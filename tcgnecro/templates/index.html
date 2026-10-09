@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TCG Necropolis</title>
+<style>
+  :root { --bg: #f6f6f4; --panel: #fff; --text: #1d1d1b; --muted: #6b6b66; --line: #ddddd8; --accent: #2f5fd0; --warn: #b0481c; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #18181a; --panel: #222225; --text: #ececea; --muted: #9a9a94; --line: #36363a; --accent: #7a9cff; --warn: #f08a5d; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, sans-serif; }
+  header { padding: 14px 20px; border-bottom: 1px solid var(--line); display: flex; gap: 16px; align-items: center; }
+  header h1 { font-size: 18px; margin: 0; white-space: nowrap; }
+  header select { width: auto; min-width: 200px; }
+  main { display: grid; grid-template-columns: 360px 1fr; gap: 20px; padding: 20px; }
+  @media (max-width: 800px) { main { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 4px; }
+  select, input[type=text], textarea { width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); font: inherit; }
+  textarea { height: 260px; font-family: ui-monospace, monospace; font-size: 13px; }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; }
+  .check { display: flex; gap: 6px; align-items: center; margin-top: 10px; font-size: 14px; color: var(--text); }
+  button { margin-top: 14px; padding: 9px 14px; border: 0; border-radius: 6px; background: var(--accent); color: #fff; font: inherit; cursor: pointer; }
+  button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  button:disabled { opacity: .5; cursor: wait; }
+  #status { margin: 0 0 12px; color: var(--muted); }
+  .problems { color: var(--warn); font-size: 14px; margin-bottom: 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+  .card img { width: 100%; border-radius: 5px; display: block; background: var(--line); aspect-ratio: 63/88; object-fit: cover; }
+  .card .t { font-size: 12px; margin-top: 4px; }
+  .card .m { font-size: 11px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header><h1>TCG Necropolis</h1>
+  <select id="game">{% for g in games %}<option value="{{ g.id }}">{{ g.name }}</option>{% endfor %}</select>
+</header>
+<main>
+  <section class="panel">
+    {% if not games %}<p>No collections indexed yet. Import a collection archive with the CLI first.</p>{% endif %}
+    <label for="pack">Whole set</label>
+    <select id="pack"><option value="">— use the decklist below —</option></select>
+
+    <label for="add">Add a card</label>
+    <input id="add" type="text" list="names" placeholder="Start typing a card name, then Enter">
+    <datalist id="names"></datalist>
+
+    <label for="deck">Decklist</label>
+    <textarea id="deck" placeholder="3x Force Lightning&#10;Gotal Outcast (48.2)&#10;Darth Vader (234.2)&#10;Force Lightning [core-set]"></textarea>
+
+    <div class="row">
+      <div><label>Page</label><select id="page_size">{% for p in page_sizes %}<option>{{ p }}</option>{% endfor %}</select></div>
+      <div><label>Layout</label><select id="layout">{% for l in layouts %}<option>{{ l }}</option>{% endfor %}</select></div>
+      <div><label>Cut lines</label><select id="cut_lines">{% for c in cut_lines %}<option{% if c == 'margins' %} selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+    </div>
+    <label class="check"><input id="double_sided" type="checkbox"> Double-sided (backs on alternate pages)</label>
+    <div id="back_label_row"><label>Generic card back</label><select id="back_label"></select></div>
+    <label class="check"><input id="compact" type="checkbox" checked> Compact images (300 DPI JPEG, much smaller file)</label>
+
+    <div class="row">
+      <button class="secondary" id="preview">Preview</button>
+      <button id="download">Download PDF</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <p id="status">Enter a decklist or pick a set, then Preview.</p>
+    <div id="problems" class="problems"></div>
+    <div id="cards" class="grid"></div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+
+async function loadGame() {
+  const info = await (await fetch(`/api/games/${$('game').value}`)).json();
+  $('pack').innerHTML = '<option value="">— use the decklist below —</option>' +
+    info.packs.map(p => `<option value="${p.id}">${p.name} (${p.printable})</option>`).join('');
+  $('names').innerHTML = info.names.map(n => `<option value="${n.replace(/"/g, '&quot;')}">`).join('');
+  $('back_label').innerHTML = info.back_labels.map(l => `<option>${l}</option>`).join('');
+  $('back_label_row').hidden = !info.back_labels.length;
+}
+
+function body() {
+  return JSON.stringify({
+    game: $('game').value, decklist: $('deck').value, pack: $('pack').value || null,
+    page_size: $('page_size').value, layout: $('layout').value, cut_lines: $('cut_lines').value,
+    double_sided: $('double_sided').checked, back_label: $('back_label').value || null,
+    compact: $('compact').checked,
+  });
+}
+
+async function post(url) {
+  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body() });
+  if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+  return res;
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+async function preview() {
+  $('status').textContent = 'Resolving…';
+  try {
+    const data = await (await post('/api/resolve')).json();
+    $('status').textContent = `${data.cards.length} card${data.cards.length === 1 ? '' : 's'} to print`;
+    const problems = [];
+    if (data.not_found.length) problems.push('Not in catalog: ' + data.not_found.map(esc).join(', '));
+    if (data.no_image.length) problems.push('No image in any collection: ' + data.no_image.map(esc).join(', '));
+    $('problems').innerHTML = problems.join('<br>');
+    $('cards').innerHTML = data.cards.map(c => `
+      <div class="card">
+        ${c.thumb ? `<img loading="lazy" src="${c.thumb}" alt="">` : '<img alt="">'}
+        <div class="t">${esc(c.title)}</div>
+        <div class="m">${esc(c.printing)} · ${esc(c.collection)}${c.backs ? ` · ${c.backs} back` : ''}</div>
+      </div>`).join('');
+  } catch (e) { $('status').textContent = 'Error: ' + e.message; }
+}
+
+async function download() {
+  const btn = $('download');
+  btn.disabled = true;
+  $('status').textContent = 'Building PDF… (large sets with full-size images can take a minute)';
+  try {
+    const res = await post('/api/pdf');
+    const blob = await res.blob();
+    const name = (res.headers.get('Content-Disposition') || '').match(/filename="(.+)"/)?.[1] || 'proxies.pdf';
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: name });
+    a.click();
+    URL.revokeObjectURL(a.href);
+    $('status').textContent = `Downloaded ${name} (${(blob.size / 1e6).toFixed(1)} MB)`;
+  } catch (e) { $('status').textContent = 'Error: ' + e.message; }
+  btn.disabled = false;
+}
+
+$('add').addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || !$('add').value.trim()) return;
+  e.preventDefault();
+  $('deck').value = ($('deck').value.trimEnd() + '\n1x ' + $('add').value.trim()).trimStart() + '\n';
+  $('add').value = '';
+  $('pack').value = '';
+});
+$('game').addEventListener('change', loadGame);
+$('preview').addEventListener('click', preview);
+$('download').addEventListener('click', download);
+$('pack').addEventListener('change', () => $('pack').value && preview());
+if ($('game').value) loadGame();
+</script>
+</body>
+</html>
