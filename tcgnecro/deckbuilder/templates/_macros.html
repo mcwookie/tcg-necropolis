@@ -1,17 +1,19 @@
-{# Shared pieces for the builder templates. #}
+{# Shared pieces for the builder templates. Import "with context": the
+   controls read `can_edit` (False when viewing someone else's deck). #}
 
 {# The −/qty/+ control. `prefix` keeps ids unique: "ctl" in the card list
    (these get out-of-band updates), "dctl" in the deck panel. With oob=True
    the control replaces the one with the same id wherever it is on the page. #}
 {% macro qty_control(deck, card, plugin, prefix="ctl", oob=False) -%}
 {% set n = deck.count(card.id) %}
+{% if not can_edit %}<span class="ctl"><span class="qty">{{ n }}</span></span>{% else %}
 <span class="ctl" id="{{ prefix }}-{{ card.id }}" {% if oob %}hx-swap-oob="true"{% endif %}>
   <button type="button" title="Remove one" {{ "disabled" if n == 0 }}
           hx-post="/decks/{{ deck.id }}/slots/{{ card.id }}?delta=-1" hx-target="#deck" hx-swap="outerHTML">−</button>
   <span class="qty {{ 'zero' if n == 0 }}">{{ n }}</span>
   <button type="button" title="Add one" {{ "disabled" if n >= plugin.max_copies(card, deck) }}
           hx-post="/decks/{{ deck.id }}/slots/{{ card.id }}?delta=1" hx-target="#deck" hx-swap="outerHTML">+</button>
-</span>
+</span>{% endif %}
 {%- endmacro %}
 
 {# One card row: color bar, name (click for details, hover for image), subtitle, badges. #}

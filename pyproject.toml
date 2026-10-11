@@ -12,6 +12,7 @@ dependencies = [
     "pillow",
     "pymupdf",
     "python-multipart",  # HTML form posts in the deck builder
+    "itsdangerous",      # signed session cookies (Starlette SessionMiddleware)
 ]
 
 [project.optional-dependencies]

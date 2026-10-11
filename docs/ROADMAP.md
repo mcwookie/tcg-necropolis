@@ -16,11 +16,24 @@ L = several sessions.
 | Bonded cards | S | Excluded from the pool. Could be listed under their parent and printed with it |
 | Pack ownership filter | S | "Only packs I own", stored once, applied as a filter |
 
+## Accounts (next steps toward internet access)
+
+Done: profiles, deck ownership, private/shared decks, a profile picker sign-in, and the
+AGPL source link. See [ACCOUNTS.md](ACCOUNTS.md).
+
+| Item | Size | Notes |
+|---|---|---|
+| Real sign-in | S–M | Replace the profile picker, either with Google/GitHub in-app (Authlib, plus a guest list of emails or usernames mapped through `User.identities`) or with Cloudflare Access (trust its verified-email header). Only `auth.py` changes |
+| Hosting over HTTPS | S | Cloudflare Tunnel (no port forwarding) or Caddy. Set `TCGNECRO_SECURE_COOKIES=1`, run uvicorn with `--proxy-headers`, keep it bound to localhost, and drop the LAN firewall rule |
+| Limit concurrent PDF builds per user | S | PDF generation is CPU-heavy |
+| Per-profile settings | S each | `User.prefs` is reserved: owned packs (powers "only cards I own"), default filters, default print options |
+| Share a deck by link | S | A "public link" visibility for people without a profile |
+| Profile management in the web UI | S | Rename/remove/promote are CLI-only for now |
+
 ## Deck builder: features
 
 | Item | Size | Notes |
 |---|---|---|
-| Deck sharing between people | M | Today everyone on the server sees every deck. Options: simple per-browser owner tags, or HTTP basic auth per user |
 | Export to ArkhamDB format | S | ArkhamDB has no public upload API, but its text/JSON import formats are documented |
 | Deck charts | S | Cost curve, class split, skill icons; see arkham.build |
 | Card list virtualization | M | "Show more" pages of 100 are fine for ~1,500 cards; a bigger game might want infinite scroll |

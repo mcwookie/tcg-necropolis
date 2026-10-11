@@ -3,8 +3,8 @@
 A game has a deck builder when tcgnecro/games/<id>/deckbuilder.py exists and
 defines PLUGIN. Pools are built from the catalog in index.db and rebuilt
 automatically when `tcgnecro catalog` reloads the game (games.loaded_at
-changes) or `tcgnecro reindex` changes its images, even while the server is
-running.
+changes) or `tcgnecro reindex` runs (index_state "images"), even while the
+server is running.
 """
 
 import json
@@ -12,6 +12,7 @@ import sqlite3
 import threading
 from importlib import import_module
 
+from tcgnecro import db
 from tcgnecro.deckbuilder.model import Pool
 from tcgnecro.deckbuilder.plugin import DeckbuilderPlugin
 from tcgnecro.games import GAME_MODULES
@@ -45,11 +46,8 @@ def plugin(game_id: str) -> DeckbuilderPlugin:
 
 
 def pool(conn: sqlite3.Connection, game_id: str) -> Pool:
-    version = (
-        conn.execute("SELECT loaded_at FROM games WHERE id = ?", (game_id,)).fetchone(),
-        conn.execute("SELECT COUNT(*), MAX(rowid) FROM images WHERE game_id = ?", (game_id,)).fetchone(),
-    )
-    version = tuple(tuple(v) if v else None for v in version)
+    loaded = conn.execute("SELECT loaded_at FROM games WHERE id = ?", (game_id,)).fetchone()
+    version = (loaded[0] if loaded else None, db.marked(conn, "images"))
     with _lock:
         cached = _pools.get(game_id)
         if cached and cached[0] == version:

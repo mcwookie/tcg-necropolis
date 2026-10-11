@@ -5,7 +5,15 @@ from datetime import datetime, timezone
 
 # Bump when the deck JSON layout changes, and teach Deck.from_json to read
 # the older layout. Every saved deck records the version it was written with.
-DECK_FORMAT = 1
+# 2: added `owner` and `visibility`. Format-1 decks load with no owner; the
+#    first profile created claims them (users.create -> store.assign_unowned).
+DECK_FORMAT = 2
+
+# Who can see a deck besides its owner.
+VISIBILITIES = {
+    "private": "Only me",
+    "shared": "Everyone on this server (read-only)",
+}
 
 
 def now() -> str:
@@ -57,6 +65,7 @@ class Deck:
     a Marvel hero, a Netrunner identity), or None for games without one.
     `meta` holds game-specific choices made while building (e.g. an Arkham
     investigator's secondary class), keyed however the plugin likes.
+    `owner` is a profile id (users.py); `visibility` is a key of VISIBILITIES.
     """
 
     id: str
@@ -68,6 +77,8 @@ class Deck:
     meta: dict = field(default_factory=dict)
     notes: str = ""
     source: str | None = None   # where it was imported from, if anywhere
+    owner: str | None = None
+    visibility: str = "private"
     created: str = field(default_factory=now)
     updated: str = field(default_factory=now)
     format: int = DECK_FORMAT
@@ -83,6 +94,17 @@ class Deck:
 
     def total(self) -> int:
         return sum(self.slots.values())
+
+    # Access rules. A deck with no owner (made before profiles existed and not
+    # yet claimed) belongs to the admins. Admins get no other special access:
+    # private decks stay private.
+    def editable_by(self, user) -> bool:
+        if user is None:
+            return False
+        return self.owner == user.id or (self.owner is None and user.is_admin)
+
+    def viewable_by(self, user) -> bool:
+        return self.editable_by(user) or (user is not None and self.visibility == "shared")
 
     def to_json(self) -> dict:
         return asdict(self)

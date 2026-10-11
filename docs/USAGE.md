@@ -9,7 +9,15 @@ cd /path/to/tcgnecro
 .venv/bin/tcgnecro serve --reload        # restart on code changes (development)
 ```
 
-The top bar switches between **Proxies** and **Decks**.
+The top bar switches between **Proxies** and **Decks**. Your profile name (top right)
+opens your profile page; **Sign out** is next to it.
+
+### Signing in
+
+The first time anyone opens the app, it asks for a name and creates the **admin**
+profile. After that, the sign-in page lists everyone's profiles: click yours. Admins add
+profiles for friends on the Profile page. Details, and why this is LAN-only for now:
+[ACCOUNTS.md](ACCOUNTS.md).
 
 First-time setup, if `data/` is empty:
 
@@ -55,6 +63,8 @@ or `Daisy Walker (rod 1)` in Arkham. Use the autocomplete to find the exact titl
 
 ### Starting a deck
 
+Your decks are listed first, followed by **Shared with you**: decks others have shared.
+
 - **New deck:** pick the game, then the investigator (filterable by name or trait;
   hover a name to see the card), and optionally a name. The investigator's required
   signature cards are added for you.
@@ -82,6 +92,9 @@ Three columns: **filters | cards | your deck**.
   - **Text list** is a plain decklist that pastes into the Proxies page or
     `tcgnecro pdf --deck`.
   - **JSON** downloads the deck file. **Copy** duplicates the deck. **Delete** asks first.
+  - **Who can see this deck** (under the name): *Only me*, or *Everyone on this server*.
+    Shared decks are read-only for others. They can print, export or **Copy to my
+    decks**, but not change yours.
   - The deck name (top) and **Notes** (bottom) save when you leave the field.
 
 Filters are kept in the address bar, so reloading or bookmarking a builder URL keeps them.
@@ -101,6 +114,7 @@ tcgnecro pdf --game G (--deck FILE | --pack PACK) [-o out.pdf] [--page letter|a4
              [--layout edge|gap|margin] [--cut-lines none|margins|full]
              [--double-sided] [--back-label LABEL] [--compact]
 tcgnecro serve [--host H] [--port P] [--reload]
+tcgnecro user list | add NAME | rename NAME NEW | admin NAME [--off] | remove NAME --decks-to NAME
 ```
 
 `--deck -` reads the decklist from stdin.
@@ -111,7 +125,9 @@ Everything is under `data/` (or the folder in `TCGNECRO_DATA`):
 
 | Path | What | Back up? |
 |---|---|---|
-| `data/decks/*.json` | your decks | **yes**, this is the only copy |
+| `data/decks/*.json` | everyone's decks | **yes**, this is the only copy |
+| `data/users.json` | profiles | **yes** |
+| `data/secret.key` | session signing key | optional; losing it just signs everyone out |
 | `data/collections/` | card images | yes, unless you still have the archives |
 | `data/cache/` | downloaded card data | no, re-downloads |
 | `data/index.db` | search index | no, rebuild with `catalog` + `reindex` |

@@ -3,10 +3,19 @@
   changed ("changed") also get their card-list control replaced out of band,
   so the list doesn't need re-fetching.
 #}
-{% from "_macros.html" import card_row, qty_control %}
+{% from "_macros.html" import card_row, qty_control with context %}
 <aside class="panel deck" id="deck">
+  {% if can_edit %}
   <input class="title" type="text" name="name" value="{{ deck.name }}" aria-label="Deck name"
          hx-post="/decks/{{ deck.id }}/meta" hx-trigger="change" hx-target="#deck" hx-swap="outerHTML">
+  <label class="f" for="visibility">Who can see this deck</label>
+  <select id="visibility" name="visibility" hx-post="/decks/{{ deck.id }}/meta" hx-trigger="change" hx-target="#deck" hx-swap="outerHTML">
+    {% for value, label in visibilities.items() %}<option value="{{ value }}" {{ "selected" if value == deck.visibility }}>{{ label }}</option>{% endfor %}
+  </select>
+  {% else %}
+  <div class="title">{{ deck.name }}</div>
+  <div class="muted small">by {{ owner_name }}</div>
+  {% endif %}
 
   {% if identity %}
   <div class="ident-card" style="--c: {{ plugin.row_color(identity) or 'var(--line)' }}">
@@ -20,7 +29,7 @@
 
   {% for s in selections %}
   <label class="f">{{ s.label }}</label>
-  <select name="{{ s.key }}" hx-post="/decks/{{ deck.id }}/meta" hx-trigger="change" hx-target="#deck" hx-swap="outerHTML">
+  <select name="{{ s.key }}" {{ "disabled" if not can_edit }} hx-post="/decks/{{ deck.id }}/meta" hx-trigger="change" hx-target="#deck" hx-swap="outerHTML">
     {% for value, label in s.options %}<option value="{{ value }}" {{ "selected" if value == s.value }}>{{ label }}</option>{% endfor %}
   </select>
   {% endfor %}
@@ -46,11 +55,13 @@
   <p class="muted small">Add cards from the list.</p>
   {% endfor %}
 
+  {% if can_edit %}
   <div class="deck-actions">
     {% for a in actions %}
     <button type="button" class="ghost" hx-post="/decks/{{ deck.id }}/action/{{ a.key }}" hx-target="#deck" hx-swap="outerHTML">{{ a.label }}</button>
     {% endfor %}
   </div>
+  {% endif %}
   {% if missing_images %}
   <p class="small" style="color:var(--warn)">{{ missing_images }} card{{ "s" if missing_images != 1 }} here
     {{ "have" if missing_images != 1 else "has" }} no image in your collections and won't print.</p>
@@ -59,13 +70,20 @@
     <button type="button" onclick="document.getElementById('print').showModal()">Print proxies</button>
     <a class="btn ghost" href="/decks/{{ deck.id }}/export.txt" target="_blank">Text list</a>
     <a class="btn ghost" href="/decks/{{ deck.id }}/export.json">JSON</a>
-    <form method="post" action="/decks/{{ deck.id }}/copy" style="display:inline"><button class="ghost">Copy</button></form>
+    <form method="post" action="/decks/{{ deck.id }}/copy" style="display:inline"><button class="ghost">{{ "Copy" if can_edit else "Copy to my decks" }}</button></form>
+    {% if can_edit %}
     <form method="post" action="/decks/{{ deck.id }}/delete" style="display:inline"
           onsubmit="return confirm('Delete this deck? This can\'t be undone.')"><button class="danger">Delete</button></form>
+    {% endif %}
   </div>
 
+  {% if can_edit %}
   <label class="f">Notes</label>
   <textarea name="notes" hx-post="/decks/{{ deck.id }}/meta" hx-trigger="change" hx-target="#deck" hx-swap="outerHTML">{{ deck.notes }}</textarea>
+  {% elif deck.notes %}
+  <label class="f">Notes</label>
+  <p class="small" style="white-space:pre-wrap">{{ deck.notes }}</p>
+  {% endif %}
   {% if deck.source %}<p class="muted small">Imported from {{ deck.source }}</p>{% endif %}
 </aside>
 

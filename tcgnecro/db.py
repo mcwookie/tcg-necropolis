@@ -89,6 +89,11 @@ MIGRATIONS = [
     ALTER TABLE cards ADD COLUMN attrs TEXT;
     ALTER TABLE games ADD COLUMN loaded_at TEXT;
     """,
+    # 2: when the image index was last rebuilt. Counting rows wasn't enough to
+    # notice a reindex: moving or renaming files keeps the count the same.
+    """
+    CREATE TABLE IF NOT EXISTS index_state (key TEXT PRIMARY KEY, value TEXT);
+    """,
 ]
 
 
@@ -107,6 +112,17 @@ def _migrate(conn: sqlite3.Connection) -> None:
         conn.executescript(script)
         conn.execute(f"PRAGMA user_version = {number}")
     conn.commit()
+
+
+def mark(conn: sqlite3.Connection, key: str) -> None:
+    """Record that `key` (e.g. "images") changed, for caches to notice."""
+    conn.execute("INSERT OR REPLACE INTO index_state VALUES (?, ?)",
+                 (key, datetime.now(timezone.utc).isoformat()))
+
+
+def marked(conn: sqlite3.Connection, key: str) -> str | None:
+    row = conn.execute("SELECT value FROM index_state WHERE key = ?", (key,)).fetchone()
+    return row[0] if row else None
 
 
 def normalize_title(title: str) -> str:

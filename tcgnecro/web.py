@@ -1,5 +1,12 @@
-"""Web app: the Proxies page (this module) and the deck builder (mounted from
-tcgnecro.deckbuilder.routes under /decks). Everything happens server-side."""
+"""Web app: the Proxies page (this module), the deck builder (mounted from
+tcgnecro.deckbuilder.routes under /decks), and sign-in (tcgnecro.auth).
+Every page except /login requires a signed-in profile. Everything happens
+server-side.
+
+Set TCGNECRO_SECURE_COOKIES=1 when serving over HTTPS, so the session cookie
+is never sent over plain HTTP."""
+
+import os
 
 import hashlib
 from pathlib import Path
@@ -7,23 +14,24 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from fastapi import Request
 from PIL import Image
 from pydantic import BaseModel
 
-from tcgnecro import db
+from tcgnecro import auth, db
 from tcgnecro.deckbuilder.routes import router as deckbuilder_router
 from tcgnecro.decklist import DecklistError, pack_requests, parse_decklist, resolve
 from tcgnecro.games import card_backs
 from tcgnecro.pdf import CUT_LINES, LAYOUTS, PAGE_SIZES, PdfOptions, generate_pdf
+from tcgnecro.templating import templates
 
 THUMB_WIDTH = 240
 
 app = FastAPI(title="TCG Necropolis")
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
+app.include_router(auth.router)
 app.include_router(deckbuilder_router)
-templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
+auth.install(app, https_only=os.environ.get("TCGNECRO_SECURE_COOKIES") == "1")
 
 
 class DeckRequest(BaseModel):

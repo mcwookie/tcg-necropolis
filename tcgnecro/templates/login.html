@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{#
+  Sign-in. While no profiles exist this is the first-run setup form; after
+  that it's the profile picker (see auth.py for why that's LAN-only).
+#}
+{% block title %}Sign in{% endblock %}
+{% block body %}
+<div class="narrow">
+  {% if error %}<p class="error-box">{{ error }}</p>{% endif %}
+  {% if not profiles %}
+  <section class="panel">
+    <h2 style="margin-top:0">Welcome</h2>
+    <p>Create the first profile. It will be the admin, and it takes ownership of any decks
+       that already exist.</p>
+    <form method="post" action="/login/setup">
+      <label class="f" for="name">Your name</label>
+      <input type="text" id="name" name="name" required autofocus>
+      <p><button>Create profile</button></p>
+    </form>
+  </section>
+  {% else %}
+  <section class="panel">
+    <h2 style="margin-top:0">Who's using TCG Necropolis?</h2>
+    <form method="post" action="/login" class="profiles">
+      <input type="hidden" name="next" value="{{ next }}">
+      {% for p in profiles %}
+      <button class="ghost" name="user_id" value="{{ p.id }}">{{ p.name }}{% if p.is_admin %} <span class="muted small">admin</span>{% endif %}</button>
+      {% endfor %}
+    </form>
+    <p class="muted small">No profile yet? Ask an admin to add one for you.</p>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

@@ -138,4 +138,5 @@ def reindex(conn: sqlite3.Connection, warn=print) -> dict[str, int]:
                 (folder.name, game_id, manifest.get("version"), manifest.get("language")),
             )
             counts[folder.name] = len(rows)
+        db.mark(conn, "images")
     return counts

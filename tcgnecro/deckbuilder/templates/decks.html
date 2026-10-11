@@ -12,7 +12,7 @@
       <tr><th>Name</th><th>Game</th><th>Built around</th><th>Cards</th><th>Status</th><th>Updated</th></tr>
       {% for deck, identity, errors in decks %}
       <tr>
-        <td><a href="/decks/{{ deck.id }}">{{ deck.name }}</a></td>
+        <td><a href="/decks/{{ deck.id }}">{{ deck.name }}</a>{% if deck.visibility == "shared" %} <span class="muted small" title="Others on this server can see it">· shared</span>{% endif %}</td>
         <td class="muted small">{{ game_names.get(deck.game, deck.game) }}</td>
         <td>{{ identity.name if identity else "—" }}</td>
         <td>{{ deck.total() }}</td>
@@ -29,6 +29,25 @@
     <p class="muted">No decks yet. Start one below.</p>
     {% endif %}
   </section>
+
+  {% if shared %}
+  <section class="panel">
+    <h2 style="margin-top:0">Shared with you</h2>
+    <table class="decks">
+      <tr><th>Name</th><th>By</th><th>Built around</th><th>Cards</th><th>Status</th><th>Updated</th></tr>
+      {% for deck, identity, errors in shared %}
+      <tr>
+        <td><a href="/decks/{{ deck.id }}">{{ deck.name }}</a></td>
+        <td>{{ owner_names.get(deck.owner, "?") }}</td>
+        <td>{{ identity.name if identity else "—" }}</td>
+        <td>{{ deck.total() }}</td>
+        <td class="small">{% if errors %}<span style="color:var(--bad)">{{ errors }} problem{{ "s" if errors != 1 }}</span>{% elif errors == 0 %}<span style="color:var(--good)">legal</span>{% endif %}</td>
+        <td class="muted small">{{ deck.updated[:16].replace("T", " ") }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </section>
+  {% endif %}
 
   {% if not games %}
   <section class="panel"><p>No game with a deck builder has its catalog loaded. Run <code>tcgnecro catalog</code>.</p></section>

@@ -75,6 +75,16 @@ def delete(deck_id: str) -> None:
     _path(deck_id).unlink(missing_ok=True)
 
 
+def assign_unowned(user_id: str) -> int:
+    """Give every deck without an owner to `user_id`. Returns how many."""
+    count = 0
+    for deck in list_decks():
+        if deck.owner is None:
+            update(deck.id, lambda d: setattr(d, "owner", user_id))
+            count += 1
+    return count
+
+
 def list_decks(game: str | None = None) -> list[Deck]:
     if not decks_dir().is_dir():
         return []

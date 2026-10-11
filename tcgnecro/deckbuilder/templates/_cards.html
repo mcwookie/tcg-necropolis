@@ -1,5 +1,5 @@
 {# The filtered card list, one page at a time. "Load more" replaces itself with the next page. #}
-{% from "_macros.html" import card_row %}
+{% from "_macros.html" import card_row with context %}
 {% if offset == 0 %}
 <div class="list-head">
   <span class="muted small">{{ total }} card{{ "s" if total != 1 }}</span>

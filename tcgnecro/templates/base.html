@@ -3,17 +3,34 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% block title %}Decks{% endblock %} · TCG Necropolis</title>
+<title>{% block title %}TCG Necropolis{% endblock %} · TCG Necropolis</title>
 <link rel="stylesheet" href="/static/app.css">
 <script src="/static/htmx.min.js"></script>
 </head>
 <body>
+{#
+  Site layout. Pages set `nav` to "proxies" / "decks" / "" to highlight the
+  menu. request.state.user is the signed-in profile (None on /login).
+#}
+{% set user = request.state.user %}
 <header class="top">
   <h1>TCG Necropolis</h1>
-  <nav><a href="/">Proxies</a><a href="/decks" class="on">Decks</a></nav>
-  {% block header %}{% endblock %}
+  {% if user %}
+  <nav>
+    <a href="/" class="{{ 'on' if nav == 'proxies' }}">Proxies</a>
+    <a href="/decks" class="{{ 'on' if nav == 'decks' }}">Decks</a>
+  </nav>
+  <div class="who">
+    <a href="/profile">{{ user.name }}</a>
+    <form method="post" action="/logout"><button class="link">Sign out</button></form>
+  </div>
+  {% endif %}
 </header>
 {% block body %}{% endblock %}
+<footer class="site">
+  TCG Necropolis is free software under the AGPL-3.0 ·
+  <a href="{{ source_url }}">Source code</a>
+</footer>
 
 <dialog id="detail"><div id="detail-body"></div></dialog>
 <img id="hover-thumb" alt="">

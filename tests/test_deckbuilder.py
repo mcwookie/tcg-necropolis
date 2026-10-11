@@ -238,7 +238,9 @@ def client(tmp_path, monkeypatch):
         catalog.versions.append(CardVersion(c["code"], "core", c["position"]))
     db.store_catalog(db.connect(), catalog)
     from tcgnecro.web import app
-    yield TestClient(app)
+    client = TestClient(app)
+    client.post("/login/setup", data={"name": "Tester"})   # first profile, signed in
+    yield client
     registry._pools.clear()
 
 
@@ -265,3 +267,19 @@ def test_web_create_edit_export(client):
 
     client.post(f"/decks/{deck_id}/delete")
     assert client.get(f"/decks/{deck_id}").status_code == 404
+
+
+def test_pool_notices_reindex_even_when_image_count_is_unchanged(client, tmp_path):
+    from PIL import Image
+    from tcgnecro import collections
+
+    conn = db.connect()
+    folder = tmp_path / "collections" / "ahlcg" / "first"
+    folder.mkdir(parents=True)
+    Image.new("RGB", (6, 8)).save(folder / "01016@core.png")
+    collections.reindex(conn, warn=lambda _: None)
+    assert "/first/" in registry.pool(conn, "ahlcg").images["01016"]
+
+    folder.rename(folder.with_name("second"))         # same number of images
+    collections.reindex(conn, warn=lambda _: None)
+    assert "/second/" in registry.pool(conn, "ahlcg").images["01016"]

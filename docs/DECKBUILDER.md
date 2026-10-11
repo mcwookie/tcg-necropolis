@@ -169,7 +169,7 @@ How filters reach the server: the form sends each filter as query parameters (`f
 
 ```json
 {
-  "format": 1,
+  "format": 2,
   "id": "0d9269855fcb",
   "game": "ahlcg",
   "name": "Zoey - Dunwich",
@@ -179,10 +179,16 @@ How filters reach the server: the form sends each filter as query parameters (`f
   "meta": {"faction_selected": "seeker", "taboo_id": 8},
   "notes": "",
   "source": "https://arkhamdb.com/decklist/view/55482/x",
+  "owner": "3f2a9c41d0be",
+  "visibility": "private",
   "created": "2026-10-11T01:50:00+00:00",
   "updated": "2026-10-11T01:52:13+00:00"
 }
 ```
+
+`owner` is a profile id from `data/users.json`, and `visibility` is `private` or `shared`
+(see [ACCOUNTS.md](ACCOUNTS.md)). Format-1 decks, saved before profiles existed, have
+neither field and load as unowned and private.
 
 Card ids are the game's catalog ids (ArkhamDB codes for Arkham). `meta` keys for Arkham
 match ArkhamDB's (`faction_selected`, `faction_1`/`faction_2`, `option_selected`,
@@ -201,6 +207,11 @@ than silently dropping fields.
 | Rename, notes, choices | `POST /decks/{id}/meta` | the deck panel; a choice change also sends `HX-Trigger: filtersChanged`, so the list re-checks legality |
 | Action button | `POST /decks/{id}/action/{key}` | the deck panel with a message |
 | Click a card name | `GET /decks/{id}/card/{card}` | card detail, opened in a `<dialog>` |
+
+Every route loads its deck through `_load(request, deck_id, edit=...)`, which applies
+the ownership rules. A deck you can't see returns 404, and editing one you can only view
+returns 403. When viewing someone else's shared deck, the builder renders a read-only
+layout (the template variable `can_edit`).
 
 All edits go through `store.update()`, which loads, modifies and saves under a lock. Each
 edit is small and applied to the latest saved state, so two tabs on the same deck don't

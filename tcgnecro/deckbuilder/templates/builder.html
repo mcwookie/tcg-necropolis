@@ -7,6 +7,15 @@
 #}
 {% block title %}{{ deck.name }}{% endblock %}
 {% block body %}
+{% if not can_edit %}
+<div class="banner">
+  <span>You're viewing <b>{{ owner_name }}</b>'s deck. It's read-only; copy it to make your own version.</span>
+  <form method="post" action="/decks/{{ deck.id }}/copy"><button>Copy to my decks</button></form>
+</div>
+<div class="builder" style="grid-template-columns: minmax(0, 460px); justify-content: center">
+  {% include "_deck.html" %}
+</div>
+{% else %}
 <div class="builder">
 
   <form class="panel filters" id="filters"
@@ -52,6 +61,7 @@
 
   {% include "_deck.html" %}
 </div>
+{% endif %}
 
 <dialog id="print">
   <form method="post" action="/decks/{{ deck.id }}/pdf">

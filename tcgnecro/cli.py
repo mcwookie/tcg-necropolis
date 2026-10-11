@@ -5,7 +5,7 @@ import sys
 import urllib.error
 from pathlib import Path
 
-from tcgnecro import collections, db
+from tcgnecro import collections, db, users
 from tcgnecro.decklist import pack_requests, parse_decklist, resolve
 from tcgnecro.games import GAME_MODULES, get_game
 from tcgnecro.pdf import CUT_LINES, LAYOUTS, PAGE_SIZES, PdfOptions, generate_pdf
@@ -80,6 +80,45 @@ def cmd_pdf(args):
     print(f"\nWrote {args.output} ({len(res.printings)} cards)", file=sys.stderr)
 
 
+def cmd_user_list(args):
+    from tcgnecro.deckbuilder import store
+    decks = store.list_decks()
+    profiles = users.list_users()
+    if not profiles:
+        print("No profiles yet. The first person to open the web app creates one, or use `tcgnecro user add`.")
+    for u in profiles:
+        owned = sum(1 for d in decks if d.owner == u.id)
+        print(f"{u.name:24} {'admin' if u.is_admin else 'member':7} {owned:3} decks  {u.email or ''}")
+    unowned = sum(1 for d in decks if d.owner is None)
+    if unowned:
+        print(f"({unowned} deck(s) have no owner; admins can edit them)")
+
+
+def cmd_user_add(args):
+    user = users.create(args.name, email=args.email, is_admin=args.admin)
+    print(f"Added {user.name}{' (admin)' if user.is_admin else ''}")
+
+
+def cmd_user_rename(args):
+    user = users.update(users.find(args.name).id, name=args.new_name)
+    print(f"Renamed to {user.name}")
+
+
+def cmd_user_admin(args):
+    user = users.find(args.name)
+    if args.off and user.is_admin and sum(u.is_admin for u in users.list_users()) == 1:
+        raise users.UserError("Can't remove the last admin")
+    users.update(user.id, is_admin=not args.off)
+    print(f"{user.name} is {'no longer' if args.off else 'now'} an admin")
+
+
+def cmd_user_remove(args):
+    user = users.find(args.name)
+    heir = users.find(args.decks_to).id if args.decks_to else None
+    moved = users.remove(user.id, decks_to=heir)
+    print(f"Removed {user.name}" + (f"; {moved} deck(s) moved to {args.decks_to}" if moved else ""))
+
+
 def cmd_serve(args):
     import uvicorn
     uvicorn.run("tcgnecro.web:app", host=args.host, port=args.port, reload=args.reload)
@@ -122,6 +161,27 @@ def main(argv=None):
     p.add_argument("--compact", action="store_true", help="300 DPI JPEG images, much smaller PDF")
     p.set_defaults(func=cmd_pdf)
 
+    p = sub.add_parser("user", help="manage profiles (who can sign in, who owns decks)")
+    usub = p.add_subparsers(required=True)
+    usub.add_parser("list", help="list profiles and their deck counts").set_defaults(func=cmd_user_list)
+    q = usub.add_parser("add", help="add a profile (the first one is always an admin)")
+    q.add_argument("name")
+    q.add_argument("--email")
+    q.add_argument("--admin", action="store_true")
+    q.set_defaults(func=cmd_user_add)
+    q = usub.add_parser("rename", help="rename a profile")
+    q.add_argument("name")
+    q.add_argument("new_name")
+    q.set_defaults(func=cmd_user_rename)
+    q = usub.add_parser("admin", help="make a profile an admin (--off to undo)")
+    q.add_argument("name")
+    q.add_argument("--off", action="store_true")
+    q.set_defaults(func=cmd_user_admin)
+    q = usub.add_parser("remove", help="delete a profile")
+    q.add_argument("name")
+    q.add_argument("--decks-to", metavar="NAME", help="profile that receives the removed profile's decks")
+    q.set_defaults(func=cmd_user_remove)
+
     p = sub.add_parser("serve", help="run the web UI")
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=8000)
@@ -131,7 +191,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         args.func(args)
-    except (collections.CollectionError, KeyError) as e:
+    except (collections.CollectionError, users.UserError, KeyError) as e:
         sys.exit(f"error: {e}")
 
 
