@@ -1,0 +1,10 @@
+{# Radio list of cards a deck can be built around (fragment for the New deck form). #}
+{% for card in identities %}
+<label class="ident" style="--c: {{ plugin.row_color(card) or 'var(--line)' }}"
+       {% if pool.images.get(card.id) %}data-thumb="{{ thumb_url(pool.images[card.id]) }}"{% endif %}>
+  <input type="radio" name="identity" value="{{ card.id }}" {{ "checked" if loop.first }}>
+  <span>{{ card.name }}<br><span class="muted small">{{ plugin.subtitle(card) }}{% if card.raw.pack_name %} · {{ card.raw.pack_name }}{% endif %}</span></span>
+</label>
+{% else %}
+<p class="muted small" style="padding:8px">Nothing matches.</p>
+{% endfor %}

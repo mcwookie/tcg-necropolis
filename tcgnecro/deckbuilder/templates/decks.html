@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{# The deck list: saved decks, plus forms to start or import a deck. #}
+{% block title %}Decks{% endblock %}
+{% block body %}
+<div class="wrap">
+  {% if error %}<p class="error-box">{{ error }}</p>{% endif %}
+
+  <section class="panel">
+    <h2 style="margin-top:0">Your decks</h2>
+    {% if decks %}
+    <table class="decks">
+      <tr><th>Name</th><th>Game</th><th>Built around</th><th>Cards</th><th>Status</th><th>Updated</th></tr>
+      {% for deck, identity, errors in decks %}
+      <tr>
+        <td><a href="/decks/{{ deck.id }}">{{ deck.name }}</a></td>
+        <td class="muted small">{{ game_names.get(deck.game, deck.game) }}</td>
+        <td>{{ identity.name if identity else "—" }}</td>
+        <td>{{ deck.total() }}</td>
+        <td class="small">
+          {% if errors is none %}<span class="muted">game not loaded</span>
+          {% elif errors %}<span style="color:var(--bad)">{{ errors }} problem{{ "s" if errors != 1 }}</span>
+          {% else %}<span style="color:var(--good)">legal</span>{% endif %}
+        </td>
+        <td class="muted small">{{ deck.updated[:16].replace("T", " ") }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p class="muted">No decks yet. Start one below.</p>
+    {% endif %}
+  </section>
+
+  {% if not games %}
+  <section class="panel"><p>No game with a deck builder has its catalog loaded. Run <code>tcgnecro catalog</code>.</p></section>
+  {% else %}
+  <div class="two">
+    <section class="panel">
+      <h2 style="margin-top:0">New deck</h2>
+      <form method="post" action="/decks">
+        <label class="f">Game</label>
+        <select name="game" id="new-game"
+                hx-get="/decks/identities" hx-target="#ident-list" hx-include="#new-game, #ident-q" hx-trigger="change">
+          {% for gid, gname in games %}<option value="{{ gid }}">{{ gname }}</option>{% endfor %}
+        </select>
+        <label class="f">Built around</label>
+        <input type="search" id="ident-q" name="q" placeholder="Filter by name or trait"
+               hx-get="/decks/identities" hx-target="#ident-list" hx-include="#new-game, #ident-q"
+               hx-trigger="input changed delay:200ms">
+        <div id="ident-list" class="ident-list"
+             hx-get="/decks/identities?game={{ games[0][0] }}" hx-trigger="load"></div>
+        <label class="f">Deck name</label>
+        <input type="text" name="name" placeholder="Defaults to the investigator's name">
+        <p><button>Create deck</button></p>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2 style="margin-top:0">Import</h2>
+      <form method="post" action="/decks/import">
+        <label class="f">Game</label>
+        <select name="game">{% for gid, gname in games %}<option value="{{ gid }}">{{ gname }}</option>{% endfor %}</select>
+        <label class="f">Deck URL</label>
+        <input type="text" name="source" required placeholder="https://arkhamdb.com/decklist/view/12345/...">
+        <p class="small muted">ArkhamDB published decklists and shared decks. Private decks can't be read; make them public or shared first.</p>
+        <p><button>Import</button></p>
+      </form>
+    </section>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

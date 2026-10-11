@@ -1,0 +1,105 @@
+/* Shared styles for the deck builder pages (the Proxies page has its own
+   inline styles). Colors are tokens so dark mode is one override block. */
+
+:root {
+  --bg: #f6f6f4; --panel: #fff; --text: #1d1d1b; --muted: #6b6b66; --line: #ddddd8;
+  --accent: #2f5fd0; --warn: #b0481c; --bad: #c0392b; --good: #2e7d4f; --hover: #f0f0ec;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #18181a; --panel: #222225; --text: #ececea; --muted: #9a9a94; --line: #36363a;
+    --accent: #7a9cff; --warn: #f08a5d; --bad: #ff7b6b; --good: #6fcf97; --hover: #2b2b2f;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, sans-serif; }
+a { color: var(--accent); }
+header.top { padding: 12px 20px; border-bottom: 1px solid var(--line); display: flex; gap: 20px; align-items: center; }
+header.top h1 { font-size: 18px; margin: 0; white-space: nowrap; }
+header.top nav a { margin-right: 14px; text-decoration: none; color: var(--muted); }
+header.top nav a.on { color: var(--text); font-weight: 600; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
+label.f { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 4px; text-transform: uppercase; letter-spacing: .03em; }
+select, input[type=text], input[type=number], input[type=search], textarea {
+  width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--bg); color: var(--text); font: inherit;
+}
+textarea { min-height: 90px; }
+button, .btn {
+  padding: 7px 12px; border: 0; border-radius: 6px; background: var(--accent); color: #fff;
+  font: inherit; cursor: pointer; text-decoration: none; display: inline-block;
+}
+button.ghost, .btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+button.danger { background: transparent; color: var(--bad); border: 1px solid var(--bad); }
+button:disabled { opacity: .35; cursor: default; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.error-box { color: var(--bad); margin: 0 0 12px; }
+
+/* ---- deck list page ---- */
+.wrap { max-width: 1100px; margin: 0 auto; padding: 20px; display: grid; gap: 20px; }
+table.decks { width: 100%; border-collapse: collapse; }
+table.decks td, table.decks th { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 800px) { .two { grid-template-columns: 1fr; } }
+.ident-list { max-height: 340px; overflow: auto; border: 1px solid var(--line); border-radius: 6px; margin-top: 6px; }
+.ident { display: flex; gap: 10px; align-items: center; padding: 6px 8px; border-left: 4px solid var(--c, var(--line)); cursor: pointer; }
+.ident:hover { background: var(--hover); }
+.ident input { margin: 0; }
+.ident img { width: 34px; border-radius: 3px; }
+
+/* ---- builder ---- */
+.builder { display: grid; grid-template-columns: 230px minmax(0, 1fr) 400px; gap: 16px; padding: 16px; align-items: start; }
+@media (max-width: 1150px) { .builder { grid-template-columns: 1fr; } }
+.filters .opts { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 14px; }
+.filters .opts label { display: flex; gap: 4px; align-items: center; }
+.swatch { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.range { display: flex; gap: 6px; align-items: center; }
+.range input { width: 64px; }
+.check { display: flex; gap: 6px; align-items: center; font-size: 14px; }
+.list-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 10px; }
+.list-head select { width: auto; }
+.row {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center;
+  padding: 5px 8px; border-left: 4px solid var(--c, var(--line)); border-bottom: 1px solid var(--line);
+}
+.row:hover { background: var(--hover); }
+.row .name { cursor: pointer; font-weight: 500; }
+.row .sub { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row.flagged { background: color-mix(in srgb, var(--bad) 12%, transparent); }
+.badges { display: flex; gap: 6px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.badges span { min-width: 1.4em; text-align: center; }
+.ctl { display: inline-flex; align-items: center; gap: 2px; }
+.ctl button { padding: 0; width: 24px; height: 24px; line-height: 22px; font-size: 16px; background: transparent; color: var(--text); border: 1px solid var(--line); }
+.ctl .qty { width: 20px; text-align: center; font-weight: 600; }
+.ctl .qty.zero { color: var(--muted); font-weight: 400; }
+.more { margin: 12px auto; display: block; }
+
+.deck { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; }
+.deck .title { font-size: 18px; font-weight: 600; border: 0; background: transparent; padding: 2px 0; }
+.ident-card { display: flex; gap: 10px; align-items: center; margin: 8px 0; border-left: 4px solid var(--c, var(--line)); padding-left: 8px; }
+.ident-card img { width: 60px; border-radius: 4px; }
+.stats { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 10px 0; font-size: 14px; }
+.stats .ok-true { color: var(--good); } .stats .ok-false { color: var(--bad); }
+.problems { margin: 8px 0; padding-left: 18px; font-size: 14px; }
+.problems .error { color: var(--bad); } .problems .warning { color: var(--warn); }
+.flash { background: var(--hover); padding: 6px 10px; border-radius: 6px; font-size: 14px; }
+.group h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 14px 0 4px; }
+.deck-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+
+/* ---- card text and detail ---- */
+.card-text { font-size: 14px; }
+.card-text blockquote { margin: 6px 0 6px 12px; font-style: italic; }
+.card-text .trait { font-weight: 600; }
+.icon { display: inline-block; padding: 0 4px; border-radius: 4px; background: var(--hover); border: 1px solid var(--line); font-size: 11px; line-height: 16px; vertical-align: 1px; }
+.icon.faction.guardian { color: #2b80c5; } .icon.faction.seeker { color: #e0802a; } .icon.faction.rogue { color: #1f8a3a; }
+.icon.faction.mystic { color: #6a4fd1; } .icon.faction.survivor { color: #cc3038; }
+dialog { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--text); max-width: min(760px, 94vw); padding: 18px; }
+dialog::backdrop { background: rgb(0 0 0 / .45); }
+.detail { display: grid; grid-template-columns: 260px 1fr; gap: 18px; }
+@media (max-width: 700px) { .detail { grid-template-columns: 1fr; } }
+.detail img { width: 100%; border-radius: 8px; }
+.detail dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 14px; margin: 10px 0; }
+.detail dt { color: var(--muted); }
+.flavor { font-style: italic; color: var(--muted); font-size: 13px; }
+#hover-thumb { position: fixed; z-index: 10; pointer-events: none; width: 200px; border-radius: 8px; box-shadow: 0 6px 24px rgb(0 0 0 / .35); display: none; }

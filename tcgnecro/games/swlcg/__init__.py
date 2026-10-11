@@ -1,4 +1,24 @@
-"""Star Wars LCG. The catalog is static JSON bundled alongside this module."""
+"""Star Wars LCG. The catalog is static JSON bundled alongside this module,
+since there is no maintained online source. Edit the JSON to add or correct
+packs, then run `tcgnecro catalog swlcg` (see docs/UPDATING_GAMES.md).
+
+swlcg_packs.json, one object per pack:
+    code       pack id, used in image names ("core-set")
+    name       display name
+    position   release order; newer packs have higher numbers
+
+swlcg_cards.json, one object per card:
+    unique_id               card id, used in image names ("0235")
+    name                    printed name
+    label                   unique title used by decklists; add "(set.number)"
+                            when a name repeats: "Darth Vader (234.2)"
+    pack_code               the pack's code
+    card_type               Affiliation, Enhancement, Event, Fate, Mission, Objective, Unit
+    side                    Light or Dark (picks the generic card back)
+    affiliation             e.g. Jedi, Sith, Neutral
+    objective_set_number    objective set the card belongs to, or null
+    objective_set_sequence  position within the set (1-6), or null
+"""
 
 import json
 from pathlib import Path
@@ -20,7 +40,8 @@ def back_group_for(pack_code: str, side: str, objective_set_number: int | None) 
     return None
 
 
-def load_catalog() -> Catalog:
+def load_catalog(refresh: bool = False) -> Catalog:
+    # Static data bundled with the code, so there is nothing to refresh.
     packs = json.loads((HERE / "swlcg_packs.json").read_text())
     cards = json.loads((HERE / "swlcg_cards.json").read_text())
 

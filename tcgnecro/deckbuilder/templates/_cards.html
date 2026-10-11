@@ -1,0 +1,16 @@
+{# The filtered card list, one page at a time. "Load more" replaces itself with the next page. #}
+{% from "_macros.html" import card_row %}
+{% if offset == 0 %}
+<div class="list-head">
+  <span class="muted small">{{ total }} card{{ "s" if total != 1 }}</span>
+</div>
+{% endif %}
+{% for card in cards %}
+  {{ card_row(deck, card, plugin, pool) }}
+{% else %}
+  <p class="muted">No cards match these filters.</p>
+{% endfor %}
+{% if next_offset is not none %}
+<button class="ghost more" hx-get="/decks/{{ deck.id }}/cards?offset={{ next_offset }}&{{ query }}"
+        hx-target="this" hx-swap="outerHTML">Show more ({{ total - next_offset }} left)</button>
+{% endif %}

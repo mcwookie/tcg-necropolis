@@ -1,7 +1,11 @@
 """SQLite index. Everything in here can be rebuilt: the catalog from the game
-modules, and the image index by scanning the collection folders."""
+modules, and the image index by scanning the collection folders. User data
+(decks) deliberately lives elsewhere, in data/decks/, so deleting index.db is
+always safe: run `tcgnecro catalog` and `tcgnecro reindex` to rebuild it."""
 
+import json
 import os
+from datetime import datetime, timezone
 import sqlite3
 import unicodedata
 from pathlib import Path
@@ -68,12 +72,41 @@ def collections_dir() -> Path:
     return data_dir() / "collections"
 
 
+def thumb_url(path: str) -> str:
+    """URL of the thumbnail for a collection image. Images are addressed by
+    their path relative to the collections folder, so the thumbnail route
+    can't be pointed at arbitrary files."""
+    return "/thumb/" + str(Path(path).relative_to(collections_dir()))
+
+
+# Schema changes after the first release, applied in order to existing
+# databases. PRAGMA user_version records how many have run. Add new steps to
+# the end; never edit or reorder old ones.
+MIGRATIONS = [
+    # 1: the deck builder needs each card's full data, and a way to notice
+    # that a catalog was reloaded while the server was running.
+    """
+    ALTER TABLE cards ADD COLUMN attrs TEXT;
+    ALTER TABLE games ADD COLUMN loaded_at TEXT;
+    """,
+]
+
+
 def connect() -> sqlite3.Connection:
     data_dir().mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(data_dir() / "index.db", check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
+    _migrate(conn)
     return conn
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    version = conn.execute("PRAGMA user_version").fetchone()[0]
+    for number, script in enumerate(MIGRATIONS[version:], start=version + 1):
+        conn.executescript(script)
+        conn.execute(f"PRAGMA user_version = {number}")
+    conn.commit()
 
 
 def normalize_title(title: str) -> str:
@@ -88,14 +121,22 @@ def store_catalog(conn: sqlite3.Connection, catalog: Catalog) -> None:
     with conn:
         for table in ("packs", "cards", "card_versions"):
             conn.execute(f"DELETE FROM {table} WHERE game_id = ?", (g,))
-        conn.execute("INSERT OR REPLACE INTO games VALUES (?, ?)", (g, catalog.name))
+        conn.execute(
+            "INSERT OR REPLACE INTO games (id, name, loaded_at) VALUES (?, ?, ?)",
+            (g, catalog.name, datetime.now(timezone.utc).isoformat()),
+        )
         conn.executemany(
             "INSERT INTO packs VALUES (?, ?, ?, ?)",
             [(g, p.id, p.name, p.sort_key) for p in catalog.packs],
         )
         conn.executemany(
-            "INSERT INTO cards VALUES (?, ?, ?, ?, ?)",
-            [(g, c.id, c.title, normalize_title(c.title), c.back_group) for c in catalog.cards],
+            "INSERT INTO cards (game_id, id, title, title_normalized, back_group, attrs)"
+            " VALUES (?, ?, ?, ?, ?, ?)",
+            [
+                (g, c.id, c.title, normalize_title(c.title), c.back_group,
+                 json.dumps(c.attrs) if c.attrs is not None else None)
+                for c in catalog.cards
+            ],
         )
         conn.executemany(
             "INSERT INTO card_versions VALUES (?, ?, ?, ?, ?)",

@@ -1,12 +1,23 @@
-"""Game registry. Each game is a module exposing GAME_ID, NAME and
-load_catalog(), with optional generic card backs in a `backs/` folder
-named `{back_group}_{label}[.bleed].{ext}` (same as upstream)."""
+"""Game registry.
+
+Each game is a package under `tcgnecro/games/<id>/` exposing:
+
+- `GAME_ID`, `NAME`
+- `load_catalog(refresh: bool = False) -> Catalog`. `refresh` asks games that
+  download their data to fetch it again instead of using the local cache.
+- optionally a `backs/` folder of generic card backs, named
+  `{back_group}_{label}[.bleed].{ext}` (same convention as upstream)
+- optionally a deck builder: `deckbuilder.py` defining `PLUGIN` plus a
+  `deckbuilder.toml` config. See docs/DECKBUILDER.md.
+
+See docs/ADDING_A_GAME.md for a walkthrough.
+"""
 
 from dataclasses import dataclass, field
 from importlib import import_module
 from pathlib import Path
 
-GAME_MODULES = ["swlcg"]
+GAME_MODULES = ["ahlcg", "swlcg"]
 
 
 @dataclass
@@ -19,8 +30,11 @@ class Pack:
 @dataclass
 class Card:
     id: str
-    title: str
+    title: str  # unique per card within a game; decklists resolve against it
     back_group: str | None
+    # Everything else the source knows about the card (text, cost, class...).
+    # Only the deck builder reads this; proxy printing needs id + title alone.
+    attrs: dict | None = None
 
 
 @dataclass

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Decks{% endblock %} · TCG Necropolis</title>
+<link rel="stylesheet" href="/static/app.css">
+<script src="/static/htmx.min.js"></script>
+</head>
+<body>
+<header class="top">
+  <h1>TCG Necropolis</h1>
+  <nav><a href="/">Proxies</a><a href="/decks" class="on">Decks</a></nav>
+  {% block header %}{% endblock %}
+</header>
+{% block body %}{% endblock %}
+
+<dialog id="detail"><div id="detail-body"></div></dialog>
+<img id="hover-thumb" alt="">
+<script>
+  // Card detail: any element with hx-target="#detail-body" opens the dialog.
+  document.body.addEventListener('htmx:afterSwap', e => {
+    if (e.detail.target.id === 'detail-body') document.getElementById('detail').showModal();
+  });
+  document.getElementById('detail').addEventListener('click', e => {
+    if (e.target.id === 'detail') e.target.close();  // click on the backdrop
+  });
+
+  // Hovering anything with data-thumb shows the card image beside the cursor.
+  const thumb = document.getElementById('hover-thumb');
+  document.addEventListener('mouseover', e => {
+    const el = e.target.closest('[data-thumb]');
+    if (!el || !el.dataset.thumb) { thumb.style.display = 'none'; return; }
+    if (thumb.getAttribute('src') !== el.dataset.thumb) thumb.src = el.dataset.thumb;
+    thumb.style.display = 'block';
+  });
+  document.addEventListener('mousemove', e => {
+    if (thumb.style.display !== 'block') return;
+    const x = e.clientX + 220 > innerWidth ? e.clientX - 220 : e.clientX + 20;
+    thumb.style.left = x + 'px';
+    thumb.style.top = Math.min(e.clientY - 40, innerHeight - 300) + 'px';
+  });
+</script>
+</body>
+</html>

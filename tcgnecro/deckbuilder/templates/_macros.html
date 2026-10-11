@@ -1,0 +1,28 @@
+{# Shared pieces for the builder templates. #}
+
+{# The −/qty/+ control. `prefix` keeps ids unique: "ctl" in the card list
+   (these get out-of-band updates), "dctl" in the deck panel. With oob=True
+   the control replaces the one with the same id wherever it is on the page. #}
+{% macro qty_control(deck, card, plugin, prefix="ctl", oob=False) -%}
+{% set n = deck.count(card.id) %}
+<span class="ctl" id="{{ prefix }}-{{ card.id }}" {% if oob %}hx-swap-oob="true"{% endif %}>
+  <button type="button" title="Remove one" {{ "disabled" if n == 0 }}
+          hx-post="/decks/{{ deck.id }}/slots/{{ card.id }}?delta=-1" hx-target="#deck" hx-swap="outerHTML">−</button>
+  <span class="qty {{ 'zero' if n == 0 }}">{{ n }}</span>
+  <button type="button" title="Add one" {{ "disabled" if n >= plugin.max_copies(card, deck) }}
+          hx-post="/decks/{{ deck.id }}/slots/{{ card.id }}?delta=1" hx-target="#deck" hx-swap="outerHTML">+</button>
+</span>
+{%- endmacro %}
+
+{# One card row: color bar, name (click for details, hover for image), subtitle, badges. #}
+{% macro card_row(deck, card, plugin, pool, prefix="ctl", flagged=False) -%}
+<div class="row {{ 'flagged' if flagged }}" style="--c: {{ plugin.row_color(card) or 'var(--line)' }}">
+  {{ qty_control(deck, card, plugin, prefix) }}
+  <div style="min-width:0">
+    <div class="name" hx-get="/decks/{{ deck.id }}/card/{{ card.id }}" hx-target="#detail-body"
+         {% if pool.images.get(card.id) %}data-thumb="{{ thumb_url(pool.images[card.id]) }}"{% endif %}>{{ card.name }}</div>
+    {% set sub = plugin.subtitle(card) %}{% if sub %}<div class="sub">{{ sub }}</div>{% endif %}
+  </div>
+  <div class="badges">{% for text, title in plugin.badges(card) %}<span title="{{ title }}">{{ text }}</span>{% endfor %}</div>
+</div>
+{%- endmacro %}

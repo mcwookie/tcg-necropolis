@@ -1,16 +1,19 @@
-"""Web UI. Everything happens server-side; the page is plain HTML + fetch()."""
+"""Web app: the Proxies page (this module) and the deck builder (mounted from
+tcgnecro.deckbuilder.routes under /decks). Everything happens server-side."""
 
 import hashlib
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse, Response
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi import Request
 from PIL import Image
 from pydantic import BaseModel
 
 from tcgnecro import db
+from tcgnecro.deckbuilder.routes import router as deckbuilder_router
 from tcgnecro.decklist import DecklistError, pack_requests, parse_decklist, resolve
 from tcgnecro.games import card_backs
 from tcgnecro.pdf import CUT_LINES, LAYOUTS, PAGE_SIZES, PdfOptions, generate_pdf
@@ -18,6 +21,8 @@ from tcgnecro.pdf import CUT_LINES, LAYOUTS, PAGE_SIZES, PdfOptions, generate_pd
 THUMB_WIDTH = 240
 
 app = FastAPI(title="TCG Necropolis")
+app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
+app.include_router(deckbuilder_router)
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
 
@@ -47,12 +52,6 @@ def _resolve(req: DeckRequest):
         raise HTTPException(400, str(e))
     finally:
         conn.close()
-
-
-def _image_id(path: str) -> str:
-    """Images are addressed by their path relative to the collections folder,
-    so the thumbnail route can't be pointed at arbitrary files."""
-    return str(Path(path).relative_to(db.collections_dir()))
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -101,7 +100,7 @@ def resolve_deck(req: DeckRequest):
                 "title": p.title,
                 "printing": p.label,
                 "collection": p.collection,
-                "thumb": f"/thumb/{_image_id(p.front.best(False)[0])}" if p.front.best(False) else None,
+                "thumb": db.thumb_url(p.front.best(False)[0]) if p.front.best(False) else None,
                 "backs": len(p.backs),
             }
             for p in res.printings

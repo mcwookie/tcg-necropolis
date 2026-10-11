@@ -1,0 +1,72 @@
+{#
+  The deck panel. Returned whole after every change. Cards whose count
+  changed ("changed") also get their card-list control replaced out of band,
+  so the list doesn't need re-fetching.
+#}
+{% from "_macros.html" import card_row, qty_control %}
+<aside class="panel deck" id="deck">
+  <input class="title" type="text" name="name" value="{{ deck.name }}" aria-label="Deck name"
+         hx-post="/decks/{{ deck.id }}/meta" hx-trigger="change" hx-target="#deck" hx-swap="outerHTML">
+
+  {% if identity %}
+  <div class="ident-card" style="--c: {{ plugin.row_color(identity) or 'var(--line)' }}">
+    {% if pool.images.get(identity.id) %}<img src="{{ thumb_url(pool.images[identity.id]) }}" alt="">{% endif %}
+    <div>
+      <div class="name" style="cursor:pointer" hx-get="/decks/{{ deck.id }}/card/{{ identity.id }}" hx-target="#detail-body">{{ identity.name }}</div>
+      <div class="muted small">{{ plugin.config.identity_label }} · {{ plugin.subtitle(identity) }}</div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% for s in selections %}
+  <label class="f">{{ s.label }}</label>
+  <select name="{{ s.key }}" hx-post="/decks/{{ deck.id }}/meta" hx-trigger="change" hx-target="#deck" hx-swap="outerHTML">
+    {% for value, label in s.options %}<option value="{{ value }}" {{ "selected" if value == s.value }}>{{ label }}</option>{% endfor %}
+  </select>
+  {% endfor %}
+
+  <div class="stats">
+    {% for st in stats %}<span><span class="muted">{{ st.label }}</span> <b class="ok-{{ st.ok|lower if st.ok is not none }}">{{ st.value }}</b></span>{% endfor %}
+  </div>
+
+  {% if message %}<p class="flash">{{ message }}</p>{% endif %}
+
+  {% if problems %}
+  <ul class="problems">{% for p in problems %}<li class="{{ p.severity }}">{{ p.message }}</li>{% endfor %}</ul>
+  {% else %}
+  <p class="small" style="color:var(--good)">Deck is legal.</p>
+  {% endif %}
+
+  {% for label, count, rows in groups %}
+  <div class="group">
+    <h3>{{ label }} ({{ count }})</h3>
+    {% for card, qty in rows %}{{ card_row(deck, card, plugin, pool, "dctl", card.id in flagged) }}{% endfor %}
+  </div>
+  {% else %}
+  <p class="muted small">Add cards from the list.</p>
+  {% endfor %}
+
+  <div class="deck-actions">
+    {% for a in actions %}
+    <button type="button" class="ghost" hx-post="/decks/{{ deck.id }}/action/{{ a.key }}" hx-target="#deck" hx-swap="outerHTML">{{ a.label }}</button>
+    {% endfor %}
+  </div>
+  {% if missing_images %}
+  <p class="small" style="color:var(--warn)">{{ missing_images }} card{{ "s" if missing_images != 1 }} here
+    {{ "have" if missing_images != 1 else "has" }} no image in your collections and won't print.</p>
+  {% endif %}
+  <div class="deck-actions">
+    <button type="button" onclick="document.getElementById('print').showModal()">Print proxies</button>
+    <a class="btn ghost" href="/decks/{{ deck.id }}/export.txt" target="_blank">Text list</a>
+    <a class="btn ghost" href="/decks/{{ deck.id }}/export.json">JSON</a>
+    <form method="post" action="/decks/{{ deck.id }}/copy" style="display:inline"><button class="ghost">Copy</button></form>
+    <form method="post" action="/decks/{{ deck.id }}/delete" style="display:inline"
+          onsubmit="return confirm('Delete this deck? This can\'t be undone.')"><button class="danger">Delete</button></form>
+  </div>
+
+  <label class="f">Notes</label>
+  <textarea name="notes" hx-post="/decks/{{ deck.id }}/meta" hx-trigger="change" hx-target="#deck" hx-swap="outerHTML">{{ deck.notes }}</textarea>
+  {% if deck.source %}<p class="muted small">Imported from {{ deck.source }}</p>{% endif %}
+</aside>
+
+{% for card in changed if card %}{{ qty_control(deck, card, plugin, "ctl", oob=True) }}{% endfor %}

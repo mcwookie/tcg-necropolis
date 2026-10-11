@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{#
+  The deck builder: filters | card list | deck.
+  The filter form is generated from the game's deckbuilder.toml; any change
+  re-fetches the card list. `filtersChanged` (sent when a deck choice changes
+  what's legal) refreshes it too.
+#}
+{% block title %}{{ deck.name }}{% endblock %}
+{% block body %}
+<div class="builder">
+
+  <form class="panel filters" id="filters"
+        hx-get="/decks/{{ deck.id }}/cards" hx-target="#card-list"
+        hx-trigger="input delay:250ms, change, filtersChanged from:body" hx-sync="this:replace">
+    <input type="hidden" name="f" value="1">
+    {% for f in config.filters %}
+      {% set v = values[f.key] %}
+      {% if f.type == "toggle" %}
+        <label class="check" style="margin-top:4px"><input type="checkbox" name="{{ f.key }}" value="1" {{ "checked" if v }}> {{ f.label }}</label>
+      {% elif f.type == "text" %}
+        <label class="f" for="f-{{ f.key }}">{{ f.label }}</label>
+        <input type="search" id="f-{{ f.key }}" name="{{ f.key }}" value="{{ v }}" placeholder="{{ f.help or '' }}">
+      {% elif f.type == "multiselect" %}
+        <label class="f">{{ f.label }}</label>
+        <div class="opts">
+          {% for o in f.options %}
+          <label><input type="checkbox" name="{{ f.key }}" value="{{ o.value }}" {{ "checked" if o.value in v }}>
+            {% if o.color %}<span class="swatch" style="background:{{ o.color }}"></span>{% endif %}{{ o.label }}</label>
+          {% endfor %}
+        </div>
+      {% elif f.type == "range" %}
+        <label class="f">{{ f.label }}</label>
+        <div class="range">
+          <input type="number" name="{{ f.key }}_min" value="{{ v[0] if v[0] is not none }}" min="{{ f.min }}" max="{{ f.max }}" aria-label="{{ f.label }} from">
+          <span class="muted">to</span>
+          <input type="number" name="{{ f.key }}_max" value="{{ v[1] if v[1] is not none }}" min="{{ f.min }}" max="{{ f.max }}" aria-label="{{ f.label }} to">
+        </div>
+      {% endif %}
+    {% endfor %}
+    {% if config.sorts %}
+      <label class="f" for="sort">Sort</label>
+      <select name="sort" id="sort">
+        {% for s in config.sorts %}<option value="{{ s.key }}" {{ "selected" if s.key == sort_key }}>{{ s.label }}</option>{% endfor %}
+      </select>
+    {% endif %}
+    <p><a class="small" href="/decks/{{ deck.id }}">Reset filters</a></p>
+  </form>
+
+  <section class="panel">
+    <div id="card-list">{% include "_cards.html" %}</div>
+  </section>
+
+  {% include "_deck.html" %}
+</div>
+
+<dialog id="print">
+  <form method="post" action="/decks/{{ deck.id }}/pdf">
+    <h3 style="margin-top:0">Print proxies</h3>
+    <div class="range" style="gap:12px">
+      <div><label class="f">Page</label><select name="page_size">{% for p in page_sizes %}<option>{{ p }}</option>{% endfor %}</select></div>
+      <div><label class="f">Layout</label><select name="layout">{% for l in layouts %}<option>{{ l }}</option>{% endfor %}</select></div>
+      <div><label class="f">Cut lines</label><select name="cut_lines">{% for c in cut_lines %}<option {{ "selected" if c == "margins" }}>{{ c }}</option>{% endfor %}</select></div>
+    </div>
+    <label class="check" style="margin-top:12px"><input type="checkbox" name="double_sided" value="true"> Double-sided (backs on alternate pages)</label>
+    {% if back_labels %}
+    <label class="f">Generic card back</label>
+    <select name="back_label">{% for l in back_labels %}<option>{{ l }}</option>{% endfor %}</select>
+    {% endif %}
+    <label class="check" style="margin-top:10px"><input type="checkbox" name="compact" value="true" checked> Compact images (smaller file)</label>
+    <p class="deck-actions">
+      <button onclick="setTimeout(() => this.closest('dialog').close(), 100)">Download PDF</button>
+      <button type="button" class="ghost" onclick="this.closest('dialog').close()">Cancel</button>
+    </p>
+  </form>
+</dialog>
+{% endblock %}

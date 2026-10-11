@@ -1,0 +1,20 @@
+{# Card detail, shown in the #detail dialog. #}
+{% from "_macros.html" import qty_control %}
+<div class="detail">
+  <div>
+    {% if pool.images.get(card.id) %}<img src="{{ thumb_url(pool.images[card.id]) }}" alt="{{ card.name }}">
+    {% else %}<p class="muted small">No image in your collections.</p>{% endif %}
+  </div>
+  <div>
+    <h3 style="margin:0">{{ card.name }}</h3>
+    {% if card.raw.subname %}<div class="muted">{{ card.raw.subname }}</div>{% endif %}
+    <dl>{% for label, value in plugin.detail_fields(card) %}<dt>{{ label }}</dt><dd style="margin:0">{{ value }}</dd>{% endfor %}</dl>
+    {% if card.raw.text %}<div class="card-text">{{ plugin.render_text(card.raw.text) }}</div>{% endif %}
+    {% if card.raw.back_text %}<hr><div class="card-text">{{ plugin.render_text(card.raw.back_text) }}</div>{% endif %}
+    {% if card.raw.flavor %}<p class="flavor">{{ card.raw.flavor }}</p>{% endif %}
+    {% if card.get("kind") != "investigator" %}
+    <p class="small">{{ "Allowed in this deck." if legal else "Not allowed for this deck's " ~ plugin.config.identity_label|lower ~ "." }}</p>
+    {% endif %}
+    <p><button type="button" class="ghost" onclick="this.closest('dialog').close()">Close</button></p>
+  </div>
+</div>

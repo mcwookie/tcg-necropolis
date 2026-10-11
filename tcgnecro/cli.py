@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+import urllib.error
 from pathlib import Path
 
 from tcgnecro import collections, db
@@ -13,7 +14,12 @@ from tcgnecro.pdf import CUT_LINES, LAYOUTS, PAGE_SIZES, PdfOptions, generate_pd
 def cmd_catalog(args):
     conn = db.connect()
     for game_id in args.games or GAME_MODULES:
-        catalog = get_game(game_id).load_catalog()
+        try:
+            catalog = get_game(game_id).load_catalog(refresh=args.refresh)
+        except (urllib.error.URLError, TimeoutError) as e:
+            print(f"{game_id}: couldn't download card data ({e}); keeping what was loaded before",
+                  file=sys.stderr)
+            continue
         db.store_catalog(conn, catalog)
         print(f"{catalog.name}: {len(catalog.packs)} packs, {len(catalog.cards)} cards")
 
@@ -85,6 +91,8 @@ def main(argv=None):
 
     p = sub.add_parser("catalog", help="load card catalogs for supported games")
     p.add_argument("games", nargs="*", choices=GAME_MODULES + [[]], metavar="GAME")
+    p.add_argument("--refresh", action="store_true",
+                   help="re-download data for games that fetch it (e.g. ahlcg from ArkhamDB)")
     p.set_defaults(func=cmd_catalog)
 
     p = sub.add_parser("import", help="unzip a collection archive into the collections folder")
