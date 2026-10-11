@@ -22,8 +22,9 @@ NAME = "Marvel Champions"
 
 def load_catalog(refresh: bool = False) -> Catalog:
     catalog = Catalog(GAME_ID, NAME)
-    # Pack(id, name, sort_key): sort_key orders packs; newer must sort higher
-    # (a release date "2019-11-01" or zero-padded position "07").
+    # Pack(id, name, sort_key, group=None, group_order=0): sort_key orders packs;
+    # newer must sort higher (a release date "2019-11-01" or zero-padded position
+    # "07"). group/group_order arrange the Collection page (e.g. by cycle).
     # Card(id, title, back_group, attrs): title must be unique per card -- decklists
     #   resolve by it. back_group picks a generic back from backs/ (or None).
     #   attrs: the full card record if you'll add a deck builder, else None.

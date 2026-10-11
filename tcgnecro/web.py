@@ -18,7 +18,7 @@ from fastapi import Request
 from PIL import Image
 from pydantic import BaseModel
 
-from tcgnecro import auth, db
+from tcgnecro import auth, collection_page, db
 from tcgnecro.deckbuilder.routes import router as deckbuilder_router
 from tcgnecro.decklist import DecklistError, pack_requests, parse_decklist, resolve
 from tcgnecro.games import card_backs
@@ -30,6 +30,7 @@ THUMB_WIDTH = 240
 app = FastAPI(title="TCG Necropolis")
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 app.include_router(auth.router)
+app.include_router(collection_page.router)
 app.include_router(deckbuilder_router)
 auth.install(app, https_only=os.environ.get("TCGNECRO_SECURE_COOKIES") == "1")
 

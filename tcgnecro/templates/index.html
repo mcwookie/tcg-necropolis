@@ -42,7 +42,7 @@
 </head>
 <body>
 <header><h1>TCG Necropolis</h1>
-  <nav><a href="/" class="on">Proxies</a><a href="/decks">Decks</a></nav>
+  <nav><a href="/" class="on">Proxies</a><a href="/decks">Decks</a><a href="/collection">Collection</a></nav>
   <div class="who"><a href="/profile">{{ request.state.user.name }}</a>
     <form method="post" action="/logout"><button class="link">Sign out</button></form></div>
   <select id="game">{% for g in games %}<option value="{{ g.id }}">{{ g.name }}</option>{% endfor %}</select>

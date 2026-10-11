@@ -58,7 +58,7 @@ tcgnecro user remove "Alex" --decks-to "Brian"
 
 | File | What |
 |---|---|
-| `data/users.json` | Profiles. User data: back it up with `data/decks/` |
+| `data/users.json` | Profiles, including each profile's settings (`prefs`). Owned packs are `prefs.owned_packs = {game: [pack ids]}`. User data: back it up with `data/decks/` |
 | `data/secret.key` | Signs the session cookie. Generated on first run. Deleting it signs everyone out |
 | `data/decks/*.json` | Each deck's `owner` (profile id) and `visibility` |
 

@@ -27,6 +27,15 @@ footer.site { text-align: center; color: var(--muted); font-size: 12px; padding:
 .narrow { max-width: 640px; margin: 0 auto; padding: 20px; display: grid; gap: 20px; }
 .profiles { display: grid; gap: 8px; }
 .profiles button { width: 100%; text-align: left; font-size: 16px; padding: 12px 14px; }
+nav.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+nav.tabs a { padding: 6px 12px; border-radius: 6px; text-decoration: none; color: var(--muted); border: 1px solid var(--line); }
+nav.tabs a.on { color: var(--text); background: var(--panel); font-weight: 600; }
+.pack-group { border: 1px solid var(--line); border-radius: 8px; margin: 12px 0; padding: 6px 12px 10px; }
+.pack-group legend { padding: 0 6px; font-weight: 600; }
+.pack-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 4px 16px; }
+.pack-list .check { display: block; }
+.list-head .deck-actions { flex-wrap: nowrap; }
+.not-owned { font-size: 11px; color: var(--warn); border: 1px solid currentColor; border-radius: 4px; padding: 0 4px; margin-left: 6px; vertical-align: 1px; }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
 label.f { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 4px; text-transform: uppercase; letter-spacing: .03em; }
 select, input[type=text], input[type=number], input[type=search], textarea {

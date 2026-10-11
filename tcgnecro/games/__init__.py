@@ -25,6 +25,10 @@ class Pack:
     id: str
     name: str
     sort_key: str  # upstream calls this date_release; newer sorts higher
+    # Optional grouping for the Collection page ("The Dunwich Legacy",
+    # "Standalone scenarios"); groups are shown in `group_order` order.
+    group: str | None = None
+    group_order: int = 0
 
 
 @dataclass

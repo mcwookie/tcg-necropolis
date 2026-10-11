@@ -24,7 +24,10 @@
     <input type="hidden" name="f" value="1">
     {% for f in config.filters %}
       {% set v = values[f.key] %}
-      {% if f.type == "toggle" %}
+      {% if f.type == "toggle" and f.key == "owned" and owned is none %}
+        <label class="check muted" style="margin-top:4px"><input type="checkbox" disabled> {{ f.label }}</label>
+        <div class="small muted" style="margin-left:22px"><a href="/collection/{{ deck.game }}">Set up your collection</a> to use this</div>
+      {% elif f.type == "toggle" %}
         <label class="check" style="margin-top:4px"><input type="checkbox" name="{{ f.key }}" value="1" {{ "checked" if v }}> {{ f.label }}</label>
       {% elif f.type == "text" %}
         <label class="f" for="f-{{ f.key }}">{{ f.label }}</label>
@@ -77,6 +80,9 @@
     <select name="back_label">{% for l in back_labels %}<option>{{ l }}</option>{% endfor %}</select>
     {% endif %}
     <label class="check" style="margin-top:10px"><input type="checkbox" name="compact" value="true" checked> Compact images (smaller file)</label>
+    {% if owned is not none %}
+    <label class="check" style="margin-top:10px"><input type="checkbox" name="unowned_only" value="true"> Only cards I don't own</label>
+    {% endif %}
     <p class="deck-actions">
       <button onclick="setTimeout(() => this.closest('dialog').close(), 100)">Download PDF</button>
       <button type="button" class="ghost" onclick="this.closest('dialog').close()">Cancel</button>

@@ -94,6 +94,11 @@ MIGRATIONS = [
     """
     CREATE TABLE IF NOT EXISTS index_state (key TEXT PRIMARY KEY, value TEXT);
     """,
+    # 3: pack groups (cycles) for the Collection page.
+    """
+    ALTER TABLE packs ADD COLUMN group_name TEXT;
+    ALTER TABLE packs ADD COLUMN group_order INTEGER;
+    """,
 ]
 
 
@@ -142,8 +147,9 @@ def store_catalog(conn: sqlite3.Connection, catalog: Catalog) -> None:
             (g, catalog.name, datetime.now(timezone.utc).isoformat()),
         )
         conn.executemany(
-            "INSERT INTO packs VALUES (?, ?, ?, ?)",
-            [(g, p.id, p.name, p.sort_key) for p in catalog.packs],
+            "INSERT INTO packs (game_id, id, name, sort_key, group_name, group_order)"
+            " VALUES (?, ?, ?, ?, ?, ?)",
+            [(g, p.id, p.name, p.sort_key, p.group, p.group_order) for p in catalog.packs],
         )
         conn.executemany(
             "INSERT INTO cards (game_id, id, title, title_normalized, back_group, attrs)"

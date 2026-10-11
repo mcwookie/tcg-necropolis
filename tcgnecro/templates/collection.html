@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{# Pick the packs you own, per game. Groups come from the catalog (Arkham cycles). #}
+{% block title %}Collection{% endblock %}
+{% block body %}
+<div class="wrap" style="max-width:900px">
+  <nav class="tabs">
+    {% for gid, gname in games %}<a href="/collection/{{ gid }}" class="{{ 'on' if gid == game_id }}">{{ gname }}</a>{% endfor %}
+  </nav>
+  {% if message %}<p class="flash">{{ message }}</p>{% endif %}
+
+  <form method="post" action="/collection/{{ game_id }}" class="panel" id="collection">
+    <div class="list-head">
+      <span>
+        {% if configured %}You own <b id="owned-count">{{ owned|length }}</b> of {{ total }} packs.
+        {% else %}<b>Not set up yet.</b> Tick what you own and save; until then the deck builder won't filter by ownership.{% endif %}
+      </span>
+      <span class="deck-actions" style="margin:0">
+        <button type="button" class="ghost" data-all="1">Select all</button>
+        <button type="button" class="ghost" data-all="0">Select none</button>
+      </span>
+    </div>
+
+    {% for group, packs in groups %}
+    <fieldset class="pack-group">
+      <legend>
+        <label class="check"><input type="checkbox" class="group-toggle"> {{ group }}</label>
+      </legend>
+      <div class="pack-list">
+        {% for p in packs %}
+        <label class="check">
+          <input type="checkbox" name="pack" value="{{ p.id }}" {{ "checked" if p.id in owned }}>
+          {{ p.name }} <span class="muted small">{{ p.cards }} cards{% if p.sort_key %} · {{ p.sort_key[:4] }}{% endif %}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </fieldset>
+    {% endfor %}
+
+    <p class="deck-actions">
+      <button>Save collection</button>
+      {% if configured %}<button class="ghost" name="forget" value="1"
+        onclick="return confirm('Forget your collection for this game? Ownership filters turn off.')">Clear</button>{% endif %}
+    </p>
+  </form>
+</div>
+<script>
+  // Group checkboxes tick/untick their packs and reflect partial selection.
+  const form = document.getElementById('collection');
+  const sync = () => form.querySelectorAll('.pack-group').forEach(g => {
+    const boxes = [...g.querySelectorAll('input[name=pack]')];
+    const on = boxes.filter(b => b.checked).length;
+    const t = g.querySelector('.group-toggle');
+    t.checked = on === boxes.length; t.indeterminate = on > 0 && on < boxes.length;
+  });
+  form.addEventListener('change', e => {
+    if (e.target.classList.contains('group-toggle'))
+      e.target.closest('.pack-group').querySelectorAll('input[name=pack]').forEach(b => b.checked = e.target.checked);
+    sync();
+  });
+  form.querySelectorAll('[data-all]').forEach(btn => btn.addEventListener('click', () => {
+    form.querySelectorAll('input[name=pack]').forEach(b => b.checked = btn.dataset.all === '1'); sync();
+  }));
+  sync();
+</script>
+{% endblock %}

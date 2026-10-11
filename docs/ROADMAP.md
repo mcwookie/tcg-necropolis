@@ -14,7 +14,8 @@ L = several sessions.
 | Side deck / upgrades / campaign XP | M | `side_slots` is stored but not shown. Deck versions and "XP available" are the core of campaign play |
 | `base_level` (Subject 5U-21) | S | Read, but not applied |
 | Bonded cards | S | Excluded from the pool. Could be listed under their parent and printed with it |
-| Pack ownership filter | S | "Only packs I own", stored once, applied as a filter |
+| Owned quantities | S | Collections record packs, not copies. Two Core Sets, or a pack whose card you own only one copy of, aren't distinguished yet |
+| Random weakness draw from owned packs | S | The draw uses every basic weakness; arkham.build limits it to your collection |
 
 ## Accounts (next steps toward internet access)
 
@@ -26,7 +27,7 @@ AGPL source link. See [ACCOUNTS.md](ACCOUNTS.md).
 | Real sign-in | S–M | Replace the profile picker, either with Google/GitHub in-app (Authlib, plus a guest list of emails or usernames mapped through `User.identities`) or with Cloudflare Access (trust its verified-email header). Only `auth.py` changes |
 | Hosting over HTTPS | S | Cloudflare Tunnel (no port forwarding) or Caddy. Set `TCGNECRO_SECURE_COOKIES=1`, run uvicorn with `--proxy-headers`, keep it bound to localhost, and drop the LAN firewall rule |
 | Limit concurrent PDF builds per user | S | PDF generation is CPU-heavy |
-| Per-profile settings | S each | `User.prefs` is reserved: owned packs (powers "only cards I own"), default filters, default print options |
+| Per-profile settings | S each | Owned packs are done (Collection page). Still to do: default filters, default print options |
 | Share a deck by link | S | A "public link" visibility for people without a profile |
 | Profile management in the web UI | S | Rename/remove/promote are CLI-only for now |
 

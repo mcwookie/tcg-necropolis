@@ -60,6 +60,14 @@ type = "toggle"
 default = true
 
 [[filters]]
+key = "owned"
+label = "Only cards I own"
+type = "toggle"
+# Handled by the core (filters.py), not the plugin. Starts switched on once
+# the profile has saved a collection on the Collection page.
+default = false
+
+[[filters]]
 key = "q"
 label = "Search"
 type = "text"

@@ -59,14 +59,29 @@ Names match ignoring case and punctuation. When several cards share a name, the
 catalog title includes something to tell them apart, e.g. `Darth Vader (234.2)` in SWLCG
 or `Daisy Walker (rod 1)` in Arkham. Use the autocomplete to find the exact title.
 
+## Collection page
+
+**Collection** (top bar) records which packs you own, separately for each game (tabs at
+the top). Packs are grouped by cycle; tick a cycle's name to select all of it. Save when
+done.
+
+- Owning a repackaged box, like *The Dunwich Legacy Investigator Expansion*, counts as
+  owning the player cards from the original Dunwich packs. Owning the Revised Core
+  counts for its reprints of Core cards.
+- Until you save a collection for a game, nothing in the deck builder filters by
+  ownership. **Clear** returns a game to that "not set up" state. Owning nothing is
+  different: that is a saved, empty collection.
+- New packs added to the catalog (e.g. after `tcgnecro catalog ahlcg --refresh`) start
+  unticked.
+
 ## Decks page
 
 ### Starting a deck
 
 Your decks are listed first, followed by **Shared with you**: decks others have shared.
 
-- **New deck:** pick the game, then the investigator (filterable by name or trait;
-  hover a name to see the card), and optionally a name. The investigator's required
+- **New deck:** pick the game, then the investigator (filterable by name or trait, or
+  "Only … in my collection"; hover a name to see the card), and optionally a name. The investigator's required
   signature cards are added for you.
 - **Import:** paste an ArkhamDB URL. Published decklists (`/decklist/view/…`) and shared
   decks (`/deck/view/…`) both work. Private decks can't be read through ArkhamDB's API.
@@ -76,7 +91,9 @@ Your decks are listed first, followed by **Shared with you**: decks others have 
 Three columns: **filters | cards | your deck**.
 
 - **Filters** come from the game's config. For Arkham, "Only cards my investigator can
-  take" is on by default and applies the investigator's deckbuilding rules. Weaknesses
+  take" is on by default and applies the investigator's deckbuilding rules. **Only cards
+  I own** starts switched on once you've saved a collection for the game. With it off,
+  cards outside your collection carry a "not owned" tag. Weaknesses
   and campaign cards are hidden by default; tick *Weakness* or *Story / campaign* under
   Type to add a story weakness or a story asset your campaign gave you. Neither counts
   toward deck size.
@@ -88,7 +105,9 @@ Three columns: **filters | cards | your deck**.
     the investigator. Changing one re-checks the card list.
   - **Draw random basic weakness** adds one at random, as the rules require.
   - **Print proxies** opens the PDF options and prints the whole deck, including the
-    investigator, signatures and weaknesses. It warns if some cards have no image.
+    investigator, signatures and weaknesses. It warns if some cards have no image. With a
+    collection saved, **Only cards I don't own** prints just the proxies you need. The deck
+    summary's **Not owned** figure tells you how many that is.
   - **Text list** is a plain decklist that pastes into the Proxies page or
     `tcgnecro pdf --deck`.
   - **JSON** downloads the deck file. **Copy** duplicates the deck. **Delete** asks first.

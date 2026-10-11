@@ -24,7 +24,7 @@ from urllib.parse import urlencode
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
-from tcgnecro import db, users
+from tcgnecro import db, ownership, users
 from tcgnecro.auth import current_user
 from tcgnecro.decklist import CardRequest, resolve
 from tcgnecro.deckbuilder import filters, registry, store
@@ -52,6 +52,16 @@ def _load(request: Request, deck_id: str, edit: bool = False) -> Deck:
     return deck
 
 
+def _owned(request: Request, game_id: str, pool) -> set[str] | None:
+    """Pool ids the signed-in profile owns in this game, or None if they
+    haven't set up their collection for it."""
+    conn = db.connect()
+    try:
+        return ownership.owned_in_pool(conn, current_user(request), game_id, pool)
+    finally:
+        conn.close()
+
+
 def _owner_name(deck: Deck) -> str:
     owner = users.get(deck.owner)
     return owner.name if owner else "nobody"
@@ -74,6 +84,7 @@ def _deck_context(request: Request, deck: Deck, plugin, pool, message: str | Non
     """Everything the deck panel template needs."""
     problems = plugin.validate(deck, pool)
     flagged = {cid for p in problems for cid in p.card_ids}
+    owned = _owned(request, deck.game, pool)
     groups: dict[str, list[tuple[DeckCard, int]]] = {}
     for card_id, qty in deck.slots.items():
         card = pool.get(card_id)
@@ -98,6 +109,9 @@ def _deck_context(request: Request, deck: Deck, plugin, pool, message: str | Non
         "missing_images": sum(1 for cid, _ in plugin.print_list(deck) if pool.resolve(cid) not in pool.images),
         "message": message,
         "can_edit": deck.editable_by(current_user(request)),
+        "owned": owned,
+        "not_owned": None if owned is None else sum(
+            qty for cid, qty in plugin.print_list(deck) if pool.resolve(cid) not in owned),
         "owner_name": _owner_name(deck),
         "visibilities": VISIBILITIES,
     }
@@ -105,9 +119,12 @@ def _deck_context(request: Request, deck: Deck, plugin, pool, message: str | Non
 
 def _card_rows(request: Request, deck: Deck, plugin, pool, offset: int = 0) -> dict:
     """Context for the card list fragment."""
-    values = filters.parse(plugin.config, request.query_params)
+    owned = _owned(request, deck.game, pool)
+    # Once you've recorded a collection, "Only cards I own" starts switched on.
+    values = filters.parse(plugin.config, request.query_params,
+                           overrides={"owned": True} if owned is not None else None)
     sort_key = request.query_params.get("sort")
-    cards = filters.sort(filters.apply(plugin, values, deck, pool), plugin.config, sort_key)
+    cards = filters.sort(filters.apply(plugin, values, deck, pool, owned), plugin.config, sort_key)
     size = plugin.config.page_size
     qs = filters.query_string(plugin.config, values) + ([("sort", sort_key)] if sort_key else [])
     return {
@@ -121,6 +138,8 @@ def _card_rows(request: Request, deck: Deck, plugin, pool, offset: int = 0) -> d
         "query": urlencode(qs),
         "values": values,
         "sort_key": sort_key or (plugin.config.sorts[0].key if plugin.config.sorts else None),
+        "owned": owned,
+        "can_edit": deck.editable_by(current_user(request)),
     }
 
 
@@ -162,11 +181,14 @@ def deck_index(request: Request, error: str | None = None):
 
 
 @router.get("/identities", response_class=HTMLResponse)
-def identities(request: Request, game: str, q: str = ""):
+def identities(request: Request, game: str, q: str = "", owned: str = ""):
     plugin, pool = _game(game)
     words = [w for w in db.normalize_title(q).split("_") if w]
     found = [c for c in plugin.identities(pool)
              if all(w in db.normalize_title(c.name + " " + str(c.get("traits"))) for w in words)]
+    mine = _owned(request, game, pool) if owned else None
+    if mine is not None:
+        found = [c for c in found if c.id in mine]
     return templates.TemplateResponse(request, "_identities.html", {
         "plugin": plugin, "pool": pool, "identities": found,
     })
@@ -334,14 +356,17 @@ def export_json(request: Request, deck_id: str):
 @router.post("/{deck_id}/pdf")
 def deck_pdf(request: Request, deck_id: str, page_size: str = Form("letter"), layout: str = Form("edge"),
              cut_lines: str = Form("margins"), double_sided: bool = Form(False),
-             compact: bool = Form(False), back_label: str = Form("")):
+             compact: bool = Form(False), back_label: str = Form(""), unowned_only: bool = Form(False)):
     deck = _load(request, deck_id)
     plugin, pool = _game(deck.game)
+    owned = _owned(request, deck.game, pool) if unowned_only else None
     requests = []
     for card_id, qty in plugin.print_list(deck):
         card = pool.get(card_id)
-        if card:
+        if card and (owned is None or card.id not in owned):
             requests += [CardRequest(card.title, card.id)] * qty
+    if not requests:
+        raise HTTPException(400, "You own every card in this deck; nothing to print")
     conn = db.connect()
     try:
         res = resolve(conn, deck.game, requests)

@@ -7,6 +7,8 @@ Build decks and print proxies for out-of-print card games, using your own card s
   supports Arkham Horror: The Card Game, and any deck goes straight to the proxy printer.
 - **Profiles:** each person signs in to their own profile and owns their decks, which
   they can keep private or share read-only with everyone on the server.
+- **Collection:** tick the packs you own, per game. The deck builder can then show only
+  cards you own, and print proxies of just the cards you don't.
 
 Based on [Proxy Nexus](https://github.com/axmccx/proxynexus-rs) by Alex McCulloch. TCG
 Necropolis uses the same image naming convention and collection layout, and imports
@@ -63,7 +65,9 @@ tcgnecro/
   pdf.py          page layout, cut lines, double-sided backs
   web.py          FastAPI app: Proxies page + mounts the deck builder and sign-in
   auth.py         sign-in, sessions, profile pages
-  users.py        profile store
+  users.py        profile store (and per-profile settings such as owned packs)
+  ownership.py    owned packs -> owned cards
+  collection_page.py  the Collection page
   templating.py   the shared Jinja environment
   cli.py          the `tcgnecro` command
   templates/      site layout, Proxies, sign-in and profile pages

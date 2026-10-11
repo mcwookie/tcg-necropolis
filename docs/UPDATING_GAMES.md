@@ -33,6 +33,12 @@ That replaces `data/cache/ahlcg/` and the `ahlcg` rows in `index.db`. Without
 `--refresh`, `catalog` reuses the cached download. Use that form to reload after a code
 change without hitting ArkhamDB.
 
+**Collection page groups:** packs are grouped by ArkhamDB's cycle number. A new campaign
+cycle is named after its first pack automatically. Non-campaign cycle numbers (starter
+decks, standalone scenarios...) get their labels from `CYCLE_LABELS` in
+`games/ahlcg/__init__.py`. If a new kind of product shows up with a number missing there,
+add a label. New packs start unticked in everyone's collection.
+
 **Repackaged expansions** (the "Investigator Expansion" / "Campaign Expansion" boxes)
 need nothing extra. ArkhamDB marks them with `reprint_type`, and `load_catalog` gives
 their reprinted cards versions under the new pack code automatically.

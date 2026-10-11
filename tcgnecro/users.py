@@ -155,3 +155,28 @@ def remove(user_id: str, decks_to: str | None = None) -> int:
     for deck in owned:
         store.update(deck.id, lambda d: setattr(d, "owner", decks_to))
     return len(owned)
+
+
+# ----- per-profile settings ----------------------------------------------------
+# Stored in User.prefs. Owned packs: prefs["owned_packs"] = {game_id: [pack ids]}.
+# A game missing from the dict means "not set up", which is different from
+# "owns nothing": filters only apply once a collection has been saved.
+
+def owned_packs(user: User | None, game_id: str) -> set[str] | None:
+    if user is None:
+        return None
+    packs = user.prefs.get("owned_packs", {}).get(game_id)
+    return set(packs) if packs is not None else None
+
+
+def set_owned_packs(user_id: str, game_id: str, packs: set[str] | None) -> User:
+    """Save which packs a profile owns for one game (None forgets it)."""
+    user = get(user_id)
+    if user is None:
+        raise UserError("No such profile")
+    owned = dict(user.prefs.get("owned_packs", {}))
+    if packs is None:
+        owned.pop(game_id, None)
+    else:
+        owned[game_id] = sorted(packs)
+    return update(user_id, prefs=user.prefs | {"owned_packs": owned})

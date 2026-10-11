@@ -159,6 +159,13 @@ fields = ["faction", "name"]   # prefix "-" for descending
 action = { label = "➤", title = "Action", css = "extra-class" }
 ```
 
+**Ownership:** a toggle filter with `key = "owned"` is handled by the core, not the plugin.
+It keeps only cards the signed-in profile owns (from the Collection page; see
+`tcgnecro/ownership.py`). It does nothing until a collection has been saved for the game,
+and then it starts switched on regardless of `default`. Add it to any game's TOML to get
+"Only cards I own". Ownership is computed from card *versions*, so cards reprinted in a
+pack the profile owns count, and reprint codes resolve through `pool.aliases`.
+
 How filters reach the server: the form sends each filter as query parameters (`faction=a&faction=b`,
 `level_min=0&level_max=2`, `q=text`, `legal=1`) plus `f=1`. Without `f=1` (first load,
 "Reset filters") the TOML defaults apply. With it, an unchecked box means off.

@@ -176,12 +176,39 @@ def reprint_versions(packs: list[dict], cards: list[dict]) -> list[CardVersion]:
     return versions
 
 
+# Labels for ArkhamDB's cycle numbers that aren't a campaign. Campaign cycles
+# are named after their first pack, so new ones need no entry here.
+CYCLE_LABELS = {
+    50: "Return to…",
+    60: "Investigator Starter Decks",
+    61: "Investigator Starter Decks (2026)",
+    70: "Standalone scenarios",
+    80: "Novellas, books and promos",
+    90: "Parallel investigators",
+}
+
+
+def cycle_labels(packs: list[dict]) -> dict[int, str]:
+    """cycle_position -> a readable group name for the Collection page."""
+    labels = {}
+    for pack in sorted(packs, key=lambda p: (p.get("cycle_position", 0), p.get("position", 0))):
+        cycle = pack.get("cycle_position", 0)
+        if cycle not in labels:
+            labels[cycle] = CYCLE_LABELS.get(cycle) or pack["name"].replace(" Investigator Expansion", "")
+    return labels
+
+
 def load_catalog(refresh: bool = False) -> Catalog:
     packs, cards = load_source(refresh)
     titles = card_titles(cards)
 
     catalog = Catalog(GAME_ID, NAME)
-    catalog.packs = [Pack(p["code"], p["name"], p.get("available") or None) for p in packs]
+    groups = cycle_labels(packs)
+    catalog.packs = [
+        Pack(p["code"], p["name"], p.get("available") or None,
+             group=groups.get(p.get("cycle_position", 0)), group_order=p.get("cycle_position", 0))
+        for p in packs
+    ]
     for card in cards:
         catalog.cards.append(Card(
             card["code"],
