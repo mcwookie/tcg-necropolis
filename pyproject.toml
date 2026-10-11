@@ -1,7 +1,9 @@
 [project]
 name = "tcgnecro"
 version = "0.1.0"
-description = "Card game proxy PDFs from local image collections"
+description = "Deck builder and proxy printer for out-of-print card games"
+license = "AGPL-3.0-only"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = [
     "fastapi",
@@ -19,7 +21,7 @@ dev = ["pytest", "httpx"]  # httpx: FastAPI's TestClient
 tcgnecro = "tcgnecro.cli:main"
 
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]  # SPDX `license` string (PEP 639)
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]

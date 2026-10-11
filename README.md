@@ -61,8 +61,32 @@ tcgnecro/
 tests/            pytest; run with `.venv/bin/python -m pytest`
 ```
 
-## License note
+## License
 
-The card back images under `tcgnecro/games/*/backs/` and all card scans are the
-publishers' artwork. The code is yours to license; decide before publishing the repo
-publicly whether the backs should be committed (see docs/ROADMAP.md).
+TCG Necropolis is free software, licensed under the **GNU Affero General Public License
+v3.0** (AGPL-3.0). See [LICENSE](LICENSE).
+
+```
+Copyright (C) 2026 Brian Vogle
+Portions copyright (C) Alex McCulloch and Proxy Nexus contributors
+```
+
+Parts of this program are ported from [Proxy Nexus](https://github.com/axmccx/proxynexus-rs)
+by Alex McCulloch, which is licensed under AGPL-3.0. The ported parts are the
+image naming convention and collection import (`naming.py`, `collections.py`),
+decklist parsing and printing selection (`decklist.py`), the PDF page layout (`pdf.py`),
+and the Arkham Horror catalog adapter (`games/ahlcg/__init__.py`).
+
+Because of the AGPL, anyone you let use a running copy of this program over a network
+must be able to get its source code. Pointing them to this repository satisfies that,
+as long as what you run matches what's published here.
+
+Third-party components:
+
+- `tcgnecro/static/htmx.min.js`: [htmx](https://htmx.org) 2.0.4, BSD Zero-Clause License.
+
+Card artwork, including the card backs under `tcgnecro/games/*/backs/` and any card
+scans, and card text are the property of their publishers (Fantasy Flight Games /
+Asmodee). They are not covered by this license. Card data for Arkham Horror is
+downloaded from [ArkhamDB](https://arkhamdb.com) at run time and is not part of this
+repository.
