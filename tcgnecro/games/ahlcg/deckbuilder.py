@@ -8,7 +8,8 @@ kinds handled here.
 
 How a deck is checked (validate):
 
-1. Exempt cards are set aside: weaknesses, the investigator's required
+1. Exempt cards are set aside: weaknesses, story cards a campaign adds
+   (kind "story"), the investigator's required
    (signature) cards, and cards restricted to this investigator. They are
    always allowed and don't count toward deck size.
 2. Every other copy is offered to the investigator's deck options in order.
@@ -107,13 +108,21 @@ class AhlcgPlugin(DeckbuilderPlugin):
     # ----- card pool --------------------------------------------------------
 
     def build_card(self, card_id: str, title: str, raw: dict) -> DeckCard | None:
-        if raw.get("encounter_code") or raw.get("bonded_to") or raw.get("duplicate_of_code"):
-            return None  # scenario cards, bonded cards, reprints (see build_pool)
+        if raw.get("bonded_to") or raw.get("duplicate_of_code"):
+            return None  # bonded cards, reprints (see build_pool)
         subtype = raw.get("subtype_code")
-        if raw["type_code"] not in PLAYER_TYPES and subtype not in WEAKNESS_SUBTYPES:
+        # Cards from an encounter set are scenario cards, except the ones a
+        # campaign puts in your deck: story weaknesses (The Man in the Pallid
+        # Mask) and story assets/events/skills (Lita Chantler). Those are kept
+        # as kind "weakness" / "story"; like weaknesses, story cards sit
+        # outside deckbuilding rules and deck size.
+        story = bool(raw.get("encounter_code"))
+        if subtype in WEAKNESS_SUBTYPES:
+            kind = "weakness"
+        elif raw["type_code"] in PLAYER_TYPES and not (story and raw["type_code"] == "investigator"):
+            kind = "story" if story else raw["type_code"]
+        else:
             return None
-
-        kind = "weakness" if subtype in WEAKNESS_SUBTYPES else raw["type_code"]
         xp = raw.get("xp")
         name = raw["name"] + (f" ({xp})" if xp else "")
         if raw.get("subname") and kind == "investigator":
@@ -126,6 +135,7 @@ class AhlcgPlugin(DeckbuilderPlugin):
             "name": name,
             "kind": kind,
             "subtype": subtype,
+            "story": story,
             "faction": raw["faction_code"],
             "factions": _factions(raw),
             "xp": xp,
@@ -188,7 +198,7 @@ class AhlcgPlugin(DeckbuilderPlugin):
 
     def _exempt(self, card: DeckCard, identity: DeckCard | None, pool: Pool) -> bool:
         """Cards outside deckbuilding options and deck size."""
-        if card.get("kind") == "weakness":
+        if card.get("kind") in ("weakness", "story"):
             return True
         if any(card.id in req for req in self._required(identity, pool)):
             return True
@@ -318,7 +328,7 @@ class AhlcgPlugin(DeckbuilderPlugin):
         restricted = self._restriction_ok(card, identity)
         if restricted is not None:
             return restricted
-        if card.get("kind") == "weakness" or self._exempt(card, identity, pool):
+        if card.get("kind") in ("weakness", "story") or self._exempt(card, identity, pool):
             return True
         for option in self._options(identity, deck, pool):
             if option.get("ignore_match") or not self.option_matches(option, card, deck):
@@ -514,7 +524,7 @@ class AhlcgPlugin(DeckbuilderPlugin):
         identity = self._identity(deck, pool)
         candidates = [
             c for c in pool.cards.values()
-            if c.get("subtype") == "basicweakness"
+            if c.get("subtype") == "basicweakness" and not c.get("story")
             and self._restriction_ok(c, identity) is not False
             and deck.count(c.id) < self.max_copies(c, deck)
         ]

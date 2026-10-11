@@ -67,7 +67,9 @@ Three columns: **filters | cards | your deck**.
 
 - **Filters** come from the game's config. For Arkham, "Only cards my investigator can
   take" is on by default and applies the investigator's deckbuilding rules. Weaknesses
-  are hidden by default; tick *Weakness* under Type to see them.
+  and campaign cards are hidden by default; tick *Weakness* or *Story / campaign* under
+  Type to add a story weakness or a story asset your campaign gave you. Neither counts
+  toward deck size.
 - **Cards:** `+`/`−` change copies (capped at the card's deck limit). Hover a name for
   its image; click it for full text and stats. "Show more" loads the next 100.
 - **Your deck:** live counts (cards toward deck size, XP, weaknesses), problems in red

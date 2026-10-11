@@ -214,7 +214,7 @@ Arkham's deckbuilding rules are data on each investigator (`deck_options`,
 investigators work without code changes.
 
 1. **Exempt cards** are always allowed and don't count toward deck size: weaknesses,
-   the investigator's required signature cards (and their alternates), and cards
+   story cards from campaigns, the investigator's required signature cards (and their alternates), and cards
    restricted to this investigator.
 2. **Each other copy** is offered to the deck options in order. The first option the
    card meets claims it. If that option's `limit` is used up, the next matching option
@@ -248,7 +248,11 @@ Option criteria supported: `faction`, `faction_select`, `option_select`,
 
 **Pool rules:**
 
-- Encounter cards, bonded cards and reprints are excluded.
+- Scenario cards (encounter sets), bonded cards and reprints are excluded. The exception
+  is encounter-set cards that a campaign puts into your deck: story weaknesses (The Man in
+  the Pallid Mask) become kind `weakness`, and story assets, events and skills (Lita
+  Chantler) become kind `story`. Both sit outside deckbuilding rules and deck size, and
+  random weakness draws skip them.
 - Reprint codes become aliases of the original (`duplicate_of_code`), so a deck listing
   `01520` (Revised Core Machete) lands on `01020`.
 - ArkhamDB's `01000` "Random Basic Weakness" placeholder is dropped on import.

@@ -44,6 +44,10 @@ value = "skill"
 label = "Skills"
 
 [[groups]]
+value = "story"
+label = "Campaign cards"
+
+[[groups]]
 value = "weakness"
 label = "Weaknesses"
 
@@ -82,14 +86,15 @@ key = "kind"
 label = "Type"
 type = "multiselect"
 field = "kind"
-# Weaknesses are hidden until asked for; they're added by requirement or at
-# random, rarely picked.
+# Weaknesses and story (campaign) cards are hidden until asked for; they're
+# added by requirement, at random, or when a campaign says so.
 default = ["asset", "event", "skill"]
 options = [
   { value = "asset",    label = "Asset" },
   { value = "event",    label = "Event" },
   { value = "skill",    label = "Skill" },
   { value = "weakness", label = "Weakness" },
+  { value = "story",    label = "Story / campaign" },
 ]
 
 [[filters]]

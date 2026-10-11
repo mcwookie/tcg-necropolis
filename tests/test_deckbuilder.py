@@ -54,6 +54,9 @@ CARDS = [
     card("01044", "Underworld Support", faction="rogue", permanent=True, deck_limit=1),
     card("01050", "Amnesia", faction="neutral", type_code="treachery", xp=None, subtype_code="basicweakness", deck_limit=1),
     card("01060", "Scenario Enemy", faction="mythos", type_code="enemy", encounter_code="x"),
+    card("03059", "The Man in the Pallid Mask", faction="mythos", type_code="enemy", xp=None,
+         subtype_code="weakness", encounter_code="curtain_call", deck_limit=1),
+    card("03070", "Lita Chantler", faction="neutral", encounter_code="x", deck_limit=1),
 ]
 
 
@@ -74,7 +77,9 @@ def messages(problems):
 # ----- pool --------------------------------------------------------------------
 
 def test_pool_keeps_player_cards_and_aliases_reprints(pool):
-    assert "01060" not in pool.cards          # encounter card
+    assert "01060" not in pool.cards          # scenario card
+    assert pool.get("03059").get("kind") == "weakness"   # story weakness from a campaign
+    assert pool.get("03070").get("kind") == "story"      # story asset
     assert "01516" not in pool.cards          # reprint...
     assert pool.resolve("01516") == "01016"   # ...stands in for the original
     assert pool.get("01016").get("slots") == ["Hand"]
@@ -134,6 +139,13 @@ def test_underworld_support_changes_size_and_copy_rule(pool):
     d = deck("03001", _01044=1, _01016=2)
     assert AH._deck_size(d, pool.get("03001"), pool) == 25
     assert any("only 1 copy" in m for m in messages(AH.validate(d, pool)))
+
+
+def test_campaign_cards_are_allowed_and_dont_count(pool):
+    d = deck(_01006=1, _03059=1, _03070=1)
+    assert AH.is_legal(pool.get("03070"), d, pool)
+    assert AH._counted(d, pool, pool.get("01001")) == 0
+    assert not [m for m in messages(AH.validate(d, pool)) if "isn't allowed" in m or "Unknown" in m]
 
 
 def test_copy_limit_is_by_title_across_levels(pool):
