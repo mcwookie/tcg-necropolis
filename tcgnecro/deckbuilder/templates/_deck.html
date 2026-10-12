@@ -19,7 +19,8 @@
 
   {% if identity %}
   <div class="ident-card" style="--c: {{ plugin.row_color(identity) or 'var(--line)' }}">
-    {% if pool.images.get(identity.id) %}<img src="{{ thumb_url(pool.images[identity.id]) }}" alt="">{% endif %}
+    {% if pool.images.get(identity.id) %}<img src="{{ thumb_url(pool.images[identity.id], identity.rotate) }}" alt=""
+         class="{{ 'landscape' if identity.landscape }}" data-thumb="{{ thumb_url(pool.images[identity.id], identity.rotate) }}"{% if identity.landscape %} data-landscape{% endif %}>{% endif %}
     <div>
       <div class="name" style="cursor:pointer" hx-get="/decks/{{ deck.id }}/card/{{ identity.id }}" hx-target="#detail-body">{{ identity.name }}</div>
       <div class="muted small">{{ plugin.config.identity_label }} · {{ plugin.subtitle(identity) }}</div>

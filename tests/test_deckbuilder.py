@@ -283,3 +283,26 @@ def test_pool_notices_reindex_even_when_image_count_is_unchanged(client, tmp_pat
     folder.rename(folder.with_name("second"))         # same number of images
     collections.reindex(conn, warn=lambda _: None)
     assert "/second/" in registry.pool(conn, "ahlcg").images["01016"]
+
+
+def test_landscape_cards_show_upright_in_the_builder(client):
+    from PIL import Image
+    from tcgnecro import collections
+
+    conn = db.connect()
+    folder = db.collections_dir() / "ahlcg" / "scans"
+    folder.mkdir(parents=True)
+    for name in ("01001@core.png", "01016@core.png"):
+        Image.new("RGB", (63, 88)).save(folder / name)
+    collections.reindex(conn, warn=lambda _: None)
+    assert registry.pool(conn, "ahlcg").get("01001").rotate == 270
+
+    r = client.post("/decks", data={"game": "ahlcg", "identity": "01001"}, follow_redirects=False)
+    deck_id = r.headers["location"].rsplit("/", 1)[1]
+    page = client.get(f"/decks/{deck_id}").text
+    assert "/thumb/ahlcg/scans/01001@core.png?r=270" in page             # deck panel investigator
+    assert "/thumb/ahlcg/scans/01016@core.png\"" in page                  # assets untouched
+    detail = client.get(f"/decks/{deck_id}/card/01001").text
+    assert "/image/ahlcg/scans/01001@core.png?r=270" in detail and 'class="detail landscape"' in detail
+    picker = client.get("/decks/identities?game=ahlcg").text
+    assert "01001@core.png?r=270" in picker and "data-landscape" in picker

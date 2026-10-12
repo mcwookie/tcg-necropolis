@@ -59,7 +59,7 @@ AGPL source link. See [ACCOUNTS.md](ACCOUNTS.md).
 | Bleed print layout | S–M | Port `print_prep.rs` (`add_uniform_bleed_border`) |
 | Upscaling | M | Deferred by choice. onnxruntime + the same Real-ESRGAN model; slow on CPU, so offline pre-upscaling may be better |
 | Background PDF jobs with progress | S | Big sets take ~30 s in a single request today |
-| Landscape cards | S | Rotated to fit portrait slots; upstream doesn't either |
+| Per-scan rotation overrides | S | Landscape cards display upright by a per-game rule (Arkham investigators/acts/agendas). If a scan is ever stored turned the other way, a `rotations.toml` in the collection folder plus a rotate button in the viewer would fix it |
 
 ## Data and housekeeping
 

@@ -72,16 +72,19 @@ def collections_dir() -> Path:
     return data_dir() / "collections"
 
 
-def thumb_url(path: str) -> str:
+def thumb_url(path: str, rotate: int = 0) -> str:
     """URL of the thumbnail for a collection image. Images are addressed by
     their path relative to the collections folder, so the thumbnail route
-    can't be pointed at arbitrary files."""
-    return "/thumb/" + str(Path(path).relative_to(collections_dir()))
+    can't be pointed at arbitrary files. `rotate`: clockwise degrees to turn
+    the image so it reads upright (games.display_rotation)."""
+    url = "/thumb/" + str(Path(path).relative_to(collections_dir()))
+    return f"{url}?r={rotate}" if rotate else url
 
 
-def image_url(path: str) -> str:
+def image_url(path: str, rotate: int = 0) -> str:
     """URL of a collection image at full size (same addressing as thumb_url)."""
-    return "/image/" + str(Path(path).relative_to(collections_dir()))
+    url = "/image/" + str(Path(path).relative_to(collections_dir()))
+    return f"{url}?r={rotate}" if rotate else url
 
 
 # Schema changes after the first release, applied in order to existing

@@ -15,7 +15,7 @@ from importlib import import_module
 from tcgnecro import db
 from tcgnecro.deckbuilder.model import Pool
 from tcgnecro.deckbuilder.plugin import DeckbuilderPlugin
-from tcgnecro.games import GAME_MODULES
+from tcgnecro.games import GAME_MODULES, display_rotation
 
 _plugins: dict[str, DeckbuilderPlugin] | None = None
 _pools: dict[str, tuple[tuple, Pool]] = {}
@@ -60,6 +60,8 @@ def pool(conn: sqlite3.Connection, game_id: str) -> Pool:
         )
     ]
     built = plugin(game_id).build_pool(rows)
+    for card in built.cards.values():
+        card.rotate = display_rotation(game_id, card.raw, "front")
 
     # A thumbnail per pool card: any front image of the card itself or of a
     # card that aliases to it (a reprint), preferring images without bleed.

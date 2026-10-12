@@ -36,6 +36,10 @@ First-time setup, if `data/` is empty:
    it full size: **Front**/**Back** switch sides, ←/→ (or the arrows) step through the
    preview, and Esc or a click outside closes it. **Open original** opens the scan itself
    in a new tab.
+
+   Landscape cards (Arkham investigators, acts and agendas) are stored sideways in
+   collections so they print in a portrait slot. Everywhere on screen (here and in the
+   deck builder) they're shown turned upright. PDFs keep them as stored.
 4. Choose layout options and **Download PDF**.
 
 PDF options:

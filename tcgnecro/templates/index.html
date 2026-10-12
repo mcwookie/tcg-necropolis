@@ -39,6 +39,7 @@
   .card .t { font-size: 12px; margin-top: 4px; }
   .card .m { font-size: 11px; color: var(--muted); }
   .card img[src] { cursor: zoom-in; }
+  .card img.land { aspect-ratio: 88/63; }   /* landscape cards, turned upright */
 
   /* Full-size card viewer */
   #viewer { border: 0; padding: 0; background: transparent; max-width: 96vw; max-height: 96vh; overflow: visible; }
@@ -211,7 +212,7 @@ async function preview() {
     shown = data.cards;
     $('cards').innerHTML = data.cards.map((c, i) => `
       <div class="card" data-i="${i}">
-        ${c.thumb ? `<img loading="lazy" src="${c.thumb}" alt="${esc(c.title)}" title="Click for full size">` : '<img alt="">'}
+        ${c.thumb ? `<img loading="lazy" src="${c.thumb}" alt="${esc(c.title)}" title="Click for full size" class="${c.landscape ? 'land' : ''}">` : '<img alt="">'}
         <div class="t">${esc(c.title)}</div>
         <div class="m">${esc(c.printing)} · ${esc(c.collection)}${c.backs ? ` · ${c.backs} back` : ''}</div>
       </div>`).join('');

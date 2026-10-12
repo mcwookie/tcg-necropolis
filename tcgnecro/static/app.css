@@ -121,3 +121,6 @@ dialog::backdrop { background: rgb(0 0 0 / .45); }
 .detail dt { color: var(--muted); }
 .flavor { font-style: italic; color: var(--muted); font-size: 13px; }
 #hover-thumb { position: fixed; z-index: 10; pointer-events: none; width: 200px; border-radius: 8px; box-shadow: 0 6px 24px rgb(0 0 0 / .35); display: none; }
+#hover-thumb.landscape { width: 280px; }
+.ident-card img.landscape { width: 84px; }
+.detail.landscape { grid-template-columns: 380px 1fr; }

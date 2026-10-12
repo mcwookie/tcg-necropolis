@@ -14,7 +14,8 @@ def client(tmp_path, monkeypatch):
     users._cache = None
     conn = db.connect()
     catalog = Catalog("ahlcg", "Arkham", packs=[Pack("core", "Core Set", "2016")])
-    catalog.cards = [Card("01001", "Roland Banks", "player"), Card("01016", "Machete", "player")]
+    catalog.cards = [Card("01001", "Roland Banks", "player", {"type_code": "investigator"}),
+                     Card("01016", "Machete", "player", {"type_code": "asset"})]
     catalog.versions = [CardVersion("01001", "core", 1), CardVersion("01016", "core", 16)]
     db.store_catalog(conn, catalog)
     folder = tmp_path / "collections" / "ahlcg" / "scans"
@@ -33,9 +34,12 @@ def test_preview_lists_every_side_with_full_size_urls(client):
     cards = client.post("/api/resolve", json={"game": "ahlcg", "decklist": "Roland Banks\nMachete"}).json()["cards"]
     roland, machete = cards
     assert [s["label"] for s in roland["sides"]] == ["Front", "Back"]
-    assert roland["sides"][0]["full"] == "/image/ahlcg/scans/01001@core.png"
-    assert roland["sides"][1]["thumb"].endswith("01001@core~back.png")
+    # Investigators are landscape: every side is turned upright for display.
+    assert roland["sides"][0]["full"] == "/image/ahlcg/scans/01001@core.png?r=270"
+    assert roland["sides"][1]["thumb"].endswith("01001@core~back.png?r=270")
+    assert roland["landscape"] and not machete["landscape"]
     assert [s["label"] for s in machete["sides"]] == ["Front"]
+    assert machete["sides"][0]["full"] == "/image/ahlcg/scans/01016@core.png"
 
 
 def test_full_image_is_the_original_and_stays_inside_collections(client):
@@ -48,3 +52,22 @@ def test_full_image_is_the_original_and_stays_inside_collections(client):
     assert client.get("/image/ahlcg/scans/missing.png").status_code == 404
     client.post("/logout")
     assert client.get("/image/ahlcg/scans/01016@core.png", follow_redirects=False).status_code == 303
+
+
+def test_rotated_images_are_turned_and_cached(client, tmp_path):
+    import io
+    size = lambda r: Image.open(io.BytesIO(r.content)).size
+    assert size(client.get("/image/ahlcg/scans/01001@core.png?r=270")) == (880, 630)
+    assert size(client.get("/image/ahlcg/scans/01001@core.png?r=180")) == (630, 880)
+    thumb = size(client.get("/thumb/ahlcg/scans/01001@core.png?r=90"))
+    assert thumb[0] > thumb[1] and min(thumb) == 240        # short side stays sharp
+    assert client.get("/thumb/ahlcg/scans/01001@core.png?r=45").status_code == 400
+    assert len(list((tmp_path / "thumbs").glob("*.jpg"))) == 3
+
+
+def test_rotation_rule_is_per_game():
+    from tcgnecro.games import display_rotation
+    assert [display_rotation("ahlcg", {"type_code": t}) for t in ("investigator", "act", "agenda", "asset", "location")] \
+        == [270, 270, 270, 0, 0]
+    assert display_rotation("ahlcg", {"type_code": "act"}, "back") == 270
+    assert display_rotation("meccg", None) == display_rotation("swlcg", None) == 0

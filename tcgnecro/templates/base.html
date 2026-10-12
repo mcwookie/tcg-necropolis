@@ -44,19 +44,22 @@
     if (e.target.id === 'detail') e.target.close();  // click on the backdrop
   });
 
-  // Hovering anything with data-thumb shows the card image beside the cursor.
+  // Hovering anything with data-thumb shows the card image beside the cursor
+  // (wider for landscape cards, marked data-landscape).
   const thumb = document.getElementById('hover-thumb');
   document.addEventListener('mouseover', e => {
     const el = e.target.closest('[data-thumb]');
     if (!el || !el.dataset.thumb) { thumb.style.display = 'none'; return; }
     if (thumb.getAttribute('src') !== el.dataset.thumb) thumb.src = el.dataset.thumb;
+    thumb.classList.toggle('landscape', 'landscape' in el.dataset);
     thumb.style.display = 'block';
   });
   document.addEventListener('mousemove', e => {
     if (thumb.style.display !== 'block') return;
-    const x = e.clientX + 220 > innerWidth ? e.clientX - 220 : e.clientX + 20;
+    const w = thumb.offsetWidth + 20, h = thumb.offsetHeight || 280;
+    const x = e.clientX + w > innerWidth ? e.clientX - w : e.clientX + 20;
     thumb.style.left = x + 'px';
-    thumb.style.top = Math.min(e.clientY - 40, innerHeight - 300) + 'px';
+    thumb.style.top = Math.max(10, Math.min(e.clientY - 40, innerHeight - h - 10)) + 'px';
   });
 </script>
 </body>

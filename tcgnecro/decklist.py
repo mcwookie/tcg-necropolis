@@ -8,10 +8,12 @@ Ported from upstream's card_store.rs. Decklist lines look like:
     Darth Vader [core-set:12:swlcg]   # [printing:position:collection]
 """
 
+import json
 import sqlite3
 from dataclasses import dataclass, field
 
 from tcgnecro.db import normalize_title
+from tcgnecro.games import display_rotation
 from tcgnecro.naming import side_sort_key
 
 
@@ -32,6 +34,7 @@ class CardRequest:
 class Side:
     image: str | None = None        # path to the image without bleed
     bleed_image: str | None = None  # path to the image with bleed
+    rotate: int = 0                 # clockwise degrees to show it upright (display only)
 
     def best(self, want_bleed: bool) -> tuple[str, bool] | None:
         """(path, has_bleed), preferring the requested kind but taking either."""
@@ -166,7 +169,7 @@ def available_printings(conn, game_id, titles) -> dict[str, list[Printing]]:
         return {}
     marks = ",".join("?" * len(normalized))
     rows = conn.execute(
-        f"""SELECT i.*, c.title, c.title_normalized, c.back_group, p.name AS pack_name, p.sort_key
+        f"""SELECT i.*, c.title, c.title_normalized, c.back_group, c.attrs, p.name AS pack_name, p.sort_key
             FROM images i
             JOIN cards c ON c.game_id = i.game_id AND c.id = i.card_id
             LEFT JOIN packs p ON p.game_id = i.game_id AND p.id = i.pack_id
@@ -175,6 +178,7 @@ def available_printings(conn, game_id, titles) -> dict[str, list[Printing]]:
     )
     printings: dict[tuple, Printing] = {}
     sides: dict[tuple, dict[str, Side]] = {}
+    attrs: dict[tuple, dict | None] = {}
     for r in rows:
         key = (r["title_normalized"], r["card_id"], r["pack_id"], r["variant"], r["collection"], r["position"])
         if key not in printings:
@@ -183,7 +187,9 @@ def available_printings(conn, game_id, titles) -> dict[str, list[Printing]]:
                 r["variant"], r["position"], r["back_group"], r["sort_key"],
             )
             sides[key] = {}
-        side = sides[key].setdefault(r["side"], Side())
+            attrs[key] = json.loads(r["attrs"]) if r["attrs"] else None
+        side = sides[key].setdefault(
+            r["side"], Side(rotate=display_rotation(game_id, attrs[key], r["side"])))
         if r["has_bleed"]:
             side.bleed_image = r["file_path"]
         else:

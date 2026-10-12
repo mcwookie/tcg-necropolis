@@ -140,7 +140,10 @@ EOF
 Add any that matter to `[icons]` in `deckbuilder.toml`. Undrawn tokens just show as
 `[token]`.
 
-**d) New filter values.** A new slot, card type or class needs adding to the matching
+**d) New landscape card types.** If an expansion introduces a landscape card type, add it
+to `LANDSCAPE_TYPES` in `games/ahlcg/__init__.py` so it displays upright.
+
+**e) New filter values.** A new slot, card type or class needs adding to the matching
 `[[filters]]` `options` list (and `[colors]` for a class) in `deckbuilder.toml`.
 Otherwise the cards still appear, but can't be selected by that filter.
 

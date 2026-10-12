@@ -36,6 +36,9 @@ ArkhamDB API ──► data/cache/ahlcg/*.json ──► games/ahlcg load_catalo
 - **Filtering runs in Python** over the pool (about 1,750 cards for Arkham, roughly 15 ms).
   That lets the "legal for my investigator" filter call the rules engine directly,
   instead of translating rules into SQL.
+- **Card images are shown upright.** `registry.pool` sets each `DeckCard.rotate` from the
+  game's `display_rotation` rule. Templates pass it to `thumb_url` / `image_url`, and the
+  server returns turned images (cached in `data/thumbs/`).
 - **Decks are JSON files**, not database rows. They're user data: they survive deleting
   `index.db`, they're easy to back up, and they're readable without the app.
 

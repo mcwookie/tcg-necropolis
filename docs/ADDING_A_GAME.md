@@ -41,6 +41,22 @@ ids and titles means existing collections and decklists just work.
 
 Add the id to `GAME_MODULES` in `tcgnecro/games/__init__.py`.
 
+### Optional: landscape cards
+
+If some cards are landscape, collections store them sideways so they print in a portrait
+slot. To show them upright on screen, add a rule to the game module:
+
+```python
+LANDSCAPE_TYPES = {"investigator", "act", "agenda"}
+
+def display_rotation(attrs, side):
+    """Clockwise degrees (0/90/180/270) to turn the stored scan for display."""
+    return 270 if attrs and attrs.get("type_code") in LANDSCAPE_TYPES else 0
+```
+
+`attrs` is the card's `Card.attrs` (None if the catalog stores none), and `side` is `"front"`,
+`"back"`, `"back2"`... It's display only; PDFs always use scans as stored.
+
 ### Optional: generic card backs
 
 Put images in `tcgnecro/games/<id>/backs/`, named `{back_group}_{label}[.bleed].png`, e.g.

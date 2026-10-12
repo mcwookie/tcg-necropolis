@@ -34,6 +34,13 @@ class DeckCard:
     name: str    # what to show in lists
     attrs: dict
     raw: dict
+    # Clockwise degrees to show the card's front image upright (landscape
+    # cards are stored sideways). Set by registry.pool from the game's rule.
+    rotate: int = 0
+
+    @property
+    def landscape(self) -> bool:
+        return self.rotate in (90, 270)
 
     def get(self, key, default=None):
         return self.attrs.get(key, default)

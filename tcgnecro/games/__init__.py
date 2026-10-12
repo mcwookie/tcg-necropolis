@@ -7,6 +7,10 @@ Each game is a package under `tcgnecro/games/<id>/` exposing:
   download their data to fetch it again instead of using the local cache.
 - optionally a `backs/` folder of generic card backs, named
   `{back_group}_{label}[.bleed].{ext}` (same convention as upstream)
+- optionally `display_rotation(attrs, side) -> int`: clockwise degrees
+  (0/90/180/270) to turn a stored scan so it reads upright on screen. For
+  landscape cards, which collections store sideways so they print in a
+  portrait slot. Display only; PDFs always use the scan as stored.
 - optionally a deck builder: `deckbuilder.py` defining `PLUGIN` plus a
   `deckbuilder.toml` config. See docs/DECKBUILDER.md.
 
@@ -70,6 +74,13 @@ def get_game(game_id: str):
     if game_id not in GAME_MODULES:
         raise KeyError(f"Unknown game '{game_id}'. Known: {', '.join(GAME_MODULES)}")
     return import_module(f"tcgnecro.games.{game_id}")
+
+
+def display_rotation(game_id: str, attrs: dict | None, side: str = "front") -> int:
+    """How far to turn a card's scan, clockwise, to show it the right way up.
+    0 for games that don't declare a rule."""
+    rule = getattr(get_game(game_id), "display_rotation", None)
+    return int(rule(attrs, side)) % 360 if rule else 0
 
 
 def card_backs(game_id: str) -> list[CardBack]:

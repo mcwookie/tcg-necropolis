@@ -109,11 +109,12 @@ def resolve_deck(req: DeckRequest):
                 "title": p.title,
                 "printing": p.label,
                 "collection": p.collection,
-                "thumb": db.thumb_url(p.front.best(False)[0]) if p.front.best(False) else None,
+                "thumb": db.thumb_url(p.front.best(False)[0], p.front.rotate) if p.front.best(False) else None,
+                "landscape": p.front.rotate in (90, 270),
                 # Every side, for the full-size viewer: front first, then backs.
                 "sides": [
                     {"label": "Front" if i == 0 else ("Back" if len(p.backs) == 1 else f"Back {i}"),
-                     "thumb": db.thumb_url(best[0]), "full": db.image_url(best[0])}
+                     "thumb": db.thumb_url(best[0], side.rotate), "full": db.image_url(best[0], side.rotate)}
                     for i, side in enumerate([p.front, *p.backs])
                     if (best := side.best(False))
                 ],
@@ -151,20 +152,58 @@ def _collection_file(image_id: str) -> Path:
     return src
 
 
+# Clockwise rotation -> the lossless PIL transpose that does it.
+ROTATIONS = {
+    90: Image.Transpose.ROTATE_270,    # PIL's names are counter-clockwise
+    180: Image.Transpose.ROTATE_180,
+    270: Image.Transpose.ROTATE_90,
+}
+
+
+def _rotation(r: int) -> int:
+    if r not in (0, *ROTATIONS):
+        raise HTTPException(400, "r must be 0, 90, 180 or 270")
+    return r
+
+
+def _cache_path(src: Path, kind: str, r: int) -> Path:
+    """Derived images live in data/thumbs/, keyed by source path, its
+    modification time (so replaced scans regenerate) and the rotation."""
+    key = f"{kind}:{src}:{src.stat().st_mtime}:{r}"
+    return db.data_dir() / "thumbs" / (hashlib.sha1(key.encode()).hexdigest() + ".jpg")
+
+
+def _open(src: Path, r: int) -> Image.Image:
+    img = Image.open(src)
+    return img.transpose(ROTATIONS[r]) if r else img
+
+
 @app.get("/image/{image_id:path}")
-def full_image(image_id: str):
-    """The original scan, for the full-size card viewer. FileResponse sends
-    ETag/Last-Modified, so browsers revalidate cheaply and pick up replaced files."""
-    return FileResponse(_collection_file(image_id))
+def full_image(image_id: str, r: int = 0):
+    """The scan at full size, for the card viewer and card details. `r` turns
+    it clockwise so landscape cards read upright; rotated copies are cached
+    as JPEGs on first view. FileResponse sends ETag/Last-Modified, so browsers
+    revalidate cheaply and pick up replaced files."""
+    src, r = _collection_file(image_id), _rotation(r)
+    if not r:
+        return FileResponse(src)
+    cache = _cache_path(src, "full", r)
+    if not cache.exists():
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        _open(src, r).convert("RGB").save(cache, "JPEG", quality=92)
+    return FileResponse(cache, media_type="image/jpeg")
 
 
 @app.get("/thumb/{image_id:path}")
-def thumb(image_id: str):
-    src = _collection_file(image_id)
-    cache = db.data_dir() / "thumbs" / (hashlib.sha1(f"{src}:{src.stat().st_mtime}".encode()).hexdigest() + ".jpg")
+def thumb(image_id: str, r: int = 0):
+    """A small JPEG of the scan, turned `r` degrees clockwise. The short side
+    is THUMB_WIDTH, so landscape thumbnails are as sharp as portrait ones."""
+    src, r = _collection_file(image_id), _rotation(r)
+    cache = _cache_path(src, "thumb", r)
     if not cache.exists():
         cache.parent.mkdir(parents=True, exist_ok=True)
-        img = Image.open(src)
-        img.thumbnail((THUMB_WIDTH, THUMB_WIDTH * 2))
+        img = _open(src, r)
+        box = (THUMB_WIDTH * 2, THUMB_WIDTH) if img.width > img.height else (THUMB_WIDTH, THUMB_WIDTH * 2)
+        img.thumbnail(box)
         img.convert("RGB").save(cache, "JPEG", quality=85)
     return FileResponse(cache, media_type="image/jpeg")

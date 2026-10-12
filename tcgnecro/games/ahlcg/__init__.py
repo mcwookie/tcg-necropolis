@@ -72,6 +72,16 @@ def load_source(refresh: bool = False) -> tuple[list[dict], list[dict]]:
     return packs, cards
 
 
+# Landscape card types. Collections store them sideways (turned 90° clockwise)
+# so they fit a portrait print slot, on every side.
+LANDSCAPE_TYPES = {"investigator", "act", "agenda"}
+
+
+def display_rotation(attrs: dict | None, side: str) -> int:
+    """Turn landscape cards 90° counter-clockwise (270° clockwise) on screen."""
+    return 270 if attrs and attrs.get("type_code") in LANDSCAPE_TYPES else 0
+
+
 def back_group_for(card: dict) -> str | None:
     """Which generic card back a card takes: player or encounter."""
     if card.get("subtype_code") in ("weakness", "basicweakness"):

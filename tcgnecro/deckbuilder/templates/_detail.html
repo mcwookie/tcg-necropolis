@@ -1,8 +1,8 @@
-{# Card detail, shown in the #detail dialog. #}
-{% from "_macros.html" import qty_control %}
-<div class="detail">
+{# Card detail, shown in the #detail dialog. Full-size image, turned upright. #}
+<div class="detail {{ 'landscape' if card.landscape }}">
   <div>
-    {% if pool.images.get(card.id) %}<img src="{{ thumb_url(pool.images[card.id]) }}" alt="{{ card.name }}">
+    {% if pool.images.get(card.id) %}<img src="{{ image_url(pool.images[card.id], card.rotate) }}" alt="{{ card.name }}"
+         style="background: url('{{ thumb_url(pool.images[card.id], card.rotate) }}') center / cover">
     {% else %}<p class="muted small">No image in your collections.</p>{% endif %}
   </div>
   <div>
