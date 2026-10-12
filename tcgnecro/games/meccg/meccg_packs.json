@@ -1,0 +1,58 @@
+[
+  {
+    "code": "the-wizards",
+    "name": "The Wizards",
+    "position": 1,
+    "total_cards": 500,
+    "total_unique": 500,
+    "available": "1995-12"
+  },
+  {
+    "code": "the-dragons",
+    "name": "The Dragons",
+    "position": 2,
+    "total_cards": 185,
+    "total_unique": 185,
+    "available": "1996-06"
+  },
+  {
+    "code": "dark-minions",
+    "name": "Dark Minions",
+    "position": 3,
+    "total_cards": 183,
+    "total_unique": 183,
+    "available": "1996-11"
+  },
+  {
+    "code": "the-lidless-eye",
+    "name": "The Lidless Eye",
+    "position": 4,
+    "total_cards": 419,
+    "total_unique": 419,
+    "available": "1997-06"
+  },
+  {
+    "code": "against-the-shadow",
+    "name": "Against the Shadow",
+    "position": 5,
+    "total_cards": 170,
+    "total_unique": 170,
+    "available": "1997-08"
+  },
+  {
+    "code": "the-white-hand",
+    "name": "The White Hand",
+    "position": 6,
+    "total_cards": 122,
+    "total_unique": 122,
+    "available": "1997-12"
+  },
+  {
+    "code": "the-balrog",
+    "name": "The Balrog",
+    "position": 7,
+    "total_cards": 104,
+    "total_unique": 104,
+    "available": "1999-02"
+  }
+]

@@ -18,6 +18,7 @@ Proxy Nexus `.pnx` collection files as-is.
 |---|---|---|---|
 | Arkham Horror: The Card Game (`ahlcg`) | yes | yes | ArkhamDB, downloaded and cached |
 | Star Wars LCG (`swlcg`) | yes | not yet | bundled JSON |
+| Middle-earth CCG (`meccg`) | yes | not yet | bundled JSON |
 
 ## Quick start
 
