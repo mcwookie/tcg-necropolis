@@ -79,6 +79,11 @@ def thumb_url(path: str) -> str:
     return "/thumb/" + str(Path(path).relative_to(collections_dir()))
 
 
+def image_url(path: str) -> str:
+    """URL of a collection image at full size (same addressing as thumb_url)."""
+    return "/image/" + str(Path(path).relative_to(collections_dir()))
+
+
 # Schema changes after the first release, applied in order to existing
 # databases. PRAGMA user_version records how many have run. Add new steps to
 # the end; never edit or reorder old ones.

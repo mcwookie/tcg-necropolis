@@ -110,6 +110,13 @@ def resolve_deck(req: DeckRequest):
                 "printing": p.label,
                 "collection": p.collection,
                 "thumb": db.thumb_url(p.front.best(False)[0]) if p.front.best(False) else None,
+                # Every side, for the full-size viewer: front first, then backs.
+                "sides": [
+                    {"label": "Front" if i == 0 else ("Back" if len(p.backs) == 1 else f"Back {i}"),
+                     "thumb": db.thumb_url(best[0]), "full": db.image_url(best[0])}
+                    for i, side in enumerate([p.front, *p.backs])
+                    if (best := side.best(False))
+                ],
                 "backs": len(p.backs),
             }
             for p in res.printings
@@ -134,12 +141,26 @@ def make_pdf(req: PdfRequest):
                     headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 
-@app.get("/thumb/{image_id:path}")
-def thumb(image_id: str):
+def _collection_file(image_id: str) -> Path:
+    """A file inside the collections folder, or 404. Guards against paths
+    like ../../index.db escaping it."""
     root = db.collections_dir().resolve()
     src = (root / image_id).resolve()
     if not src.is_relative_to(root) or not src.is_file():
         raise HTTPException(404)
+    return src
+
+
+@app.get("/image/{image_id:path}")
+def full_image(image_id: str):
+    """The original scan, for the full-size card viewer. FileResponse sends
+    ETag/Last-Modified, so browsers revalidate cheaply and pick up replaced files."""
+    return FileResponse(_collection_file(image_id))
+
+
+@app.get("/thumb/{image_id:path}")
+def thumb(image_id: str):
+    src = _collection_file(image_id)
     cache = db.data_dir() / "thumbs" / (hashlib.sha1(f"{src}:{src.stat().st_mtime}".encode()).hexdigest() + ".jpg")
     if not cache.exists():
         cache.parent.mkdir(parents=True, exist_ok=True)

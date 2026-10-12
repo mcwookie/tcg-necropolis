@@ -32,7 +32,10 @@ First-time setup, if `data/` is empty:
 1. Pick the game in the top bar.
 2. Either pick a **whole set**, or type a **decklist** (see below). The "Add a card" box
    autocompletes card names and appends a `1x` line.
-3. **Preview** shows what will print and which names weren't found.
+3. **Preview** shows what will print and which names weren't found. Click a card to see
+   it full size: **Front**/**Back** switch sides, ←/→ (or the arrows) step through the
+   preview, and Esc or a click outside closes it. **Open original** opens the scan itself
+   in a new tab.
 4. Choose layout options and **Download PDF**.
 
 PDF options:

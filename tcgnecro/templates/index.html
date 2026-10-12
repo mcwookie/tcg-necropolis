@@ -38,6 +38,26 @@
   .card img { width: 100%; border-radius: 5px; display: block; background: var(--line); aspect-ratio: 63/88; object-fit: cover; }
   .card .t { font-size: 12px; margin-top: 4px; }
   .card .m { font-size: 11px; color: var(--muted); }
+  .card img[src] { cursor: zoom-in; }
+
+  /* Full-size card viewer */
+  #viewer { border: 0; padding: 0; background: transparent; max-width: 96vw; max-height: 96vh; overflow: visible; }
+  #viewer::backdrop { background: rgb(0 0 0 / .8); }
+  #viewer figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  #viewer img { display: block; max-height: 82vh; max-width: 86vw; width: auto; height: auto;
+                border-radius: 12px; box-shadow: 0 10px 40px rgb(0 0 0 / .6); background: #222; }
+  #viewer figcaption { color: #eee; font-size: 14px; text-align: center; display: flex; flex-wrap: wrap;
+                       gap: 6px 14px; justify-content: center; align-items: center; }
+  #viewer figcaption .meta { color: #aaa; }
+  #viewer figcaption a { color: #9db7ff; }
+  #viewer button { margin: 0; padding: 4px 10px; background: rgb(255 255 255 / .12); color: #fff;
+                   border: 1px solid rgb(255 255 255 / .25); border-radius: 6px; font-size: 13px; }
+  #viewer button.on { background: rgb(255 255 255 / .35); }
+  #viewer .nav { position: fixed; top: 50%; transform: translateY(-50%); font-size: 32px; line-height: 1;
+                 padding: 8px 14px; border-radius: 50%; }
+  #viewer .prev { left: 2vw; } #viewer .next { right: 2vw; }
+  #viewer .close { position: fixed; top: 2vh; right: 2vw; font-size: 22px; line-height: 1; padding: 6px 12px; }
+  #viewer .nav:disabled { visibility: hidden; }
 </style>
 </head>
 <body>
@@ -83,6 +103,22 @@
 </main>
 <footer class="site">TCG Necropolis is free software under the AGPL-3.0 · <a href="{{ source_url }}">Source code</a></footer>
 
+<dialog id="viewer" aria-label="Card viewer">
+  <button class="close" type="button" aria-label="Close" title="Close (Esc)">×</button>
+  <button class="nav prev" type="button" aria-label="Previous card" title="Previous (←)">‹</button>
+  <figure>
+    <img id="viewer-img" alt="">
+    <figcaption>
+      <b id="viewer-title"></b>
+      <span class="meta" id="viewer-meta"></span>
+      <span id="viewer-sides"></span>
+      <a id="viewer-orig" target="_blank" rel="noopener">Open original</a>
+      <span class="meta" id="viewer-pos"></span>
+    </figcaption>
+  </figure>
+  <button class="nav next" type="button" aria-label="Next card" title="Next (→)">›</button>
+</dialog>
+
 <script>
 const $ = id => document.getElementById(id);
 
@@ -112,6 +148,57 @@ async function post(url) {
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
+// ---- full-size viewer --------------------------------------------------
+// Click a thumbnail to open it. The cached thumbnail shows at once and the
+// original replaces it when loaded. ←/→ step through the preview, Esc or a
+// click outside the card closes it.
+let shown = [];            // cards from the last preview
+let at = { card: 0, side: 0, token: 0 };
+
+function openViewer(card, side = 0) {
+  const c = shown[card];
+  if (!c || !c.sides.length) return;
+  at = { card, side, token: at.token + 1 };
+  const s = c.sides[side], token = at.token, img = $('viewer-img');
+  img.src = s.thumb;                                   // instant placeholder
+  const full = new Image();
+  full.onload = () => { if (at.token === token) img.src = s.full; };
+  full.src = s.full;
+  img.alt = c.title;
+  $('viewer-title').textContent = c.title;
+  $('viewer-meta').textContent = `${c.printing} · ${c.collection}`;
+  $('viewer-orig').href = s.full;
+  $('viewer-pos').textContent = `${card + 1} / ${shown.length}`;
+  $('viewer-sides').innerHTML = c.sides.length > 1 ? c.sides.map((x, i) =>
+    `<button type="button" data-side="${i}" class="${i === side ? 'on' : ''}">${esc(x.label)}</button>`).join(' ') : '';
+  document.querySelector('#viewer .prev').disabled = !nextWithImage(card, -1);
+  document.querySelector('#viewer .next').disabled = !nextWithImage(card, 1);
+  if (!$('viewer').open) $('viewer').showModal();
+}
+
+function nextWithImage(from, step) {
+  for (let i = from + step; i >= 0 && i < shown.length; i += step) if (shown[i].sides.length) return { i };
+  return null;
+}
+function step(dir) { const n = nextWithImage(at.card, dir); if (n) openViewer(n.i); }
+
+$('cards').addEventListener('click', e => {
+  const card = e.target.closest('.card');
+  if (card && e.target.tagName === 'IMG') openViewer(Number(card.dataset.i));
+});
+$('viewer').addEventListener('click', e => {
+  if (e.target.id === 'viewer' || e.target.tagName === 'FIGURE') $('viewer').close();   // outside the card
+  else if (e.target.matches('.close')) $('viewer').close();
+  else if (e.target.matches('.prev')) step(-1);
+  else if (e.target.matches('.next')) step(1);
+  else if (e.target.dataset.side) openViewer(at.card, Number(e.target.dataset.side));
+});
+document.addEventListener('keydown', e => {
+  if (!$('viewer').open) return;
+  if (e.key === 'ArrowLeft') step(-1);
+  if (e.key === 'ArrowRight') step(1);
+});
+
 async function preview() {
   $('status').textContent = 'Resolving…';
   try {
@@ -121,9 +208,10 @@ async function preview() {
     if (data.not_found.length) problems.push('Not in catalog: ' + data.not_found.map(esc).join(', '));
     if (data.no_image.length) problems.push('No image in any collection: ' + data.no_image.map(esc).join(', '));
     $('problems').innerHTML = problems.join('<br>');
-    $('cards').innerHTML = data.cards.map(c => `
-      <div class="card">
-        ${c.thumb ? `<img loading="lazy" src="${c.thumb}" alt="">` : '<img alt="">'}
+    shown = data.cards;
+    $('cards').innerHTML = data.cards.map((c, i) => `
+      <div class="card" data-i="${i}">
+        ${c.thumb ? `<img loading="lazy" src="${c.thumb}" alt="${esc(c.title)}" title="Click for full size">` : '<img alt="">'}
         <div class="t">${esc(c.title)}</div>
         <div class="m">${esc(c.printing)} · ${esc(c.collection)}${c.backs ? ` · ${c.backs} back` : ''}</div>
       </div>`).join('');
