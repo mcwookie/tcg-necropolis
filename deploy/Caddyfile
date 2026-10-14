@@ -1,0 +1,14 @@
+# Caddy in front of TCG Necropolis (compose profile "https").
+# Gets HTTPS certificates automatically for TCGNECRO_DOMAIN and asks for a
+# password before anyone reaches the app, because the app's own sign-in is
+# still a profile picker. Passwords live in deploy/caddy-users (see
+# docs/DOCKER.md); remove the basic_auth block once real sign-in exists.
+{$TCGNECRO_DOMAIN} {
+	encode zstd gzip
+
+	basic_auth {
+		import /etc/caddy/users
+	}
+
+	reverse_proxy app:8000
+}

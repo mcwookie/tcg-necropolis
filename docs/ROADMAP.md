@@ -70,8 +70,6 @@ AGPL source link. See [ACCOUNTS.md](ACCOUNTS.md).
   characters (ß, æ) can normalize differently.
 - **Card back artwork** in `games/*/backs/` is publisher art. Decide whether it belongs in a
   public repo; the app runs without it (blank backs).
-- **Docker packaging** to replace proxynexus-package: a small Python image plus a volume
-  for `data/`. S–M.
 - **ArkhamDB etiquette:** card data is fetched only on `catalog --refresh` and cached;
   imports hit the API once per deck. Keep it that way. Don't add per-request API calls.
 

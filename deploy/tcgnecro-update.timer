@@ -1,0 +1,11 @@
+# Runs tcgnecro-update.service two minutes after boot, then every 5 minutes.
+[Unit]
+Description=Check for TCG Necropolis updates every 5 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+RandomizedDelaySec=30s
+
+[Install]
+WantedBy=timers.target

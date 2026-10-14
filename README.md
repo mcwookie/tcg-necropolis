@@ -30,6 +30,9 @@ Proxy Nexus `.pnx` collection files as-is.
 .venv/bin/tcgnecro serve                        # http://127.0.0.1:8000
 ```
 
+Or with Docker: `cp deploy/env.example .env && docker compose up -d` (see
+[docs/DOCKER.md](docs/DOCKER.md)).
+
 The first person to open it creates the admin profile. Use `tcgnecro serve --host 0.0.0.0`
 to reach it from other machines on your network.
 
@@ -44,6 +47,8 @@ trust.** Real sign-in for internet access is planned; see
 | [docs/USAGE.md](docs/USAGE.md) | Using the web app and the CLI, decklist syntax, where data lives, backups |
 | [docs/ACCOUNTS.md](docs/ACCOUNTS.md) | Profiles, sign-in, deck ownership and sharing, managing profiles |
 | [docs/DECKBUILDER.md](docs/DECKBUILDER.md) | How the deck builder works: plugins, the TOML config reference, the Arkham rules engine |
+| [docs/DOCKER.md](docs/DOCKER.md) | Docker image and compose, HTTPS with Caddy, automatic updates from `main` |
+| [docs/DEPLOY_VPS.md](docs/DEPLOY_VPS.md) | Hosting it on a rented server: HTTPS, a password gate, backups, updates |
 | [docs/UPDATING_GAMES.md](docs/UPDATING_GAMES.md) | Keeping a game current: new expansions, new images, new rules |
 | [docs/ADDING_A_GAME.md](docs/ADDING_A_GAME.md) | Supporting a new game, for proxies and optionally deck building |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | What's left to do, known limitations, ideas |
@@ -76,6 +81,7 @@ tcgnecro/
   deckbuilder/    game-agnostic deck builder core (see docs/DECKBUILDER.md)
   games/<id>/     one package per game: catalog, card backs, optional deck builder
 tests/            pytest; run with `.venv/bin/python -m pytest`
+Dockerfile, compose.yaml, deploy/, .github/workflows/   container image, deployment, CI (docs/DOCKER.md)
 ```
 
 ## License

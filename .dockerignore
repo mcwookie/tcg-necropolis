@@ -1,0 +1,13 @@
+# Keep the build context small and the image free of local data.
+.git
+.github
+.venv
+data
+tests
+docs
+deploy/*
+!deploy/docker-entrypoint.sh
+**/__pycache__
+*.egg-info
+.pytest_cache
+*.pdf

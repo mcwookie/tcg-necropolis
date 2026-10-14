@@ -1,0 +1,5 @@
+# Copy to deploy/caddy-users (not committed) and add one line per person:
+#   username <hash>
+# Make a hash with:
+#   docker run --rm caddy:2 caddy hash-password --plaintext 'their password'
+brian $2a$14$REPLACE_WITH_HASH

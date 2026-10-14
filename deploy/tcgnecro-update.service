@@ -1,0 +1,13 @@
+# Pulls the newest TCG Necropolis image and restarts the app when it changed.
+# Install: see docs/DOCKER.md ("Automatic updates").
+[Unit]
+Description=Update TCG Necropolis from main
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# The account that owns the checkout; it must be in the docker group.
+User=CHANGE_ME
+Group=docker
+ExecStart=/opt/tcgnecro/deploy/update.sh

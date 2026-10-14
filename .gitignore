@@ -4,3 +4,7 @@ __pycache__/
 *.egg-info/
 *.pdf
 .pytest_cache/
+
+# Docker deployment secrets
+.env
+deploy/caddy-users
