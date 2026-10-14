@@ -85,7 +85,9 @@ Only `build_card` is required. Every other hook has a default that gives a plain
 | `row_color`, `subtitle`, `badges` | from TOML | Card row appearance |
 | `render_text(text)` | `markup.render` with TOML icons | Card text HTML |
 | `detail_fields(card)` | `[]` | (label, value) rows in the card dialog |
-| `import_deck(source, pool) -> Deck` | not supported | Build a deck from a URL or text |
+| `import_deck(source, pool) -> Deck` | not supported | Build a deck from a URL or text (one-off copy) |
+| `sync_link(source) -> dict \| None` | `None` | If an import URL can be kept in sync, the link to store (provider, kind, remote_id) |
+| `fetch_remote(link, pool) -> RemoteDeck` | not supported | The newest version of a linked deck, following the site's upgrade chain |
 | `print_list(deck)` | identity + slots | What "Print proxies" prints |
 
 Rules for plugins:
@@ -179,7 +181,7 @@ How filters reach the server: the form sends each filter as query parameters (`f
 
 ```json
 {
-  "format": 2,
+  "format": 3,
   "id": "0d9269855fcb",
   "game": "ahlcg",
   "name": "Zoey - Dunwich",
@@ -191,6 +193,11 @@ How filters reach the server: the form sends each filter as query parameters (`f
   "source": "https://arkhamdb.com/decklist/view/55482/x",
   "owner": "3f2a9c41d0be",
   "visibility": "private",
+  "sync": {"provider": "arkhamdb", "provider_name": "ArkhamDB", "kind": "deck",
+           "remote_id": "6380828", "url": "https://arkhamdb.com/deck/view/6380828",
+           "version": "0.1", "remote_updated": "2026-10-11T22:23:21+00:00",
+           "fingerprint": "…", "synced_name": "Nathaniel Cho for Path to Carcosa",
+           "status": "ok", "message": "", "last_checked": "…", "last_synced": "…"},
   "created": "2026-10-11T01:50:00+00:00",
   "updated": "2026-10-11T01:52:13+00:00"
 }
@@ -227,6 +234,32 @@ All edits go through `store.update()`, which loads, modifies and saves under a l
 edit is small and applied to the latest saved state, so two tabs on the same deck don't
 overwrite each other's work. The page doesn't live-update across tabs, though; reload to
 see changes made elsewhere.
+
+## Deck sync (`deckbuilder/sync.py`)
+
+Imports are linked to their source when the plugin's `sync_link` recognizes it, and
+`sync_deck` keeps them up to date, one-way, from the site:
+
+- **Rule 1: site changes are applied.** `fetch_remote` returns the newest version (a
+  `RemoteDeck`). ArkhamDB makes a new deck per upgrade, linked by `next_deck`, and the
+  plugin follows that chain. The local deck is updated in place: same id, owner, sharing
+  and notes.
+- **Rule 2: local edits are never silently overwritten.** `sync.fingerprint` is a hash of
+  the deck's identity, slots, side slots and meta as last synced. If the deck no longer
+  matches it, an unforced sync records `status: "local-changes"` and leaves the deck
+  alone; `force=True` replaces it.
+- **Rule 3: the name follows the site** unless the deck was renamed here
+  (`synced_name`).
+- **Errors are recorded, not raised:** private or deleted decks and network failures set
+  `status: "error"` with a message, and the deck keeps its last synced version.
+
+Syncs run from the deck page (`POST /decks/{id}/sync`, `?force=1`), `tcgnecro decks
+sync`, and a background task in the web server (`sync_all` every
+`TCGNECRO_SYNC_MINUTES`, default 60, first run two minutes after start-up). The
+background task skips decks with local changes.
+
+Format-2 decks load with `sync: null`. Decks imported before sync existed show a
+"Keep in sync" button (`sync.can_link`), which links them on the first sync.
 
 ## The Arkham rules engine (`games/ahlcg/deckbuilder.py`)
 

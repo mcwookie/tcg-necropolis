@@ -33,9 +33,17 @@ AGPL source link. See [ACCOUNTS.md](ACCOUNTS.md).
 
 ## Deck builder: features
 
+Deck sync with ArkhamDB is done (one-way, following upgrades; see USAGE.md). Still open:
+
 | Item | Size | Notes |
 |---|---|---|
-| Export to ArkhamDB format | S | ArkhamDB has no public upload API, but its text/JSON import formats are documented |
+| Sync private ArkhamDB decks | M | ArkhamDB's OAuth API reads private decks, but needs a registered OAuth client and a sign-in to ArkhamDB per user |
+| Show what a sync changed | S | A card-by-card diff ("+2 Machete, −1 Flashlight") in the sync message |
+
+
+| Item | Size | Notes |
+|---|---|---|
+| Export to ArkhamDB format (two-way sync) | S–M | ArkhamDB has no public upload API, but its text/JSON import formats are documented |
 | Deck charts | S | Cost curve, class split, skill icons; see arkham.build |
 | Card list virtualization | M | "Show more" pages of 100 are fine for ~1,500 cards; a bigger game might want infinite scroll |
 | Live updates across tabs | M | Edits are safe across tabs, but a second tab only shows them after reload. Server-sent events would fix it |

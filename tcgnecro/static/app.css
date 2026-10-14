@@ -35,6 +35,9 @@ nav.tabs a.on { color: var(--text); background: var(--panel); font-weight: 600; 
 .pack-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 4px 16px; }
 .pack-list .check { display: block; }
 .list-head .deck-actions { flex-wrap: nowrap; }
+.sync-box { margin-top: 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; }
+.sync-box .warn { color: var(--warn); margin-top: 4px; }
+.sync-box .bad { color: var(--bad); margin-top: 4px; }
 .not-owned { font-size: 11px; color: var(--warn); border: 1px solid currentColor; border-radius: 4px; padding: 0 4px; margin-left: 6px; vertical-align: 1px; }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
 label.f { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 4px; text-transform: uppercase; letter-spacing: .03em; }

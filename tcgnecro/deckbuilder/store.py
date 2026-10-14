@@ -19,7 +19,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from tcgnecro import db
-from tcgnecro.deckbuilder.model import Deck, now
+from tcgnecro.deckbuilder.model import DECK_FORMAT, Deck, now
 
 _lock = threading.Lock()
 
@@ -56,6 +56,7 @@ def save(deck: Deck) -> Deck:
 
 def _write(deck: Deck) -> Deck:
     deck.updated = now()
+    deck.format = DECK_FORMAT     # written in the current layout from now on
     path = _path(deck.id)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")

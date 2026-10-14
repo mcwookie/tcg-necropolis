@@ -77,6 +77,7 @@ pulling it, use `docker compose up -d --build`.
 | `TCGNECRO_IMAGE` | `ghcr.io/mcwookie/tcg-necropolis:latest` | Which image to run. Pin `:sha-<commit>` to stop following `main` |
 | `TCGNECRO_SOURCE_URL` | your GitHub repo | The footer's "Source code" link (AGPL) |
 | `TCGNECRO_REBUILD_INDEX` | `1` | Set `0` to skip the catalog reload and reindex on start |
+| `TCGNECRO_SYNC_MINUTES` | `60` | Minutes between automatic syncs of decks linked to ArkhamDB; `0` turns it off |
 
 ## HTTPS and a password gate (internet-facing servers)
 
@@ -171,6 +172,7 @@ docker compose exec app tcgnecro user list            # any CLI command, inside 
 docker compose exec app tcgnecro user add Friend
 docker compose exec app tcgnecro import /data/new.pnx # copy the archive into the data folder first
 docker compose exec app tcgnecro catalog ahlcg --refresh   # new Arkham expansion
+docker compose exec app tcgnecro decks sync           # sync linked decks with ArkhamDB now
 docker compose restart app                            # restart (also rebuilds the index)
 ```
 

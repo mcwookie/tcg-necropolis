@@ -12,7 +12,7 @@ from markupsafe import Markup
 
 from tcgnecro.deckbuilder import markup
 from tcgnecro.deckbuilder.config import GameConfig
-from tcgnecro.deckbuilder.model import Action, Deck, DeckCard, Pool, Problem, Selection, Stat
+from tcgnecro.deckbuilder.model import Action, Deck, DeckCard, Pool, Problem, RemoteDeck, Selection, Stat
 
 
 class DeckbuilderPlugin:
@@ -129,6 +129,20 @@ class DeckbuilderPlugin:
         """Build a Deck from a URL or pasted text. The returned deck needs no
         id; the caller assigns one."""
         raise NotImplementedError(f"Importing decks isn't supported for {self.game_id} yet")
+
+    # ----- sync with the source site (deckbuilder/sync.py) -------------------
+
+    def sync_link(self, source: str) -> dict | None:
+        """If `source` (an import URL) can be kept in sync, the link to store:
+        at least {"provider", "provider_name", "kind", "remote_id"}. None
+        means decks from this source can only be imported once."""
+        return None
+
+    def fetch_remote(self, link: dict, pool: Pool) -> RemoteDeck:
+        """The newest version of a linked deck, following the site's upgrade
+        chain. Raise ValueError with a readable message for decks that can't
+        be read (private, deleted)."""
+        raise NotImplementedError(f"Syncing decks isn't supported for {self.game_id}")
 
     def print_list(self, deck: Deck) -> list[tuple[str, int]]:
         """(card_id, copies) to print as proxies. Default: identity + slots."""

@@ -7,7 +7,8 @@ from datetime import datetime, timezone
 # the older layout. Every saved deck records the version it was written with.
 # 2: added `owner` and `visibility`. Format-1 decks load with no owner; the
 #    first profile created claims them (users.create -> store.assign_unowned).
-DECK_FORMAT = 2
+# 3: added `sync`, the link to the deck's source site (deckbuilder/sync.py).
+DECK_FORMAT = 3
 
 # Who can see a deck besides its owner.
 VISIBILITIES = {
@@ -86,6 +87,9 @@ class Deck:
     source: str | None = None   # where it was imported from, if anywhere
     owner: str | None = None
     visibility: str = "private"
+    # Link to the site the deck came from, kept up to date by deckbuilder/sync.py.
+    # None when the deck isn't synced.
+    sync: dict | None = None
     created: str = field(default_factory=now)
     updated: str = field(default_factory=now)
     format: int = DECK_FORMAT
@@ -123,6 +127,25 @@ class Deck:
             raise ValueError(f"Deck {data.get('id')} was saved by a newer version (format {version})")
         known = {f for f in cls.__dataclass_fields__}
         return cls(**{k: v for k, v in data.items() if k in known})
+
+
+@dataclass
+class RemoteDeck:
+    """A deck as its source site currently has it (plugin.fetch_remote).
+    `remote_id` is the *newest* version's id: sites like ArkhamDB make a new
+    deck for each upgrade and link the versions, and plugins follow that chain."""
+
+    name: str
+    identity: str | None
+    slots: dict[str, int]
+    side_slots: dict[str, int]
+    meta: dict
+    remote_id: str
+    url: str
+    kind: str = "deck"           # site-specific: "deck", "decklist"...
+    version: str | None = None   # the site's version label, e.g. "1.2"
+    updated: str | None = None   # when the site last changed it
+    notes: str = ""
 
 
 @dataclass

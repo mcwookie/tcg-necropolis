@@ -12,7 +12,7 @@
       <tr><th>Name</th><th>Game</th><th>Built around</th><th>Cards</th><th>Status</th><th>Updated</th></tr>
       {% for deck, identity, errors in decks %}
       <tr>
-        <td><a href="/decks/{{ deck.id }}">{{ deck.name }}</a>{% if deck.visibility == "shared" %} <span class="muted small" title="Others on this server can see it">· shared</span>{% endif %}</td>
+        <td><a href="/decks/{{ deck.id }}">{{ deck.name }}</a>{% if deck.visibility == "shared" %} <span class="muted small" title="Others on this server can see it">· shared</span>{% endif %}{% if deck.sync %} <span class="muted small" title="Kept in sync with {{ deck.sync.provider_name }}{% if deck.sync.status != 'ok' %}: {{ deck.sync.message }}{% endif %}">· synced{% if deck.sync.status != 'ok' %} ⚠{% endif %}</span>{% endif %}</td>
         <td class="muted small">{{ game_names.get(deck.game, deck.game) }}</td>
         <td>{{ identity.name if identity else "—" }}</td>
         <td>{{ deck.total() }}</td>

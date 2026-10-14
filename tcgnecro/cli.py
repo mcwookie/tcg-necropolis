@@ -119,8 +119,24 @@ def cmd_user_remove(args):
     print(f"Removed {user.name}" + (f"; {moved} deck(s) moved to {args.decks_to}" if moved else ""))
 
 
+def cmd_decks_sync(args):
+    from tcgnecro.deckbuilder import store, sync
+    if args.deck_ids:
+        decks = [store.load(i) for i in args.deck_ids]
+    else:
+        decks = [d for d in store.list_decks() if d.sync]
+    if not decks:
+        print("No synced decks. Import a deck from ArkhamDB (or use its Sync button) to link one.")
+    for deck in decks:
+        result = sync.sync_deck(deck.id, force=args.force)
+        print(f"{deck.id}  {result.deck.name[:40]:40}  {result.message}")
+
+
 def cmd_serve(args):
+    import logging
     import uvicorn
+    # Show the app's own log lines (e.g. deck sync results) next to uvicorn's.
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(message)s")
     uvicorn.run("tcgnecro.web:app", host=args.host, port=args.port, reload=args.reload)
 
 
@@ -181,6 +197,13 @@ def main(argv=None):
     q.add_argument("name")
     q.add_argument("--decks-to", metavar="NAME", help="profile that receives the removed profile's decks")
     q.set_defaults(func=cmd_user_remove)
+
+    p = sub.add_parser("decks", help="deck maintenance")
+    dsub = p.add_subparsers(required=True)
+    q = dsub.add_parser("sync", help="update linked decks from their source site (e.g. ArkhamDB)")
+    q.add_argument("deck_ids", nargs="*", metavar="DECK_ID", help="only these decks (default: every linked deck)")
+    q.add_argument("--force", action="store_true", help="replace changes made here since the last sync")
+    q.set_defaults(func=cmd_decks_sync)
 
     p = sub.add_parser("serve", help="run the web UI")
     p.add_argument("--host", default="127.0.0.1")

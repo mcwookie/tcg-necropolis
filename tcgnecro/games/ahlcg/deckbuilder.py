@@ -35,9 +35,10 @@ parallel investigator front/back choices, base_level. See docs/ROADMAP.md.
 import json
 import random
 import re
+import urllib.error
 from pathlib import Path
 
-from tcgnecro.deckbuilder.model import Action, Deck, DeckCard, Pool, Problem, Selection, Stat
+from tcgnecro.deckbuilder.model import Action, Deck, DeckCard, Pool, Problem, RemoteDeck, Selection, Stat
 from tcgnecro.deckbuilder.plugin import DeckbuilderPlugin
 from tcgnecro.games.ahlcg import fetch_json
 
@@ -556,23 +557,54 @@ class AhlcgPlugin(DeckbuilderPlugin):
 
     # ----- import / export --------------------------------------------------
 
-    def import_deck(self, source: str, pool: Pool) -> Deck:
-        """ArkhamDB decklist or deck URL (or bare id). Private decks can't be
-        read through the public API; publish or share them first."""
-        source = source.strip()
-        if m := re.search(r"/decklist/(?:view/)?(\d+)", source):
-            data = fetch_json(f"{API}/decklist/{m.group(1)}")
-        elif m := re.search(r"/deck/(?:view/)?(\d+)", source):
-            data = fetch_json(f"{API}/deck/{m.group(1)}")
+    # ArkhamDB has two kinds of deck: published *decklists* (/decklist/view/N),
+    # which don't change, and players' *decks* (/deck/view/N), readable when
+    # shared. Upgrading a deck with experience creates a new deck and links
+    # the versions with previous_deck / next_deck; sync follows next_deck to
+    # the newest one. Private decks need ArkhamDB's login API (not supported).
+
+    def sync_link(self, source: str) -> dict | None:
+        source = (source or "").strip()
+        if m := re.search(r"arkhamdb\.com/decklist/(?:view/)?(\d+)", source):
+            kind, remote_id = "decklist", m.group(1)
+        elif m := re.search(r"arkhamdb\.com/deck/(?:view/)?(\d+)", source):
+            kind, remote_id = "deck", m.group(1)
         elif source.isdigit():
-            try:
-                data = fetch_json(f"{API}/decklist/{source}")
-            except Exception:
-                data = fetch_json(f"{API}/deck/{source}")
+            kind, remote_id = "auto", source     # resolved on first fetch
         else:
-            raise ValueError("Paste an ArkhamDB deck or decklist URL")
+            return None
+        return {"provider": "arkhamdb", "provider_name": "ArkhamDB", "kind": kind, "remote_id": remote_id}
+
+    def fetch_remote(self, link: dict, pool: Pool) -> RemoteDeck:
+        kind, remote_id = link["kind"], str(link["remote_id"])
+        if kind == "auto":
+            try:
+                data, kind = self._fetch("decklist", remote_id), "decklist"
+            except ValueError:
+                data, kind = self._fetch("deck", remote_id), "deck"
+        else:
+            data = self._fetch(kind, remote_id)
+        # Follow upgrades to the newest version (bounded, in case of a loop).
+        for _ in range(100):
+            nxt = data.get("next_deck")
+            if kind != "deck" or not nxt:
+                break
+            data = self._fetch("deck", str(nxt))
+        return self._remote_from(data, kind, pool)
+
+    def _fetch(self, kind: str, remote_id: str) -> dict:
+        try:
+            data = fetch_json(f"{API}/{kind}/{remote_id}")
+        except urllib.error.HTTPError as e:
+            if e.code in (403, 404):
+                raise ValueError(f"ArkhamDB {kind} {remote_id} isn't readable (private or deleted?)") from None
+            raise
         if not isinstance(data, dict) or "slots" not in data:
-            raise ValueError("ArkhamDB didn't return a deck (is it private?)")
+            raise ValueError(f"ArkhamDB {kind} {remote_id} isn't readable (private or deleted?)")
+        return data
+
+    def _remote_from(self, data: dict, kind: str, pool: Pool) -> RemoteDeck:
+        investigator = data.get("investigator_code")
 
         def normalize(slots: dict | list | None) -> dict[str, int]:
             out: dict[str, int] = {}
@@ -580,7 +612,7 @@ class AhlcgPlugin(DeckbuilderPlugin):
                 if code == RANDOM_WEAKNESS_PLACEHOLDER:
                     continue  # validation will ask for a weakness to be drawn
                 cid = pool.resolve(code)
-                if cid != data.get("investigator_code"):
+                if cid != investigator:
                     out[cid] = out.get(cid, 0) + int(qty)
             return out
 
@@ -590,17 +622,30 @@ class AhlcgPlugin(DeckbuilderPlugin):
         if data.get("taboo_id"):
             meta["taboo_id"] = data["taboo_id"]
 
-        return Deck(
-            id="",
-            game=self.game_id,
+        return RemoteDeck(
             name=data.get("name") or "Imported deck",
-            identity=pool.resolve(data["investigator_code"]) if data.get("investigator_code") else None,
+            identity=pool.resolve(investigator) if investigator else None,
             slots=normalize(data.get("slots")),
             side_slots=normalize(data.get("sideSlots")),
             meta=meta,
+            remote_id=str(data["id"]),
+            url=f"https://arkhamdb.com/{kind}/view/{data['id']}",
+            kind=kind,
+            version=str(data["version"]) if data.get("version") else None,
+            updated=data.get("date_update"),
             notes=data.get("description_md") or "",
-            source=source,
         )
+
+    def import_deck(self, source: str, pool: Pool) -> Deck:
+        """ArkhamDB decklist or deck URL (or bare id), as a one-off copy.
+        The web app links imports for syncing instead (deckbuilder/sync.py)."""
+        link = self.sync_link(source)
+        if link is None:
+            raise ValueError("Paste an ArkhamDB deck or decklist URL")
+        remote = self.fetch_remote(link, pool)
+        return Deck(id="", game=self.game_id, name=remote.name, identity=remote.identity,
+                    slots=remote.slots, side_slots=remote.side_slots, meta=remote.meta,
+                    notes=remote.notes, source=source.strip())
 
 
 PLUGIN = AhlcgPlugin("ahlcg", Path(__file__).with_name("deckbuilder.toml"))

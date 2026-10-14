@@ -20,6 +20,8 @@ services:
       # 1 when people reach the app over HTTPS (Caddy below, or a tunnel).
       TCGNECRO_SECURE_COOKIES: ${TCGNECRO_SECURE_COOKIES:-0}
       TCGNECRO_SOURCE_URL: ${TCGNECRO_SOURCE_URL:-https://github.com/mcwookie/tcg-necropolis}
+      # How often to sync decks linked to ArkhamDB; 0 turns it off.
+      TCGNECRO_SYNC_MINUTES: ${TCGNECRO_SYNC_MINUTES:-60}
       # Trust X-Forwarded-* headers from the Caddy container.
       FORWARDED_ALLOW_IPS: "*"
     ports:

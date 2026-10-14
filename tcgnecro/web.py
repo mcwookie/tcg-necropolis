@@ -4,8 +4,14 @@ Every page except /login requires a signed-in profile. Everything happens
 server-side.
 
 Set TCGNECRO_SECURE_COOKIES=1 when serving over HTTPS, so the session cookie
-is never sent over plain HTTP."""
+is never sent over plain HTTP.
 
+While running, the server also keeps linked decks in sync with their source
+site (deckbuilder/sync.py) every TCGNECRO_SYNC_MINUTES (default 60; 0 = off)."""
+
+import asyncio
+import contextlib
+import logging
 import os
 
 import hashlib
@@ -14,11 +20,13 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
+from starlette.concurrency import run_in_threadpool
 from fastapi import Request
 from PIL import Image
 from pydantic import BaseModel
 
 from tcgnecro import auth, collection_page, db
+from tcgnecro.deckbuilder import sync
 from tcgnecro.deckbuilder.routes import router as deckbuilder_router
 from tcgnecro.decklist import DecklistError, pack_requests, parse_decklist, resolve
 from tcgnecro.games import card_backs
@@ -27,7 +35,33 @@ from tcgnecro.templating import templates
 
 THUMB_WIDTH = 240
 
-app = FastAPI(title="TCG Necropolis")
+SYNC_MINUTES = int(os.environ.get("TCGNECRO_SYNC_MINUTES", "60"))
+SYNC_FIRST_DELAY = 120   # seconds after start-up before the first check
+
+log = logging.getLogger("tcgnecro.sync")
+
+
+async def _sync_loop(minutes: int) -> None:
+    await asyncio.sleep(SYNC_FIRST_DELAY)
+    while True:
+        try:
+            results = await run_in_threadpool(sync.sync_all)
+            updated = sum(1 for _, r in results if r.changed)
+            log.info("deck sync: %d linked, %d updated", len(results), updated)
+        except Exception:
+            log.exception("deck sync failed")
+        await asyncio.sleep(minutes * 60)
+
+
+@contextlib.asynccontextmanager
+async def lifespan(app):
+    task = asyncio.create_task(_sync_loop(SYNC_MINUTES)) if SYNC_MINUTES > 0 else None
+    yield
+    if task:
+        task.cancel()
+
+
+app = FastAPI(title="TCG Necropolis", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 app.include_router(auth.router)
 app.include_router(collection_page.router)

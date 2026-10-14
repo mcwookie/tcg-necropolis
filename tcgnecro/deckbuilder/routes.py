@@ -27,7 +27,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from tcgnecro import db, ownership, users
 from tcgnecro.auth import current_user
 from tcgnecro.decklist import CardRequest, resolve
-from tcgnecro.deckbuilder import filters, registry, store
+from tcgnecro.deckbuilder import filters, registry, store, sync
 from tcgnecro.deckbuilder.model import VISIBILITIES, Deck, DeckCard
 from tcgnecro.games import card_backs
 from tcgnecro.pdf import CUT_LINES, LAYOUTS, PAGE_SIZES, PdfOptions, generate_pdf
@@ -113,6 +113,8 @@ def _deck_context(request: Request, deck: Deck, plugin, pool, message: str | Non
         "not_owned": None if owned is None else sum(
             qty for cid, qty in plugin.print_list(deck) if pool.resolve(cid) not in owned),
         "owner_name": _owner_name(deck),
+        "can_link": sync.can_link(plugin, deck),
+        "local_changes": sync.has_local_changes(deck),
         "visibilities": VISIBILITIES,
     }
 
@@ -211,7 +213,7 @@ def create_deck(request: Request, game: str = Form(...), identity: str = Form(""
 def import_deck(request: Request, game: str = Form(...), source: str = Form(...)):
     plugin, pool = _game(game)
     try:
-        deck = plugin.import_deck(source, pool)
+        deck = sync.import_and_link(plugin, source, pool)   # linked for syncing when possible
     except Exception as e:  # network errors, bad URLs, private decks
         return RedirectResponse("/decks?" + urlencode({"error": f"Import failed: {e}"}), 303)
     deck.id = store.new_id()
@@ -311,6 +313,27 @@ async def _run(fn):
     return await run_in_threadpool(fn)
 
 
+@router.post("/{deck_id}/sync", response_class=HTMLResponse)
+def sync_now(request: Request, deck_id: str, force: bool = False):
+    """Sync from the source site. ?force=1 replaces changes made here. When
+    the cards changed, the whole page reloads (the investigator may differ)."""
+    _load(request, deck_id, edit=True)
+    result = sync.sync_deck(deck_id, force=force)
+    plugin, pool = _game(result.deck.game)
+    response = _deck_fragment(request, result.deck, plugin, pool, message=result.message)
+    if result.changed:
+        response.headers["HX-Refresh"] = "true"
+    return response
+
+
+@router.post("/{deck_id}/unsync", response_class=HTMLResponse)
+def stop_syncing(request: Request, deck_id: str):
+    _load(request, deck_id, edit=True)
+    deck = sync.unlink(deck_id)
+    plugin, pool = _game(deck.game)
+    return _deck_fragment(request, deck, plugin, pool, message="No longer syncing; this deck is now yours to edit")
+
+
 @router.post("/{deck_id}/action/{key}", response_class=HTMLResponse)
 def run_action(request: Request, deck_id: str, key: str):
     deck = _load(request, deck_id, edit=True)
@@ -387,7 +410,7 @@ def copy_deck(request: Request, deck_id: str):
     """Copy any deck you can see into your own decks (private)."""
     deck = _load(request, deck_id)
     copy = Deck.from_json(deck.to_json() | {
-        "id": store.new_id(), "name": f"{deck.name} (copy)", "source": None,
+        "id": store.new_id(), "name": f"{deck.name} (copy)", "source": None, "sync": None,
         "owner": current_user(request).id, "visibility": "private",
     })
     store.save(copy)

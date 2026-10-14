@@ -123,6 +123,33 @@ Three columns: **filters | cards | your deck**.
     decks**, but not change yours.
   - The deck name (top) and **Notes** (bottom) save when you leave the field.
 
+### Keeping decks in sync with ArkhamDB
+
+Decks imported from ArkhamDB stay **linked**: when the deck changes there, the change
+comes here.
+
+- **What syncs:** the cards, side deck and investigator choices. The name follows too,
+  unless you've renamed the deck here. Your notes, who can see the deck, and the deck
+  itself (its address here) are never touched.
+- **Upgrades are followed.** When you upgrade a deck with experience, ArkhamDB makes a
+  new deck for the new version and links the two. Sync follows that chain to the newest
+  version and updates your deck in place.
+- **When:** automatically about every hour while the server runs, whenever you click
+  **Sync now** on the deck page, or with `tcgnecro decks sync`.
+- **Changes made here win until you decide otherwise.** If you change the cards here,
+  automatic syncing pauses for that deck and the deck page explains why. **Sync and
+  replace my changes** takes ArkhamDB's version; **Stop syncing** keeps yours and
+  unlinks the deck.
+- **Decks imported before syncing existed** show **Keep in sync with the source**,
+  which links them (replacing their cards with ArkhamDB's current version).
+- **Only decks ArkhamDB shows publicly** can be synced, the same as importing: published
+  decklists, and decks you've made public or shared. If a linked deck becomes private,
+  the deck page shows the error and keeps the last synced version.
+- **Copying a synced deck** gives you an unlinked copy, yours to change freely.
+- **One-way:** changes made here never go back to ArkhamDB.
+
+The deck list marks linked decks "synced" (with ⚠ if the last sync had a problem).
+
 Filters are kept in the address bar, so reloading or bookmarking a builder URL keeps them.
 "Reset filters" goes back to the game's defaults.
 
@@ -141,6 +168,7 @@ tcgnecro pdf --game G (--deck FILE | --pack PACK) [-o out.pdf] [--page letter|a4
              [--double-sided] [--back-label LABEL] [--compact]
 tcgnecro serve [--host H] [--port P] [--reload]
 tcgnecro user list | add NAME | rename NAME NEW | admin NAME [--off] | remove NAME --decks-to NAME
+tcgnecro decks sync [DECK_ID...] [--force]   # sync linked decks now; --force replaces local changes
 ```
 
 `--deck -` reads the decklist from stdin.

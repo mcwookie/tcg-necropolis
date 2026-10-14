@@ -86,7 +86,36 @@
   <label class="f">Notes</label>
   <p class="small" style="white-space:pre-wrap">{{ deck.notes }}</p>
   {% endif %}
-  {% if deck.source %}<p class="muted small">Imported from {{ deck.source }}</p>{% endif %}
+  {% if deck.sync %}
+  {% set s = deck.sync %}
+  <div class="sync-box {{ s.status }}">
+    <div>Synced with <a href="{{ s.url }}" target="_blank" rel="noopener">{{ s.provider_name }}</a>
+      {%- if s.version %} · version {{ s.version }}{% endif %}
+      <span class="muted">· checked {{ ago(s.last_checked) }}</span></div>
+    {% if can_edit and (local_changes or s.status == "local-changes") %}
+      <div class="warn">You've changed the cards here since the last sync, so automatic syncing is paused.
+        Syncing now replaces your changes with {{ s.provider_name }}'s version.</div>
+    {% elif s.status == "error" %}<div class="bad">{{ s.message }}</div>{% endif %}
+    {% if can_edit %}
+    <div class="deck-actions" style="margin-top:6px">
+      {% if local_changes %}
+      <button type="button" class="ghost" hx-post="/decks/{{ deck.id }}/sync?force=1" hx-target="#deck" hx-swap="outerHTML"
+              hx-confirm="Replace your changes with {{ s.provider_name }}'s version of this deck?">Sync and replace my changes</button>
+      {% else %}
+      <button type="button" class="ghost" hx-post="/decks/{{ deck.id }}/sync" hx-target="#deck" hx-swap="outerHTML">Sync now</button>
+      {% endif %}
+      <button type="button" class="ghost" hx-post="/decks/{{ deck.id }}/unsync" hx-target="#deck" hx-swap="outerHTML"
+              hx-confirm="Stop syncing? The deck stays as it is now, and becomes yours to edit freely.">Stop syncing</button>
+    </div>
+    {% endif %}
+  </div>
+  {% elif deck.source %}
+  <p class="muted small">Imported from {{ deck.source }}</p>
+  {% if can_edit and can_link %}
+  <button type="button" class="ghost" hx-post="/decks/{{ deck.id }}/sync" hx-target="#deck" hx-swap="outerHTML"
+          hx-confirm="Keep this deck in sync with its source from now on? Its cards are replaced with the source's current version.">Keep in sync with the source</button>
+  {% endif %}
+  {% endif %}
 </aside>
 
 {% for card in changed if card %}{{ qty_control(deck, card, plugin, "ctl", oob=True) }}{% endfor %}
