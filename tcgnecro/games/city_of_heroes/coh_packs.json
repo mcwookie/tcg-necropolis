@@ -1,0 +1,14 @@
+[
+  {
+    "code": "arena",
+    "name": "Arena",
+    "position": 1,
+    "available": "2005-06-01"
+  },
+  {
+    "code": "secret_origins",
+    "name": "Secret Origins",
+    "position": 2,
+    "available": "2006-08-01"
+  }
+]
