@@ -78,11 +78,14 @@ convention). After `reindex`, check that images matched a pack:
 ```bash
 .venv/bin/python -c "
 from tcgnecro import db; c = db.connect()
-print(c.execute(\"select count(*), sum(pack_id is null) from images where game_id='<id>'\").fetchone())"
+print(tuple(c.execute(\"select count(*), sum(pack_id is null) from images where game_id='<id>'\").fetchone()))"
 ```
 
-The second number counts images whose printing didn't match a catalog pack. They're
-treated as variants (alt art, fan cards), which is fine if intended.
+It prints `(images, unmatched)`, e.g. `(503, 0)`. "Unmatched" images have a printing
+that isn't a catalog pack, and are treated as variants (alt art, fan cards). A few are fine
+if intended. If *every* image is unmatched, check that `tcgnecro catalog <id>` actually
+loaded cards and packs, and that image names use the same card and pack ids as the
+catalog.
 
 ## Step 2: a deck builder
 
