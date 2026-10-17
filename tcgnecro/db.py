@@ -107,6 +107,22 @@ MIGRATIONS = [
     ALTER TABLE packs ADD COLUMN group_name TEXT;
     ALTER TABLE packs ADD COLUMN group_order INTEGER;
     """,
+    # 4: collections are identified by game + name. Folders live under
+    # collections/{game}/{name}/, so two games may each have one called "scans";
+    # a key on name alone made reindex fail for them.
+    """
+    CREATE TABLE collections_new (
+        name TEXT NOT NULL,
+        game_id TEXT NOT NULL,
+        version TEXT,
+        language TEXT,
+        PRIMARY KEY (game_id, name)
+    );
+    INSERT INTO collections_new (name, game_id, version, language)
+        SELECT name, game_id, version, language FROM collections;
+    DROP TABLE collections;
+    ALTER TABLE collections_new RENAME TO collections;
+    """,
 ]
 
 

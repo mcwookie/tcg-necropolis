@@ -159,10 +159,10 @@ Every change is saved immediately; there is no save button.
 
 ```bash
 tcgnecro catalog [GAME...] [--refresh]   # load card data; --refresh re-downloads (ahlcg)
-tcgnecro import FILE [--name NAME]       # unzip a collection archive (.pnx/.zip) and index it
+tcgnecro import FILE [--name NAME] [--game GAME]   # unzip a collection archive (.pnx/.zip) and index it
 tcgnecro reindex                         # rescan collection folders after adding/fixing images
 tcgnecro list                            # collections and image counts
-tcgnecro remove NAME                     # delete a collection folder
+tcgnecro remove NAME [--game GAME]       # delete a collection folder (--game if two games share the name)
 tcgnecro pdf --game G (--deck FILE | --pack PACK) [-o out.pdf] [--page letter|a4]
              [--layout edge|gap|margin] [--cut-lines none|margins|full]
              [--double-sided] [--back-label LABEL] [--compact]
@@ -172,6 +172,15 @@ tcgnecro decks sync [DECK_ID...] [--force]   # sync linked decks now; --force re
 ```
 
 `--deck -` reads the decklist from stdin.
+
+**What `import` accepts:** a Proxy Nexus `.pnx` or any `.zip`. Inside, it looks for
+`manifest.toml` and the card images either at the top of the archive or in a single
+folder that holds everything (what "Compress folder" produces). Images can be in an
+`images/` folder or loose next to the manifest. With no `manifest.toml`, pass `--game`
+(e.g. `--game ahlcg`) and one is written for you. Files not named like card images
+(`0235@core-set.png`) are skipped and listed. An archive with no card images at all is
+refused rather than imported empty. The collection is named after the file, without
+`.zip`/`.pnx`.
 
 ## Where your data lives
 

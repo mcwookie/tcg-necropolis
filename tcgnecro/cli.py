@@ -26,7 +26,7 @@ def cmd_catalog(args):
 
 def cmd_import(args):
     conn = db.connect()
-    target = collections.import_archive(Path(args.archive), args.name)
+    target = collections.import_archive(Path(args.archive), args.name, game=args.game)
     print(f"Extracted to {target}")
     _reindex(conn)
 
@@ -36,15 +36,18 @@ def cmd_reindex(args):
 
 
 def _reindex(conn):
-    for name, count in collections.reindex(conn).items():
-        print(f"{name}: {count} images")
+    """Rescan and print each collection as "game / collection: N images"."""
+    for (game, name), count in sorted(collections.reindex(conn).items()):
+        print(f"{game} / {name}: {count} images")
 
 
 def cmd_list(args):
     conn = db.connect()
     rows = conn.execute(
         """SELECT c.name, c.game_id, c.version, COUNT(i.file_path) AS images
-           FROM collections c LEFT JOIN images i ON i.collection = c.name GROUP BY c.name"""
+           FROM collections c
+           LEFT JOIN images i ON i.collection = c.name AND i.game_id = c.game_id
+           GROUP BY c.game_id, c.name ORDER BY c.game_id, c.name"""
     ).fetchall()
     if not rows:
         print("No collections. Use `tcgnecro import ARCHIVE`.")
@@ -53,7 +56,7 @@ def cmd_list(args):
 
 
 def cmd_remove(args):
-    collections.remove(args.name)
+    collections.remove(args.name, args.game)
     _reindex(db.connect())
 
 
@@ -150,9 +153,11 @@ def main(argv=None):
                    help="re-download data for games that fetch it (e.g. ahlcg from ArkhamDB)")
     p.set_defaults(func=cmd_catalog)
 
-    p = sub.add_parser("import", help="unzip a collection archive into the collections folder")
+    p = sub.add_parser("import", help="unzip a collection archive (.pnx or .zip) into the collections folder")
     p.add_argument("archive")
     p.add_argument("--name", help="collection name (default: file name)")
+    p.add_argument("--game", choices=GAME_MODULES,
+                   help="the game the cards are for; needed when the archive has no manifest.toml")
     p.set_defaults(func=cmd_import)
 
     sub.add_parser("reindex", help="rescan collection folders").set_defaults(func=cmd_reindex)
@@ -160,6 +165,7 @@ def main(argv=None):
 
     p = sub.add_parser("remove", help="delete a collection folder")
     p.add_argument("name")
+    p.add_argument("--game", choices=GAME_MODULES, help="needed if several games have a collection with this name")
     p.set_defaults(func=cmd_remove)
 
     p = sub.add_parser("pdf", help="build a print-and-play PDF")

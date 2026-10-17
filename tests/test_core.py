@@ -1,4 +1,5 @@
 import zipfile
+from pathlib import Path
 
 import pymupdf
 import pytest
@@ -92,7 +93,7 @@ def test_import_resolve_and_pdf(data):
     archive = tmp / "mini.zip"
     _make_archive(archive, ["0235@core-set.png", "0235@alt-art.png"])
     collections.import_archive(archive, progress=lambda _: None)
-    assert collections.reindex(conn) == {"mini": 2}
+    assert collections.reindex(conn) == {("swlcg", "mini"): 2}
 
     requests, not_found = parse_decklist(conn, "swlcg", "2x Force Lightning\nForce Lightning [alt-art]\nNope")
     res = resolve(conn, "swlcg", requests, not_found)
@@ -110,3 +111,84 @@ def test_import_rejects_invalid_archive(data):
     with pytest.raises(collections.CollectionError, match="no front"):
         collections.import_archive(archive)
     assert not (tmp / "data" / "collections" / "swlcg" / "bad").exists()
+
+
+# ----- archive layouts -----------------------------------------------------------
+
+MANIFEST = 'game = "swlcg"\nversion = "1"\nlanguage = "en"\n'
+
+
+def _zip(path, files: dict):
+    png = __import__("io").BytesIO()
+    Image.new("RGB", (6, 8)).save(png, "PNG")
+    with zipfile.ZipFile(path, "w") as zf:
+        for name, content in files.items():
+            zf.writestr(name, png.getvalue() if content is None else content)
+    return path
+
+
+@pytest.mark.parametrize("layout", [
+    {"manifest.toml": MANIFEST, "images/0235@core-set.png": None},                  # .pnx layout
+    {"cards/manifest.toml": MANIFEST, "cards/images/0235@core-set.png": None},      # zipped folder
+    {"manifest.toml": MANIFEST, "0235@core-set.png": None},                          # images at the top
+    {"cards/manifest.toml": MANIFEST, "cards/0235@core-set.png": None,
+     "__MACOSX/cards/._0235@core-set.png": "junk", "cards/.DS_Store": "junk"},      # macOS zip
+])
+def test_common_zip_layouts_import(data, layout):
+    tmp, conn = data
+    target = collections.import_archive(_zip(tmp / "scans.zip", layout), progress=lambda _: None)
+    assert target.name == "scans"
+    assert sorted(p.name for p in target.iterdir()) == ["0235@core-set.png", "manifest.toml"]
+    assert collections.reindex(conn) == {("swlcg", "scans"): 1}
+
+
+def test_zip_without_manifest_needs_game(data):
+    tmp, conn = data
+    archive = _zip(tmp / "loose.zip", {"0235@core-set.png": None})
+    with pytest.raises(collections.CollectionError, match="--game"):
+        collections.import_archive(archive)
+    target = collections.import_archive(archive, game="swlcg", progress=lambda _: None)
+    assert 'game = "swlcg"' in (target / "manifest.toml").read_text()
+    with pytest.raises(collections.CollectionError, match="manifest says game 'swlcg', not 'ahlcg'"):
+        collections.import_archive(_zip(tmp / "other.zip", {"manifest.toml": MANIFEST,
+                                                            "0236@core-set.png": None}), game="ahlcg")
+
+
+def test_archive_without_card_images_is_refused(data):
+    tmp, _ = data
+    archive = _zip(tmp / "empty.zip", {"manifest.toml": MANIFEST, "readme.txt": "hi", "photo.png": None})
+    with pytest.raises(collections.CollectionError, match="no card images"):
+        collections.import_archive(archive)
+    assert not (tmp / "data" / "collections" / "swlcg" / "empty").exists()
+
+
+def test_badly_named_files_are_skipped_and_reported(data):
+    tmp, _ = data
+    messages = []
+    archive = _zip(tmp / "mixed.zip", {"manifest.toml": MANIFEST, "images/0235@core-set.png": None,
+                                       "images/scan001.png": None})
+    target = collections.import_archive(archive, progress=messages.append)
+    assert not (target / "scan001.png").exists()
+    assert any("skipped 1 file(s)" in m and "scan001.png" in m for m in messages)
+
+
+@pytest.mark.parametrize("filename, name", [
+    ("ahlcg.pnx", "ahlcg"), ("scans.zip", "scans"), ("scans.pnx.zip", "scans"), ("Scans.ZIP", "Scans"),
+])
+def test_collection_name_drops_archive_extensions(filename, name):
+    assert collections.collection_name(Path(filename)) == name
+
+
+def test_two_games_may_have_collections_with_the_same_name(data):
+    tmp, conn = data
+    db.store_catalog(conn, get_game("meccg").load_catalog())
+    for game, image in (("swlcg", "0235@core-set.png"), ("meccg", "05001@against-the-shadow.png")):
+        folder = tmp / "data" / "collections" / game / "scans"
+        folder.mkdir(parents=True)
+        Image.new("RGB", (6, 8)).save(folder / image)
+    assert collections.reindex(conn, warn=lambda _: None) == {("meccg", "scans"): 1, ("swlcg", "scans"): 1}
+
+    with pytest.raises(collections.CollectionError, match="say which with --game"):
+        collections.remove("scans")
+    collections.remove("scans", game="meccg")
+    assert collections.reindex(conn, warn=lambda _: None) == {("swlcg", "scans"): 1}

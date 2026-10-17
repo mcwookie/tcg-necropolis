@@ -1,6 +1,6 @@
 """Collections are plain folders: data/collections/{game}/{name}/ holding a
-manifest.toml and the card images. A collection archive is the same thing zipped up
-(with the images under images/), so importing one just unzips it."""
+manifest.toml and the card images. A collection archive (a Proxy Nexus .pnx,
+or any .zip) is the same thing zipped up, so importing one just unzips it."""
 
 import shutil
 import sqlite3
@@ -19,17 +19,84 @@ class CollectionError(Exception):
     pass
 
 
-def import_archive(archive_path: Path, name: str | None = None, progress=print) -> Path:
-    name = name or archive_path.stem
+# Files that zip tools add and nobody wants imported.
+JUNK = (".DS_Store", "Thumbs.db", "desktop.ini")
+
+
+def _is_junk(path: str) -> bool:
+    return path.startswith("__MACOSX/") or Path(path).name in JUNK
+
+
+def _archive_root(names: list[str]) -> str:
+    """The archive's top level, or the single folder everything sits in (what
+    "Compress folder" in a file manager produces). Returned as a prefix."""
+    tops = {n.split("/", 1)[0] for n in names}
+    if len(tops) == 1 and all("/" in n for n in names):
+        return tops.pop() + "/"
+    return ""
+
+
+def collection_name(archive_path: Path) -> str:
+    """'ahlcg.pnx' -> 'ahlcg', 'scans.zip' -> 'scans', 'scans.pnx.zip' -> 'scans'."""
+    name = archive_path.name
+    for suffix in (".zip", ".pnx"):
+        if name.lower().endswith(suffix):
+            name = name[: -len(suffix)]
+    return name
+
+
+def import_archive(archive_path: Path, name: str | None = None, progress=print,
+                   game: str | None = None) -> Path:
+    """Unzip a collection archive into data/collections/{game}/{name}/.
+
+    Accepts Proxy Nexus .pnx files and ordinary .zip files, laid out as
+    manifest.toml + images/, either at the top of the archive or inside one
+    wrapper folder. Images may also sit at that top level with no images/
+    folder. Without a manifest, `game` says which game the cards belong to
+    and a manifest is written. Files that don't follow the image naming
+    convention are skipped (and counted); an archive with no usable card
+    images is refused rather than imported empty.
+    """
+    name = name or collection_name(archive_path)
     with zipfile.ZipFile(archive_path) as zf:
-        manifest = tomllib.loads(zf.read(MANIFEST).decode())
+        files = [m for m in zf.infolist() if not m.is_dir() and not _is_junk(m.filename)]
+        root = _archive_root([m.filename for m in files])
+
+        manifest_name = root + MANIFEST
+        if manifest_name in zf.namelist():
+            manifest_bytes = zf.read(manifest_name)
+            manifest = tomllib.loads(manifest_bytes.decode())
+            if game and manifest.get("game") != game:
+                raise CollectionError(
+                    f"{archive_path.name}'s manifest says game '{manifest.get('game')}', not '{game}'")
+        elif game:
+            manifest = {"game": game, "version": "1", "language": "en"}
+            manifest_bytes = (f'game = "{game}"\nversion = "1"\nlanguage = "en"\n').encode()
+        else:
+            raise CollectionError(
+                f"{archive_path.name} has no {MANIFEST}. Say which game its cards are for with "
+                f"--game (one of: {', '.join(GAME_MODULES)})")
+
         game_id = manifest["game"]
         if game_id not in GAME_MODULES:
             raise CollectionError(f"{archive_path.name} is for game '{game_id}', which isn't supported yet")
 
-        members = [m for m in zf.infolist() if m.filename.startswith("images/") and not m.is_dir()]
-        parsed = [parse_filename(Path(m.filename).name) for m in members]
-        errors = validate([p for p in parsed if p])
+        # Card images live in images/ under the root, or directly in the root.
+        image_dir = root + "images/"
+        if any(m.filename.startswith(image_dir) for m in files):
+            candidates = [m for m in files if m.filename.startswith(image_dir)]
+        else:
+            candidates = [m for m in files if "/" not in m.filename.removeprefix(root)
+                          and m.filename != manifest_name]
+        members, skipped = [], []
+        for m in candidates:
+            (members if parse_filename(Path(m.filename).name) else skipped).append(m)
+        if not members:
+            raise CollectionError(
+                f"{archive_path.name} has no card images named like 0235@core-set.png "
+                f"({len(skipped)} other file(s) found). See the naming convention in docs/UPDATING_GAMES.md")
+
+        errors = validate([parse_filename(Path(m.filename).name) for m in members])
         if errors:
             raise CollectionError("\n".join([f"{archive_path.name} failed validation:"] + errors))
 
@@ -39,7 +106,7 @@ def import_archive(archive_path: Path, name: str | None = None, progress=print) 
         target.mkdir(parents=True)
 
         try:
-            (target / MANIFEST).write_bytes(zf.read(MANIFEST))
+            (target / MANIFEST).write_bytes(manifest_bytes)
             for i, member in enumerate(members, 1):
                 with zf.open(member) as src, open(target / Path(member.filename).name, "wb") as dst:
                     shutil.copyfileobj(src, dst, 1024 * 1024)
@@ -48,15 +115,22 @@ def import_archive(archive_path: Path, name: str | None = None, progress=print) 
         except BaseException:
             shutil.rmtree(target, ignore_errors=True)
             raise
+    if skipped:
+        shown = ", ".join(Path(m.filename).name for m in skipped[:5]) + (" ..." if len(skipped) > 5 else "")
+        progress(f"  skipped {len(skipped)} file(s) not named like card images: {shown}")
     return target
 
 
-def remove(name: str) -> None:
-    for folder in collection_folders():
-        if folder.name == name:
-            shutil.rmtree(folder)
-            return
-    raise CollectionError(f"No collection named '{name}'")
+def remove(name: str, game: str | None = None) -> None:
+    """Delete a collection folder. `game` is needed only when more than one
+    game has a collection with that name."""
+    matches = [f for f in collection_folders() if f.name == name and (game is None or f.parent.name == game)]
+    if not matches:
+        raise CollectionError(f"No collection named '{name}'" + (f" for {game}" if game else ""))
+    if len(matches) > 1:
+        raise CollectionError(f"More than one game has a collection named '{name}' "
+                              f"({', '.join(f.parent.name for f in matches)}); say which with --game")
+    shutil.rmtree(matches[0])
 
 
 def collection_folders() -> list[Path]:
@@ -101,8 +175,9 @@ def _match_printing(card_id, printing, by_card_pack, by_api_id):
     return card_id, None
 
 
-def reindex(conn: sqlite3.Connection, warn=print) -> dict[str, int]:
-    """Rebuild the image index from the collection folders on disk."""
+def reindex(conn: sqlite3.Connection, warn=print) -> dict[tuple[str, str], int]:
+    """Rebuild the image index from the collection folders on disk.
+    Returns {(game id, collection name): image count}."""
     counts = {}
     with conn:
         conn.execute("DELETE FROM images")
@@ -137,6 +212,6 @@ def reindex(conn: sqlite3.Connection, warn=print) -> dict[str, int]:
                 "INSERT INTO collections VALUES (?, ?, ?, ?)",
                 (folder.name, game_id, manifest.get("version"), manifest.get("language")),
             )
-            counts[folder.name] = len(rows)
+            counts[(game_id, folder.name)] = len(rows)
         db.mark(conn, "images")
     return counts

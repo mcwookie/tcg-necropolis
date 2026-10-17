@@ -91,7 +91,9 @@ cd data/collections/ahlcg/ahlcg-tskc && mkdir -p /tmp/pack/images && cp *.jpg /t
   && cp manifest.toml /tmp/pack/ && (cd /tmp/pack && zip -r ~/ahlcg-tskc.zip .)
 ```
 
-`tcgnecro import ahlcg-tskc.zip` (or upstream Proxy Nexus, renamed to `.pnx`) reads it.
+`tcgnecro import ahlcg-tskc.zip` (or upstream Proxy Nexus, renamed to `.pnx`) reads it. A
+plain zip of the folder works too, and so does a zip of loose images without a manifest:
+`tcgnecro import scans.zip --game ahlcg`.
 
 ### 3. Deck builder: does the expansion add anything new?
 
