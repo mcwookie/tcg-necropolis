@@ -21,7 +21,7 @@
           {% elif errors %}<span style="color:var(--bad)">{{ errors }} problem{{ "s" if errors != 1 }}</span>
           {% else %}<span style="color:var(--good)">legal</span>{% endif %}
         </td>
-        <td class="muted small">{{ deck.updated[:16].replace("T", " ") }}</td>
+        <td class="muted small">{{ when(deck.updated) }}</td>
       </tr>
       {% endfor %}
     </table>
@@ -42,7 +42,7 @@
         <td>{{ identity.name if identity else "—" }}</td>
         <td>{{ deck.total() }}</td>
         <td class="small">{% if errors %}<span style="color:var(--bad)">{{ errors }} problem{{ "s" if errors != 1 }}</span>{% elif errors == 0 %}<span style="color:var(--good)">legal</span>{% endif %}</td>
-        <td class="muted small">{{ deck.updated[:16].replace("T", " ") }}</td>
+        <td class="muted small">{{ when(deck.updated) }}</td>
       </tr>
       {% endfor %}
     </table>

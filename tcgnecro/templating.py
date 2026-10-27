@@ -7,8 +7,11 @@ login, profile, Proxies) and then tcgnecro/deckbuilder/templates/.
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi.templating import Jinja2Templates
+from jinja2 import pass_context
+from markupsafe import Markup, escape
 
 from tcgnecro import db
 
@@ -35,4 +38,34 @@ def ago(stamp: str | None) -> str:
     return "just now"
 
 
-templates.env.globals.update(thumb_url=db.thumb_url, image_url=db.image_url, source_url=SOURCE_URL, ago=ago)
+def user_timezone(request) -> str | None:
+    """The signed-in profile's chosen time zone, or None for "this device's"."""
+    user = getattr(getattr(request, "state", None), "user", None)
+    return user.prefs.get("timezone") if user else None
+
+
+@pass_context
+def when(context, stamp: str | None, fmt: str = "datetime") -> Markup:
+    """A timestamp as <time>. The browser rewrites it in the viewer's time zone
+    (their profile's choice, else their device's; see base.html). The text
+    rendered here is the fallback: the profile's zone if set, else UTC.
+    fmt: "datetime" or "date"."""
+    if not stamp:
+        return Markup("—")
+    moment = datetime.fromisoformat(stamp)
+    tz_name = user_timezone(context.get("request"))
+    try:
+        zone = ZoneInfo(tz_name) if tz_name else None
+    except (ZoneInfoNotFoundError, ValueError):
+        zone = None
+    if fmt == "date":
+        text = moment.astimezone(zone or timezone.utc).strftime("%Y-%m-%d")
+    elif zone:
+        text = moment.astimezone(zone).strftime("%Y-%m-%d %H:%M %Z")
+    else:
+        text = moment.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    return Markup(f'<time datetime="{escape(stamp)}" data-fmt="{escape(fmt)}">{escape(text)}</time>')
+
+
+templates.env.globals.update(thumb_url=db.thumb_url, image_url=db.image_url, source_url=SOURCE_URL,
+                             ago=ago, when=when, user_timezone=user_timezone)

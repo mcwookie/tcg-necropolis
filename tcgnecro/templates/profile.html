@@ -13,6 +13,11 @@
       <input type="text" id="name" name="name" value="{{ user.name }}" required>
       <label class="f" for="email">Email <span class="muted">(optional; will be used for Google sign-in later)</span></label>
       <input type="text" id="email" name="email" value="{{ user.email or '' }}">
+      <label class="f" for="timezone">Time zone for dates and times</label>
+      <select id="timezone" name="timezone">
+        <option value="">Automatic: this device's time zone</option>
+        {% for tz in timezones %}<option {{ "selected" if tz == user.prefs.get("timezone") }}>{{ tz }}</option>{% endfor %}
+      </select>
       <p><button>Save</button></p>
     </form>
   </section>
@@ -24,7 +29,7 @@
       <tr><th>Name</th><th>Role</th><th>Decks</th><th>Since</th></tr>
       {% for p in profiles %}
       <tr><td>{{ p.name }}</td><td class="small">{{ "admin" if p.is_admin else "member" }}</td>
-          <td>{{ deck_counts.get(p.id, 0) }}</td><td class="muted small">{{ p.created[:10] }}</td></tr>
+          <td>{{ deck_counts.get(p.id, 0) }}</td><td class="muted small">{{ when(p.created, "date") }}</td></tr>
       {% endfor %}
     </table>
     <form method="post" action="/profile/users" style="margin-top:14px">
@@ -39,4 +44,11 @@
   </section>
   {% endif %}
 </div>
+<script>
+  // Name the device's zone in the "Automatic" option.
+  try {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    document.querySelector('#timezone option[value=""]').textContent += ` (${zone})`;
+  } catch {}
+</script>
 {% endblock %}

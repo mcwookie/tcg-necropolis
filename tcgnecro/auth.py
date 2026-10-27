@@ -19,6 +19,7 @@ deleting that file signs everyone out.
 
 import secrets
 from pathlib import Path
+from zoneinfo import available_timezones
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Form, HTTPException, Request
@@ -157,15 +158,19 @@ def profile_page(request: Request, error: str | None = None, message: str | None
     counts = {u.id: sum(1 for d in decks if d.owner == u.id) for u in users.list_users()}
     return templates.TemplateResponse(request, "profile.html", {
         "user": user, "profiles": users.list_users(), "deck_counts": counts,
+        "timezones": sorted(available_timezones()),
         "error": error, "message": message,
     })
 
 
 @router.post("/profile")
-def update_profile(request: Request, name: str = Form(...), email: str = Form("")):
+def update_profile(request: Request, name: str = Form(...), email: str = Form(""), timezone: str = Form("")):
     user = current_user(request)
+    if timezone and timezone not in available_timezones():
+        return RedirectResponse("/profile?" + urlencode({"error": f"Unknown time zone '{timezone}'"}), 303)
+    prefs = {k: v for k, v in user.prefs.items() if k != "timezone"} | ({"timezone": timezone} if timezone else {})
     try:
-        users.update(user.id, name=name, email=email.strip() or None)
+        users.update(user.id, name=name, email=email.strip() or None, prefs=prefs)
     except users.UserError as e:
         return RedirectResponse("/profile?" + urlencode({"error": str(e)}), 303)
     return RedirectResponse("/profile?message=Saved", 303)

@@ -12,6 +12,10 @@ cd /path/to/tcgnecro
 The top bar switches between **Proxies** and **Decks**. Your profile name (top right)
 opens your profile page; **Sign out** is next to it.
 
+Dates and times are shown in your device's time zone. To use a fixed zone instead (for
+example on a computer whose clock is set to UTC), pick one under **Time zone** on your
+Profile page.
+
 ### Signing in
 
 The first time anyone opens the app, it asks for a name and creates the **admin**
@@ -128,7 +132,9 @@ Three columns: **filters | cards | your deck**.
 Decks imported from ArkhamDB stay **linked**: when the deck changes there, the change
 comes here.
 
-- **What syncs:** the cards, side deck and investigator choices. The name follows too,
+- **What syncs:** the cards, side deck, investigator choices and campaign experience
+  (shown as **XP to spend**: earned for the current upgrade, plus adjustments, minus
+  what ArkhamDB counts as spent). The name follows too,
   unless you've renamed the deck here. Your notes, who can see the deck, and the deck
   itself (its address here) are never touched.
 - **Upgrades are followed.** When you upgrade a deck with experience, ArkhamDB makes a

@@ -13,6 +13,7 @@ dependencies = [
     "pymupdf",
     "python-multipart",  # HTML form posts in the deck builder
     "itsdangerous",      # signed session cookies (Starlette SessionMiddleware)
+    "tzdata",            # time zone names where the OS has none (e.g. slim Docker images)
 ]
 
 [project.optional-dependencies]

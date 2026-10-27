@@ -184,3 +184,22 @@ def test_sync_all_and_cli(client, fake, capsys):
     fake["deck/100"] = remote(100, slots={"01006": 1, "01016": 1}, updated="2026-06-01T00:00:00+00:00")
     cli(["decks", "sync", a])
     assert "Updated to" in capsys.readouterr().out
+
+
+def test_campaign_experience_comes_from_arkhamdb(client, fake):
+    fake["deck/300"] = remote(300, xp=5, xp_spent=None, xp_adjustment=None)
+    deck_id = import_deck(client, "https://arkhamdb.com/deck/view/300")
+    deck = store.load(deck_id)
+    assert deck.meta["experience"] == {"earned": 5, "spent": 0, "adjustment": 0}
+
+    stats = {s.label: s for s in registry.plugin("ahlcg").stats(deck, registry.pool(db.connect(), "ahlcg"))}
+    assert stats["XP to spend"].value == "5" and "Earned 5" in stats["XP to spend"].title
+    assert "XP in deck" in stats and "XP" not in stats          # the two figures are told apart
+    assert 'title="Earned 5 for this upgrade' in client.get(f"/decks/{deck_id}").text
+
+    # Spending happens on ArkhamDB; the next sync brings the new figures.
+    fake["deck/300"] = remote(300, xp=5, xp_spent=7, xp_adjustment=1, updated="2026-07-01T00:00:00+00:00")
+    sync.sync_deck(deck_id)
+    deck = store.load(deck_id)
+    stats = {s.label: s for s in registry.plugin("ahlcg").stats(deck, registry.pool(db.connect(), "ahlcg"))}
+    assert stats["XP to spend"].value == "-1" and stats["XP to spend"].ok is False   # overspent

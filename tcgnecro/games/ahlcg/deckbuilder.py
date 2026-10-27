@@ -509,12 +509,24 @@ class AhlcgPlugin(DeckbuilderPlugin):
         size = self._deck_size(deck, identity, pool)
         counted = self._counted(deck, pool, identity)
         weaknesses = sum(q for cid, q in deck.slots.items() if (c := pool.get(cid)) and c.get("kind") == "weakness")
-        return [
+        stats = [
             Stat("Cards", f"{counted} / {size}", counted == size),
-            Stat("XP", str(self.xp(deck, pool))),
+            Stat("XP in deck", str(self.xp(deck, pool)),
+                 title="Total experience cost of the cards in the deck (exceptional cards count double)"),
+        ]
+        exp = deck.meta.get("experience")
+        if exp:
+            available = exp["earned"] + exp["adjustment"] - exp["spent"]
+            source = " (from ArkhamDB, as of the last sync)" if deck.sync else ""
+            stats.append(Stat(
+                "XP to spend", str(available), ok=False if available < 0 else None,
+                title=f"Earned {exp['earned']} for this upgrade, adjustment {exp['adjustment']:+d}, "
+                      f"spent {exp['spent']}{source}"))
+        stats += [
             Stat("Weaknesses", str(weaknesses)),
             Stat("Total incl. signatures", str(deck.total())),
         ]
+        return stats
 
     def actions(self, deck: Deck, pool: Pool) -> list[Action]:
         return [Action("random_weakness", "Draw random basic weakness")] if deck.identity else []
@@ -621,6 +633,15 @@ class AhlcgPlugin(DeckbuilderPlugin):
             meta = json.loads(meta) if meta.strip() else {}
         if data.get("taboo_id"):
             meta["taboo_id"] = data["taboo_id"]
+        # Campaign experience as ArkhamDB tracks it: earned for this upgrade
+        # (xp), spent on it (xp_spent, worked out by ArkhamDB against the
+        # previous version), and a manual adjustment.
+        if any(data.get(k) is not None for k in ("xp", "xp_spent", "xp_adjustment")):
+            meta["experience"] = {
+                "earned": int(data.get("xp") or 0),
+                "spent": int(data.get("xp_spent") or 0),
+                "adjustment": int(data.get("xp_adjustment") or 0),
+            }
 
         return RemoteDeck(
             name=data.get("name") or "Imported deck",

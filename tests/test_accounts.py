@@ -1,5 +1,7 @@
 """Profiles, sign-in and deck ownership."""
 
+import re
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -149,3 +151,25 @@ def test_admins_do_not_see_private_decks(app):
     bob_id = users.create("Bob").id
     store.save(Deck(id="b1", game="ahlcg", name="Bob's", owner=bob_id))
     assert sign_in(app, "Alice").get("/decks/b1/export.json").status_code == 404
+
+
+def test_time_zone_preference(app):
+    users.create("Alice")
+    alice = sign_in(app, "Alice")
+    store.save(Deck(id="t1", game="ahlcg", name="Timed", owner=users.by_name("Alice").id))
+
+    page = alice.get("/profile").text
+    assert "Automatic: this device's time zone" in page and ">America/New_York<" in page
+    assert alice.post("/profile", data={"name": "Alice", "timezone": "Mars/Olympus"},
+                      follow_redirects=False).headers["location"].startswith("/profile?error=")
+    alice.post("/profile", data={"name": "Alice", "timezone": "America/New_York"})
+    assert users.by_name("Alice").prefs["timezone"] == "America/New_York"
+
+    decks = alice.get("/decks").text
+    assert 'data-tz="America/New_York"' in decks
+    # Saving stamps the deck with the current time; it's rendered in New York time.
+    assert re.search(r'<time datetime="[^"]+" data-fmt="datetime">\d{4}-\d\d-\d\d \d\d:\d\d E[DS]T</time>', decks)
+
+    alice.post("/profile", data={"name": "Alice", "timezone": ""})     # back to automatic
+    assert "timezone" not in users.by_name("Alice").prefs
+    assert 'data-tz=""' in alice.get("/decks").text

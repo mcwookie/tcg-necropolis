@@ -165,6 +165,7 @@ class Stat:
     label: str
     value: str
     ok: bool | None = None  # None: neutral, True: good, False: needs attention
+    title: str | None = None  # tooltip with more detail
 
 
 @dataclass

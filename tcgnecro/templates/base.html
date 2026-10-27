@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="/static/app.css">
 <script src="/static/htmx.min.js"></script>
 </head>
-<body>
+<body data-tz="{{ user_timezone(request) or '' }}">
 {#
   Site layout. Pages set `nav` to "proxies" / "decks" / "" to highlight the
   menu. request.state.user is the signed-in profile (None on /login).
@@ -61,6 +61,30 @@
     thumb.style.left = x + 'px';
     thumb.style.top = Math.max(10, Math.min(e.clientY - 40, innerHeight - h - 10)) + 'px';
   });
+
+  // Timestamps (<time datetime>, from when() in templating.py) shown in the
+  // viewer's time zone: their profile's choice, else this device's.
+  // data-fmt="title" keeps the text (e.g. "5 min ago") and puts the time on hover.
+  function localizeTimes() {
+    const zone = document.body.dataset.tz || undefined;
+    // (dateStyle/timeStyle can't be combined with timeZoneName, so the parts are spelled out.)
+    const DATE = { year: 'numeric', month: 'short', day: 'numeric' };
+    const DATETIME = { ...DATE, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' };
+    document.querySelectorAll('time[datetime]').forEach(t => {
+      const moment = new Date(t.getAttribute('datetime'));
+      if (isNaN(moment)) return;
+      const style = t.dataset.fmt === 'date' ? DATE : DATETIME;
+      let text;
+      try { text = new Intl.DateTimeFormat(undefined, { ...style, timeZone: zone }).format(moment); }
+      catch {
+        try { text = new Intl.DateTimeFormat(undefined, style).format(moment); }   // unknown zone name
+        catch { return; }                                                         // keep the server's text
+      }
+      if (t.dataset.fmt === 'title') t.title = text; else t.textContent = text;
+    });
+  }
+  localizeTimes();
+  document.body.addEventListener('htmx:afterSettle', localizeTimes);
 </script>
 </body>
 </html>

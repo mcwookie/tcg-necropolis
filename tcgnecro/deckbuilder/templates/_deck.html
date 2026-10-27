@@ -36,7 +36,7 @@
   {% endfor %}
 
   <div class="stats">
-    {% for st in stats %}<span><span class="muted">{{ st.label }}</span> <b class="ok-{{ st.ok|lower if st.ok is not none }}">{{ st.value }}</b></span>{% endfor %}
+    {% for st in stats %}<span{% if st.title %} title="{{ st.title }}"{% endif %}><span class="muted">{{ st.label }}</span> <b class="ok-{{ st.ok|lower if st.ok is not none }}">{{ st.value }}</b></span>{% endfor %}
     {% if not_owned is not none %}<span title="Copies of cards outside your collection (including signatures and weaknesses)"><span class="muted">Not owned</span> <b>{{ not_owned }}</b></span>{% endif %}
   </div>
 
@@ -91,7 +91,7 @@
   <div class="sync-box {{ s.status }}">
     <div>Synced with <a href="{{ s.url }}" target="_blank" rel="noopener">{{ s.provider_name }}</a>
       {%- if s.version %} · version {{ s.version }}{% endif %}
-      <span class="muted">· checked {{ ago(s.last_checked) }}</span></div>
+      <span class="muted">· checked <time datetime="{{ s.last_checked }}" data-fmt="title">{{ ago(s.last_checked) }}</time></span></div>
     {% if can_edit and (local_changes or s.status == "local-changes") %}
       <div class="warn">You've changed the cards here since the last sync, so automatic syncing is paused.
         Syncing now replaces your changes with {{ s.provider_name }}'s version.</div>
