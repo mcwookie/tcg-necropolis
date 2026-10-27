@@ -6,14 +6,18 @@ license = "AGPL-3.0-only"
 license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = [
-    "fastapi",
-    "uvicorn",
-    "jinja2",
-    "pillow",
-    "pymupdf",
-    "python-multipart",  # HTML form posts in the deck builder
-    "itsdangerous",      # signed session cookies (Starlette SessionMiddleware)
-    "tzdata",            # time zone names where the OS has none (e.g. slim Docker images)
+    # Upper bounds stop a new major version reaching the Docker image untested.
+    # Raise them deliberately, after running the tests (docs/DOCKER.md).
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.30,<1",
+    "jinja2>=3.1,<4",
+    "pillow>=11,<13",
+    # 2.0 added a bundled ML layout module (numpy, onnxruntime) that we don't
+    # use, and current numpy needs an x86-64-v2 CPU, which some servers lack.
+    "pymupdf>=1.24,<2",
+    "python-multipart>=0.0.9,<1",  # HTML form posts in the deck builder
+    "itsdangerous>=2,<3",          # signed session cookies (Starlette SessionMiddleware)
+    "tzdata",                      # time zone names where the OS has none (e.g. slim Docker images)
 ]
 
 [project.optional-dependencies]
