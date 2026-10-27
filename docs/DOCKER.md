@@ -111,8 +111,17 @@ they never get committed.
 Actions tab):
 
 1. **test:** installs the app and runs `pytest`. A failing test stops the release.
-2. **image:** builds for `linux/amd64` and `linux/arm64`, then pushes
-   `ghcr.io/mcwookie/tcg-necropolis:latest` and `:sha-<commit>`.
+2. **image:** builds the amd64 image and checks it starts on an older x86-64 CPU
+   (`deploy/check-old-cpu.sh`, below). Only then does it build for `linux/amd64` and
+   `linux/arm64` and push `ghcr.io/mcwookie/tcg-necropolis:latest` and `:sha-<commit>`.
+
+**The old-CPU check.** Some servers have CPUs without x86-64-v2 instructions, and
+packages built for newer CPUs crash or hang there at start-up. That happened once:
+PyMuPDF 2.0 pulled in a NumPy that needs x86-64-v2, so `pyproject.toml` now caps each
+dependency's major version. The check runs the image's Python on an emulated x86-64-v1
+CPU and imports the app, which takes about 20 seconds. Run it yourself on any image with
+`deploy/check-old-cpu.sh IMAGE`. When raising a version cap in `pyproject.toml`, this is
+what tells you whether the new version still runs on those servers.
 
 It needs no secrets; it uses the workflow's built-in `GITHUB_TOKEN`.
 
@@ -188,5 +197,6 @@ copies of users' work. A provider snapshot or nightly `tar` (as in
 | `docker compose pull` says *denied* or *unauthorized* | The GHCR package is still private. See "Publishing images" |
 | Caddy fails to start: *is a directory* | `deploy/caddy-users` didn't exist when Caddy first started. `rm -r deploy/caddy-users`, create the file, `docker compose up -d` |
 | Signed out after every page | `TCGNECRO_SECURE_COOKIES=1` but the site is used over plain `http://` |
+| `RuntimeError: NumPy was built with baseline optimizations (X86_V2)…`, or a crash right after "Loading card catalogs" | The server's CPU lacks x86-64-v2 and a dependency needs it. Pin the previous build (`TCGNECRO_IMAGE=…:sha-<commit>`) and see "The old-CPU check" |
 | Container restarting, `unhealthy` | `docker compose logs app`. The first start after adding big collections takes longer while indexing |
 | Timer runs but nothing updates | `journalctl -u tcgnecro-update`: a `git pull` conflict from local edits to tracked files, or the user isn't in the `docker` group |

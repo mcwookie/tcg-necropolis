@@ -1,5 +1,6 @@
-# On every push to main: run the tests, then build the container image and
-# publish it to GitHub Container Registry as
+# On every push to main: run the tests, check the image starts on an older
+# x86-64 CPU (deploy/check-old-cpu.sh), then publish it to GitHub Container
+# Registry as
 #   ghcr.io/<owner>/<repo>:latest    and    :sha-<commit>
 # Servers pick up :latest with deploy/update.sh (see docs/DOCKER.md).
 name: Docker image
@@ -51,7 +52,21 @@ jobs:
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=sha-
-      - uses: docker/build-push-action@v7
+      # Gate: the image must start on an older x86-64 CPU (no x86-64-v2), as
+      # some servers have. Build amd64 onto the runner, check it, and only then
+      # publish. The publish step below reuses this build's cache.
+      - name: Build amd64 image for the CPU check
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: tcgnecro:check
+          cache-from: type=gha
+      - name: Check it starts on an x86-64-v1 CPU
+        run: deploy/check-old-cpu.sh tcgnecro:check
+      - name: Build and publish
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64,linux/arm64
