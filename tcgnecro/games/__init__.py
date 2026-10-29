@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from importlib import import_module
 from pathlib import Path
 
-GAME_MODULES = ["ahlcg", "meccg", "swlcg", "city_of_heroes"]
+GAME_MODULES = ["ahlcg", "meccg", "swlcg", "city_of_heroes", "marvel_champions"]
 
 
 @dataclass
