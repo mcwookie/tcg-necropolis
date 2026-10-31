@@ -120,31 +120,52 @@ Trust plan (up to 50 users).
 browser ──HTTPS──► Cloudflare ── Access sign-in ── tunnel ──► cloudflared ──► app:8000
 ```
 
-1. **Create the tunnel.** Zero Trust dashboard → Networks → Tunnels → create a
-   *Cloudflared* tunnel (e.g. `tcgnecro`). Copy its token; skip the install steps.
-2. **Give the tunnel a public hostname**, e.g. `necro.example.com`, with service
-   `http://app:8000` (the app's name on the compose network).
-3. **Protect that hostname with Access** *before* sharing it: Access → Applications →
-   add a *self-hosted* application for `necro.example.com`, with a policy that allows
-   your friends' email addresses. Choose the login methods under Settings →
-   Authentication (the emailed one-time code needs no setup). Copy the application's
-   **Audience (AUD) tag** from its settings.
-4. **Fill in `.env`** next to `compose.yaml`:
+Cloudflare moves these screens around; the names below are as of late 2026.
+
+1. **Create the tunnel.** Main dashboard → **Networking → Tunnels** (or Zero Trust →
+   Networks → Connectors) → create a tunnel of type **Cloudflared**, e.g. `tcgnecro`.
+   Copy its **token**: under install/add a connector, pick Docker; the token is the long
+   string after `--token` (it starts `eyJ`). The 36-character **tunnel ID** is not the
+   token. Skip the install command itself; the `tunnel` service runs cloudflared.
+2. **Add a route**: in the tunnel, add a **Published application** route: subdomain
+   (e.g. `necro`), your domain, service type **HTTP**, URL **`app:8000`**, typed as is:
+   `app` is the app's service name on the compose network. Saving it creates the DNS
+   record (the domain's DNS must be on Cloudflare).
+3. **Protect that hostname with Access** *before* sharing it: Zero Trust → Access
+   controls → Applications → add a **Self-hosted** application of type **Public DNS** for
+   the same hostname, with an **Allow** policy that includes your friends' email
+   addresses.
+   - **Login methods:** new Zero Trust accounts start with only **Cloudflare** (signing
+     in with a Cloudflare account). Friends without one need the emailed **One-time
+     PIN**: add it under Settings → Authentication (or Integrations → Identity
+     providers), then tick it on the application. Leave MFA off unless you want it.
+   - Copy the application's **Audience (AUD) tag**: the application's Configure →
+     Additional settings. Your **team name** is the first part of your team domain
+     (`<team>.cloudflareaccess.com`, under Zero Trust settings).
+4. **Give every profile its email**: Profile → Profiles (admins can edit each one), or
+   `tcgnecro user email "Friend" friend@example.com`. The email must match the one
+   they sign in to Cloudflare with. **Do your own first**, before step 6, or you'll be
+   locked out (recovery: `docker compose exec app tcgnecro user email NAME EMAIL`). On a
+   fresh install with no profiles, the first person through Access creates the admin
+   profile with their email.
+5. **Fill in `.env`** next to `compose.yaml`:
 
    ```
    CLOUDFLARE_TUNNEL_TOKEN=eyJh...
    TCGNECRO_CF_ACCESS_TEAM=myteam          # the "myteam" in myteam.cloudflareaccess.com
    TCGNECRO_CF_ACCESS_AUD=4714c1358e65...  # the application's audience tag
    TCGNECRO_SECURE_COOKIES=1
+   COMPOSE_PROFILES=tunnel                 # so updates keep the tunnel running
    ```
 
-5. **Give every profile its email**: Profile → Profiles (admins can edit each one), or
-   `tcgnecro user email "Friend" friend@example.com`. The email must match the one
-   they sign in to Cloudflare with. **Do your own first**, before step 6, or you'll be
-   locked out. (On a fresh install with no profiles, the first person through Access
-   creates the admin profile with their email.)
-6. **Start it:** `docker compose --profile tunnel up -d` (or add `tunnel` to
-   `COMPOSE_PROFILES` in `.env` so the update job keeps it running).
+6. **Start it:** `docker compose up -d`. `docker logs tcgnecro-tunnel-1` should show
+   "Registered tunnel connection" (four times) and the tunnel turns **Healthy**. A
+   "failed to sufficiently increase receive buffer size" line is harmless.
+
+**If something's off:** "Provided Tunnel token is not valid" means the tunnel ID (or a
+truncated token) went in `.env`; error **1033** in the browser means no cloudflared is
+connected (the `tunnel` service isn't running or can't sign in). After any `.env`
+change, `docker compose up -d` recreates what changed.
 
 Once `TCGNECRO_CF_ACCESS_*` are set, the app refuses every request that doesn't carry a
 valid Access token, including direct visits to its port on your network: use the
