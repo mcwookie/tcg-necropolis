@@ -2,7 +2,7 @@
 
 The catalog is static JSON bundled alongside this module,
 since there is no maintained online source. Edit the JSON to add or correct
-packs, then run `tcgnecro catalog meccg` (see docs/UPDATING_GAMES.md).
+packs, then run `tcgnecro catalog city_of_heroes` (see docs/UPDATING_GAMES.md).
 
 coh_packs.json, one object per pack:
     code          pack id, used in image names ("the-wizards")
@@ -17,6 +17,14 @@ coh_cards.json, one object per card:
     number        card position in the pack
     type          edge, enhancement, hero, mission, sig power, power, sidekick
     rarity        rarity (common, uncommon, rare, battle pack)
+    image         scan filename on the Homecoming wiki
+  For the deck builder (from the Homecoming wiki's card pages; null/[] when
+  a card has none):
+    text, inspiration, archetype, travel, accuracy, defense, health, recharge
+    powersets         a super's powersets, or a power's own powerset
+    starting_powers   a hero's two starting powers, by name
+    prereq            printed requirement ("Requires 2 Archery Powers.")
+    signature_hero    the hero a signature power requires, by name
 """
 
 import json
@@ -41,6 +49,7 @@ def load_catalog(refresh: bool = False) -> Catalog:
             c["id"],
             c["name"],
             "back",  # all cards have the same back
+            c,       # for the deck builder
         ))
         catalog.versions.append(CardVersion(c["id"], c["pack_code"], c["number"]))
     return catalog

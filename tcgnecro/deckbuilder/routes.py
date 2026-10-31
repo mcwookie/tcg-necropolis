@@ -28,7 +28,7 @@ from tcgnecro import db, ownership, users
 from tcgnecro.auth import current_user
 from tcgnecro.decklist import CardRequest, resolve
 from tcgnecro.deckbuilder import filters, registry, store, sync
-from tcgnecro.deckbuilder.model import VISIBILITIES, Deck, DeckCard
+from tcgnecro.deckbuilder.model import MAIN, VISIBILITIES, Deck, DeckCard
 from tcgnecro.games import card_backs
 from tcgnecro.pdf import CUT_LINES, LAYOUTS, PAGE_SIZES, PdfOptions, generate_pdf
 from tcgnecro.templating import templates
@@ -85,22 +85,31 @@ def _deck_context(request: Request, deck: Deck, plugin, pool, message: str | Non
     problems = plugin.validate(deck, pool)
     flagged = {cid for p in problems for cid in p.card_ids}
     owned = _owned(request, deck.game, pool)
-    groups: dict[str, list[tuple[DeckCard, int]]] = {}
-    for card_id, qty in deck.slots.items():
-        card = pool.get(card_id)
-        if card:
-            groups.setdefault(plugin.group_of(card), []).append((card, qty))
-    ordered = [
-        (plugin.config.group_label(g), sum(q for _, q in rows),
-         sorted(rows, key=lambda r: filters._sort_value(r[0].name)))
-        for g, rows in sorted(groups.items(), key=lambda kv: plugin.config.group_order(kv[0]))
-    ]
+    def grouped(slots: dict[str, int]):
+        groups: dict[str, list[tuple[DeckCard, int]]] = {}
+        for card_id, qty in slots.items():
+            card = pool.get(card_id)
+            if card:
+                groups.setdefault(plugin.group_of(card), []).append((card, qty))
+        return [
+            (plugin.config.group_label(g), sum(q for _, q in rows),
+             sorted(rows, key=lambda r: filters._sort_value(r[0].name)))
+            for g, rows in sorted(groups.items(), key=lambda kv: plugin.config.group_order(kv[0]))
+        ]
+
+    ordered = grouped(deck.slots)
+    # Games with more than one part to a deck (MECCG): each extra part listed
+    # under its own heading, after the main one.
+    parts = [(s.key, s.label, deck.total(s.key), grouped(deck.sections.get(s.key, {})))
+             for s in plugin.sections()]
     return {
         "deck": deck,
         "plugin": plugin,
         "pool": pool,
         "identity": pool.get(deck.identity) if deck.identity else None,
         "groups": ordered,
+        "parts": parts,
+        "main_label": plugin.main_label() if parts else None,
         "problems": problems,
         "flagged": flagged,
         "stats": plugin.stats(deck, pool),
@@ -126,9 +135,11 @@ def _card_rows(request: Request, deck: Deck, plugin, pool, offset: int = 0) -> d
     values = filters.parse(plugin.config, request.query_params,
                            overrides={"owned": True} if owned is not None else None)
     sort_key = request.query_params.get("sort")
+    section = _section(plugin, request.query_params.get("section"))
     cards = filters.sort(filters.apply(plugin, values, deck, pool, owned), plugin.config, sort_key)
     size = plugin.config.page_size
-    qs = filters.query_string(plugin.config, values) + ([("sort", sort_key)] if sort_key else [])
+    qs = (filters.query_string(plugin.config, values) + ([("sort", sort_key)] if sort_key else [])
+          + ([("section", section)] if section != MAIN else []))
     return {
         "deck": deck,
         "plugin": plugin,
@@ -139,16 +150,27 @@ def _card_rows(request: Request, deck: Deck, plugin, pool, offset: int = 0) -> d
         "next_offset": offset + size if offset + size < len(cards) else None,
         "query": urlencode(qs),
         "values": values,
+        "section": section,
+        "sections": [(MAIN, plugin.main_label())] + [(x.key, x.label) for x in plugin.sections()]
+                    if plugin.sections() else [],
         "sort_key": sort_key or (plugin.config.sorts[0].key if plugin.config.sorts else None),
         "owned": owned,
         "can_edit": deck.editable_by(current_user(request)),
     }
 
 
+def _section(plugin, key: str | None) -> str:
+    """A section key the game has, else MAIN."""
+    return key if key and any(s.key == key for s in plugin.sections()) else MAIN
+
+
 def _deck_fragment(request: Request, deck: Deck, plugin, pool, changed: list[str] = (),
-                   message: str | None = None, refresh_list: bool = False) -> HTMLResponse:
-    """The deck panel, plus fresh +/- controls for `changed` cards in the list."""
-    ctx = _deck_context(request, deck, plugin, pool, message) | {"changed": [pool.get(c) for c in changed]}
+                   message: str | None = None, refresh_list: bool = False,
+                   section: str = MAIN) -> HTMLResponse:
+    """The deck panel, plus fresh +/- controls for `changed` cards in the list
+    (which shows counts for `section`)."""
+    ctx = _deck_context(request, deck, plugin, pool, message) | {
+        "changed": [pool.get(c) for c in changed], "list_section": section}
     response = templates.TemplateResponse(request, "_deck.html", ctx)
     if refresh_list:
         response.headers["HX-Trigger"] = "filtersChanged"
@@ -266,21 +288,29 @@ def card_detail(request: Request, deck_id: str, card_id: str):
 
 
 @router.post("/{deck_id}/slots/{card_id}", response_class=HTMLResponse)
-def change_count(request: Request, deck_id: str, card_id: str, delta: int = 0, to: int | None = None):
-    """Add/remove copies: ?delta=1 / ?delta=-1, or ?to=N. Clamped to 0..max copies."""
+def change_count(request: Request, deck_id: str, card_id: str, delta: int = 0, to: int | None = None,
+                 section: str = MAIN, list_section: str | None = None):
+    """Add/remove copies: ?delta=1 / ?delta=-1, or ?to=N. Clamped to 0..max
+    copies. ?section= picks the part of the deck for games with several
+    (plugin.sections()); ?list_section= is the part the card list shows."""
     deck = _load(request, deck_id, edit=True)
     plugin, pool = _game(deck.game)
     card = pool.get(card_id)
     if card is None:
         raise HTTPException(404, "No such card")
+    section = _section(plugin, section)
 
     def change(d: Deck):
-        current = d.count(card.id)
+        current = d.count(card.id, section)
         wanted = to if to is not None else current + delta
-        d.set_count(card.id, max(0, min(wanted, plugin.max_copies(card, d))))
+        if wanted > current:   # adding is capped; removing always works, even over the limit
+            limit = plugin.section_limit(card, d, section) if plugin.allowed_in(card, section) else 0
+            wanted = min(wanted, max(current, limit))
+        d.set_count(card.id, max(0, wanted), section)
 
     deck = store.update(deck_id, change)
-    return _deck_fragment(request, deck, plugin, pool, changed=[card.id])
+    return _deck_fragment(request, deck, plugin, pool, changed=[card.id],
+                          section=_section(plugin, list_section if list_section is not None else section))
 
 
 @router.post("/{deck_id}/meta", response_class=HTMLResponse)

@@ -24,6 +24,13 @@ meccg_cards.json, one object per card:
                   "(pack-code #number)": "Angmarim (against-the-shadow #58)".
                   Titles match ignoring case and punctuation, so names that
                   differ only in capitals still need a suffix.
+  For the deck builder, from the Council of Elrond's card database
+  (github.com/council-of-elrond-meccg/meccg-cards-database; credit it if you
+  redistribute): unique, avatar, agent, subtype ("Creature", "Minor Item"...),
+  keywords, spawn, race, skills, mind, direct_influence, prowess, body,
+  marshalling_points, marshalling_type, specific (the avatar or race a card
+  is for), stage_points, site_type ("{H}" for havens), playable_as_resource,
+  playable_as_hazard, starting_minor_item, home_site, under_deeps, text (plain).
 """
 
 import json
@@ -61,6 +68,7 @@ def load_catalog(refresh: bool = False) -> Catalog:
             c["unique_id"],
             c["label"],
             back_group_for(c["card_type"]),
+            {k: v for k, v in c.items() if k != "label"},   # for the deck builder
         ))
         catalog.versions.append(CardVersion(c["unique_id"], c["pack_code"], c["card_number"]))
     return catalog

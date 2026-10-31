@@ -18,6 +18,16 @@ swlcg_cards.json, one object per card:
     affiliation             e.g. Jedi, Sith, Neutral
     objective_set_number    objective set the card belongs to, or null
     objective_set_sequence  position within the set (1-6), or null
+    affiliation_lock        the affiliation an objective is locked to
+                            ("[Jedi] affiliation only"), or null
+    is_unique               unique card
+    is_limited              objective says "Limit 1 per objective deck"
+    cost, force_icons, resource_value, damage_capacity, edge_priority,
+    combat_icons, edge_combat_icons ({unit, blast, tactics}), traits, text
+                            printed values, for the deck builder; null when
+                            the card has none
+
+The rules fields came from the community swlcg-json data set.
 """
 
 import json
@@ -52,6 +62,7 @@ def load_catalog(refresh: bool = False) -> Catalog:
             c["unique_id"],
             c["label"],
             back_group_for(c["pack_code"], c["side"], c["objective_set_number"]),
+            {k: v for k, v in c.items() if k != "label"},   # for the deck builder
         ))
         position = int(c["unique_id"]) if c["unique_id"].isdigit() else None
         catalog.versions.append(CardVersion(c["unique_id"], c["pack_code"], position))

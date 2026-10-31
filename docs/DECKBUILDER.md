@@ -89,6 +89,23 @@ Only `build_card` is required. Every other hook has a default that gives a plain
 | `sync_link(source) -> dict \| None` | `None` | If an import URL can be kept in sync, the link to store (provider, kind, remote_id) |
 | `fetch_remote(link, pool) -> RemoteDeck` | not supported | The newest version of a linked deck, following the site's upgrade chain |
 | `print_list(deck)` | identity + slots | What "Print proxies" prints |
+| `sections() -> [Section]` | `[]` | Parts of a deck besides the main one (MECCG's location deck, sideboard, pool). See "Deck sections" below |
+| `main_label()` | `"Deck"` | Name of the main part when there are sections |
+| `allowed_in(card, section)` | `True` | Whether a card can go in a part at all (`MAIN` is the main part) |
+| `section_limit(card, deck, section)` | `max_copies` less copies in the other parts | Caps the + button in one part |
+
+### Deck sections
+
+Most games build one deck. A game whose decks have several parts lists the extra parts
+in `sections()`; the main part stays `deck.slots` and is called `main_label()`, and each
+extra part is `deck.sections[key]` (`Deck.count(id, section)`, `set_count(id, qty,
+section)`, `total(section)`, `all_counts()`; `model.MAIN` names the main part).
+
+On the page, an **Add to** choice appears above the filters; the card list's + and −
+change that part, and the deck panel lists each part under its own heading with its own
+controls. The +/− route takes `?section=` (and `?list_section=`, the part the list shows,
+so its controls refresh correctly). The plugin decides what goes where (`allowed_in`),
+the per-part limits (`section_limit`), and what prints (`print_list`).
 
 Rules for plugins:
 
@@ -181,13 +198,14 @@ How filters reach the server: the form sends each filter as query parameters (`f
 
 ```json
 {
-  "format": 3,
+  "format": 4,
   "id": "0d9269855fcb",
   "game": "ahlcg",
   "name": "Zoey - Dunwich",
   "identity": "02001",
   "slots": {"01020": 2, "02006": 1},
   "side_slots": {},
+  "sections": {},
   "meta": {"faction_selected": "seeker", "taboo_id": 8},
   "notes": "",
   "source": "https://arkhamdb.com/decklist/view/55482/x",
@@ -203,6 +221,8 @@ How filters reach the server: the form sends each filter as query parameters (`f
 }
 ```
 
+`sections` holds the extra parts of a deck for games that have them (format 4; MECCG:
+`{"location": {...}, "sideboard": {...}, "pool": {...}}`); older decks load with none.
 `owner` is a profile id from `data/users.json`, and `visibility` is `private` or `shared`
 (see [ACCOUNTS.md](ACCOUNTS.md)). Format-1 decks, saved before profiles existed, have
 neither field and load as unowned and private.
@@ -365,7 +385,75 @@ twice); MarvelCDB lets them be published anyway.
 
 Not yet: MarvelCDB's "current" format (legacy packs excluded) and campaign-mode cards.
 
+## The Star Wars LCG rules (`games/swlcg/deckbuilder.py`)
+
+Decks are built from **objective sets**: an objective and the five command cards
+printed with it, always together. So the builder's "cards" are sets: the pool holds one
+entry per set (its objective, with the set's cards in `attrs["members"]`), and slots
+count sets. Command cards are in the pool too (kind `command`, hidden from the list) only
+so printing and image checks find them. **Print** expands each set into its six cards.
+
+From the Core Set rulebook:
+
+- The identity is an **affiliation** card (all three printings of each are offered);
+  it fixes the side.
+- **At least 10 sets**, all from that side. Any affiliation's sets are allowed unless the
+  objective says "[affiliation] affiliation only" (`affiliation_lock`).
+- **At most 2 copies** of a set, or 1 if it says "Limit 1 per objective deck"
+  (`is_limited`).
+
+The sets are searchable by every card in them, and filterable by what they contain and
+their Force icons. Balance of the Force's multiplayer objectives (outside numbered sets)
+follow that expansion's own rules and aren't offered.
+
+## The City of Heroes rules (`games/city_of_heroes/deckbuilder.py`)
+
+From the Technical Rules (v0.545, rules 103.1 and 506.2):
+
+- The identity is the **hero**. Its two **starting powers** are added when the deck is
+  started.
+- **At least 40 cards** besides the hero and one copy of each starting power; no maximum;
+  **at most 3 copies** of a card. A deck has only one hero.
+- **Warnings** (legal, but probably not wanted): another hero's **signature power**, and
+  a power no super in the deck has the powerset for (the hero's and any sidekick's in the
+  deck; "Common Pool" powers count as usable by anyone, which the rules don't spell out).
+
+"Only cards my hero can take" hides other heroes and their signature powers; "Only powers
+my supers can use" applies the powerset check.
+
+## The Middle-earth CCG rules (`games/meccg/deckbuilder.py`)
+
+From the Council of Elrond's Official Game Rules (deck construction, 1.3-1.7). A deck has
+no identity card: **Playing as** (Wizard, Ringwraith, Fallen-wizard, Balrog) and **Game
+length** are choices, and the deck has four parts (deck sections): the **play deck**
+(main), **location deck**, **sideboard** and **pool**.
+
+- **Play deck:** 30-50 resources and as many hazards (cards playable as either count as
+  either), up to 10 non-avatar characters, up to 3 avatars (not three different ones), and
+  at least 12 creatures, with agents-as-hazards, "Ahunt"/"at Home" Dragons, creatures also
+  playable as events and Spawn permanent-events counting half.
+- **Location deck:** sites only; any number of havens, one of each other site.
+- **Sideboard:** at most 30, 35 or 40 cards by game length.
+- **Pool:** up to 10 non-avatar characters and 2 non-unique, non-hoard minor items; for a
+  Fallen-wizard, Stage resources worth exactly 3 stage points (at least one non-unique).
+- **Across play deck, sideboard and pool:** one copy of a unique non-avatar card, three of
+  a non-unique card (Fallen-wizard: two of characters and hero/minion resources), havens
+  exempt; agents' total mind at most 36; avatar-specific cards need that avatar.
+- **By alignment** (`_allowed`): which avatars, characters (Balrog: minion Orcs and Trolls,
+  mind under 9), resources (hero/minion, the other side's items, Stage for Fallen-wizards,
+  Balrog's faction races) and sites (including the five shared Balrog sites and the minion
+  sites a Balrog needs its own version of) each may use, and the Fallen-wizard and Balrog
+  banned lists. Agents count as hazards for Wizards and Balrogs, characters otherwise.
+
+Not checked: the 10 extra sideboard cards against Fallen-wizard opponents, the
+Fallen-wizard two-copies split for hazards played as resources, and the starting-company
+draft (a game-time choice).
+
 ## Tests
+
+`tests/test_swlcg_deckbuilder.py`, `tests/test_city_of_heroes_deckbuilder.py` and
+`tests/test_meccg_deckbuilder.py` cover those games' rules the same way; the MECCG tests
+also cover deck sections end to end through the web routes.
 
 `tests/test_marvel_deckbuilder.py` does the same for Marvel Champions (hero sets,
 aspects, Spider-Woman, Adam Warlock, Gamora's limit, MarvelCDB code mapping, printing

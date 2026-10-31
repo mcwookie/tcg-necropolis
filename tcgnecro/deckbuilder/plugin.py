@@ -12,7 +12,8 @@ from markupsafe import Markup
 
 from tcgnecro.deckbuilder import markup
 from tcgnecro.deckbuilder.config import GameConfig
-from tcgnecro.deckbuilder.model import Action, Deck, DeckCard, Pool, Problem, RemoteDeck, Selection, Stat
+from tcgnecro.deckbuilder.model import (MAIN, Action, Deck, DeckCard, Pool, Problem, RemoteDeck, Section,
+                                       Selection, Stat)
 
 
 class DeckbuilderPlugin:
@@ -68,6 +69,27 @@ class DeckbuilderPlugin:
     def max_copies(self, card: DeckCard, deck: Deck) -> int:
         """Upper bound for the + button."""
         return int(card.get("deck_limit") or self.config.default_copies)
+
+    # ----- sections (games whose decks have several parts) -------------------
+
+    def sections(self) -> list[Section]:
+        """Parts of a deck besides the main one, e.g. MECCG's location deck,
+        sideboard and pool. Default: none, so a deck is just its main part."""
+        return []
+
+    def main_label(self) -> str:
+        """What the main part is called when a game has sections."""
+        return "Deck"
+
+    def allowed_in(self, card: DeckCard, section: str) -> bool:
+        """Can this card go in this section at all (MAIN for the main part)?"""
+        return True
+
+    def section_limit(self, card: DeckCard, deck: Deck, section: str) -> int:
+        """Upper bound for the + button in one section. Default: the card's
+        max_copies, less any copies in the deck's other parts."""
+        elsewhere = sum(q for cid, q in deck.all_counts().items() if cid == card.id) - deck.count(card.id, section)
+        return max(0, self.max_copies(card, deck) - elsewhere)
 
     def validate(self, deck: Deck, pool: Pool) -> list[Problem]:
         problems = []

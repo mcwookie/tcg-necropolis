@@ -3,9 +3,8 @@
 Build decks and print proxies for out-of-print card games, using your own card scans.
 
 - **Proxies:** pick cards from packs (or paste a decklist), set how many of each, and get a print-and-play PDF.
-- **Decks:** a deck builder with per-game rules, filters and validation. It currently
-  supports Arkham Horror: The Card Game and Marvel Champions, and any deck goes straight
-  to the proxy printer.
+- **Decks:** a deck builder with per-game rules, filters and validation for every game
+  here, and any deck goes straight to the proxy printer.
 - **Profiles:** each person signs in to their own profile and owns their decks, which
   they can keep private or share read-only with everyone on the server.
 - **Collection:** tick the packs you own, per game. The deck builder can then show only
@@ -19,8 +18,9 @@ Proxy Nexus `.pnx` collection files as-is.
 |---|---|---|---|
 | Arkham Horror: The Card Game (`ahlcg`) | yes | yes | ArkhamDB, downloaded and cached |
 | Marvel Champions (`marvel_champions`) | yes | yes | MarvelCDB, downloaded and cached |
-| Star Wars LCG (`swlcg`) | yes | not yet | bundled JSON |
-| Middle-earth CCG (`meccg`) | yes | not yet | bundled JSON |
+| Star Wars LCG (`swlcg`) | yes | yes (objective sets) | bundled JSON |
+| Middle-earth CCG (`meccg`) | yes | yes (play deck, location deck, sideboard, pool) | bundled JSON |
+| City of Heroes CCG (`city_of_heroes`) | yes | yes | bundled JSON |
 
 ## Quick start
 
@@ -48,7 +48,7 @@ trust.** Real sign-in for internet access is planned; see
 |---|---|
 | [docs/USAGE.md](docs/USAGE.md) | Using the web app and the CLI, decklist syntax, where data lives, backups |
 | [docs/ACCOUNTS.md](docs/ACCOUNTS.md) | Profiles, sign-in, deck ownership and sharing, managing profiles |
-| [docs/DECKBUILDER.md](docs/DECKBUILDER.md) | How the deck builder works: plugins, the TOML config reference, the Arkham and Marvel rules engines |
+| [docs/DECKBUILDER.md](docs/DECKBUILDER.md) | How the deck builder works: plugins, the TOML config reference, each game's rules |
 | [docs/DOCKER.md](docs/DOCKER.md) | Docker image and compose, HTTPS with Caddy, automatic updates from `main` |
 | [docs/DEPLOY_VPS.md](docs/DEPLOY_VPS.md) | Hosting it on a rented server: HTTPS, a password gate, backups, updates |
 | [docs/UPDATING_GAMES.md](docs/UPDATING_GAMES.md) | Keeping a game current: new expansions, new images, new rules |
@@ -115,3 +115,13 @@ scans, and card text are the property of their publishers (Fantasy Flight Games 
 Asmodee). They are not covered by this license. Card data for Arkham Horror is
 downloaded from [ArkhamDB](https://arkhamdb.com) at run time and is not part of this
 repository.
+
+The bundled card data builds on community work:
+
+- Star Wars LCG rules fields: [swlcg-json](https://github.com/jgornick/swlcg-json),
+  released into the public domain.
+- Middle-earth CCG rules fields and card text: the Council of Elrond's
+  [MeCCG Cards Database](https://github.com/council-of-elrond-meccg/meccg-cards-database),
+  used under its terms, which ask projects to credit it (here) and to notify the Council.
+- City of Heroes CCG card text and stats: the
+  [Unofficial Homecoming Wiki](https://homecoming.wiki)'s card pages.

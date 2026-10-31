@@ -8,13 +8,20 @@ from datetime import datetime, timezone
 # 2: added `owner` and `visibility`. Format-1 decks load with no owner; the
 #    first profile created claims them (users.create -> store.assign_unowned).
 # 3: added `sync`, the link to the deck's source site (deckbuilder/sync.py).
-DECK_FORMAT = 3
+# 4: added `sections`, extra parts of a deck beyond `slots` for games that
+#    have them (MECCG's location deck, sideboard and pool). Older decks load
+#    with none.
+DECK_FORMAT = 4
 
 # Who can see a deck besides its owner.
 VISIBILITIES = {
     "private": "Only me",
     "shared": "Everyone on this server (read-only)",
 }
+
+
+# The key for a deck's main part (`slots`) wherever sections are named.
+MAIN = "main"
 
 
 def now() -> str:
@@ -74,6 +81,8 @@ class Deck:
     `meta` holds game-specific choices made while building (e.g. an Arkham
     investigator's secondary class), keyed however the plugin likes.
     `owner` is a profile id (users.py); `visibility` is a key of VISIBILITIES.
+    `slots` is the main deck. `sections` holds any other parts of the deck a
+    game has (plugin.sections()), keyed by section: {"location": {id: qty}}.
     """
 
     id: str
@@ -90,21 +99,41 @@ class Deck:
     # Link to the site the deck came from, kept up to date by deckbuilder/sync.py.
     # None when the deck isn't synced.
     sync: dict | None = None
+    sections: dict[str, dict[str, int]] = field(default_factory=dict)
     created: str = field(default_factory=now)
     updated: str = field(default_factory=now)
     format: int = DECK_FORMAT
 
-    def count(self, card_id: str) -> int:
-        return self.slots.get(card_id, 0)
+    def section(self, key: str | None = None) -> dict[str, int]:
+        """A section's {card id: copies}, for reading; None or "main" is `slots`."""
+        if key in (None, "", MAIN):
+            return self.slots
+        return self.sections.get(key, {})
 
-    def set_count(self, card_id: str, qty: int) -> None:
+    def count(self, card_id: str, section: str | None = None) -> int:
+        if section in (None, "", MAIN):
+            return self.slots.get(card_id, 0)
+        return self.sections.get(section, {}).get(card_id, 0)
+
+    def set_count(self, card_id: str, qty: int, section: str | None = None) -> None:
+        slots = self.slots if section in (None, "", MAIN) else self.sections.setdefault(section, {})
         if qty > 0:
-            self.slots[card_id] = qty
+            slots[card_id] = qty
         else:
-            self.slots.pop(card_id, None)
+            slots.pop(card_id, None)
+        if section not in (None, "", MAIN) and not slots:
+            self.sections.pop(section, None)
 
-    def total(self) -> int:
-        return sum(self.slots.values())
+    def total(self, section: str | None = None) -> int:
+        return sum(self.section(section).values())
+
+    def all_counts(self) -> dict[str, int]:
+        """Copies of each card across the main deck and every section."""
+        out = dict(self.slots)
+        for slots in self.sections.values():
+            for card_id, qty in slots.items():
+                out[card_id] = out.get(card_id, 0) + qty
+        return out
 
     # Access rules. A deck with no owner (made before profiles existed and not
     # yet claimed) belongs to the admins. Admins get no other special access:
@@ -177,6 +206,16 @@ class Selection:
     label: str
     options: list[tuple[str, str]]  # (value, label)
     value: str | None = None
+
+
+@dataclass
+class Section:
+    """A part of a deck besides the main one (plugin.sections()), e.g. MECCG's
+    location deck. Its cards are in deck.sections[key]."""
+
+    key: str
+    label: str
+    help: str | None = None
 
 
 @dataclass

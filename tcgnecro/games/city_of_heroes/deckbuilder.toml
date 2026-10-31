@@ -1,0 +1,165 @@
+# City of Heroes CCG deck builder config.
+#
+# Data only; rules live in deckbuilder.py.
+# Field reference: docs/DECKBUILDER.md ("Config reference").
+
+identity_label = "Hero"
+default_copies = 3
+color_field = "inspiration"
+group_field = "kind"
+page_size = 100
+
+[colors]
+insight = "#2f7ac4"
+enrage = "#c4302b"
+"catch a breath" = "#3f8a3a"
+"break free" = "#d9822b"
+luck = "#c9a227"
+respite = "#7a4fc4"
+
+[[badges]]
+field = "recharge"
+title = "Recharge"
+
+# ---- Deck list groups, in order -------------------------------------------
+
+[[groups]]
+value = "sidekick"
+label = "Sidekicks"
+
+[[groups]]
+value = "sig power"
+label = "Signature powers"
+
+[[groups]]
+value = "power"
+label = "Powers"
+
+[[groups]]
+value = "enhancement"
+label = "Enhancements"
+
+[[groups]]
+value = "edge"
+label = "Edges"
+
+[[groups]]
+value = "mission"
+label = "Missions"
+
+# ---- Filters, top to bottom as shown ---------------------------------------
+
+[[filters]]
+key = "legal"
+label = "Only cards my hero can take"
+type = "toggle"
+default = true
+help = "Hides other heroes and their signature powers"
+
+[[filters]]
+key = "usable"
+label = "Only powers my supers can use"
+type = "toggle"
+default = false
+help = "Powers from the hero's or a sidekick's powersets (and the Common Pool)"
+
+[[filters]]
+key = "owned"
+label = "Only cards I own"
+type = "toggle"
+default = false
+
+[[filters]]
+key = "q"
+label = "Search"
+type = "text"
+fields = ["name", "text", "prereq"]
+help = "Matches name, text and requirements"
+
+[[filters]]
+key = "kind"
+label = "Type"
+type = "multiselect"
+field = "kind"
+default = ["sidekick", "power", "sig power", "enhancement", "edge", "mission"]
+options = [
+  { value = "sidekick",    label = "Sidekick" },
+  { value = "power",       label = "Power" },
+  { value = "sig power",   label = "Signature power" },
+  { value = "enhancement", label = "Enhancement" },
+  { value = "edge",        label = "Edge" },
+  { value = "mission",     label = "Mission" },
+]
+
+[[filters]]
+key = "inspiration"
+label = "Inspiration"
+type = "multiselect"
+field = "inspiration"
+options = [
+  { value = "insight",        label = "Insight",        color = "#2f7ac4" },
+  { value = "enrage",         label = "Enrage",         color = "#c4302b" },
+  { value = "catch a breath", label = "Catch a Breath", color = "#3f8a3a" },
+  { value = "break free",     label = "Break Free",     color = "#d9822b" },
+  { value = "luck",           label = "Luck",           color = "#c9a227" },
+  { value = "respite",        label = "Respite",        color = "#7a4fc4" },
+]
+
+[[filters]]
+key = "powerset"
+label = "Powerset"
+type = "multiselect"
+field = "powersets"
+options = [
+  { value = "Archery", label = "Archery" },
+  { value = "Assault Rifle", label = "Assault Rifle" },
+  { value = "Battle Axe", label = "Battle Axe" },
+  { value = "Claws", label = "Claws" },
+  { value = "Common Pool", label = "Common Pool" },
+  { value = "Dark Armor", label = "Dark Armor" },
+  { value = "Dark Melee", label = "Dark Melee" },
+  { value = "Devices", label = "Devices" },
+  { value = "Electrical Blast", label = "Electrical Blast" },
+  { value = "Electrical Manipulation", label = "Electrical Manipulation" },
+  { value = "Empathy", label = "Empathy" },
+  { value = "Energy Manipulation", label = "Energy Manipulation" },
+  { value = "Energy Melee", label = "Energy Melee" },
+  { value = "Fiery Aura", label = "Fiery Aura" },
+  { value = "Fiery Melee", label = "Fiery Melee" },
+  { value = "Fire Blast", label = "Fire Blast" },
+  { value = "Force Field", label = "Force Field" },
+  { value = "Gravity Control", label = "Gravity Control" },
+  { value = "Ice Armor", label = "Ice Armor" },
+  { value = "Ice Control", label = "Ice Control" },
+  { value = "Ice Manipulation", label = "Ice Manipulation" },
+  { value = "Illusion Control", label = "Illusion Control" },
+  { value = "Invulnerability", label = "Invulnerability" },
+  { value = "Katana", label = "Katana" },
+  { value = "Martial Arts", label = "Martial Arts" },
+  { value = "Mind Control", label = "Mind Control" },
+  { value = "Psychic Blast", label = "Psychic Blast" },
+  { value = "Radiation Blast", label = "Radiation Blast" },
+  { value = "Radiation Emission", label = "Radiation Emission" },
+  { value = "Regeneration", label = "Regeneration" },
+  { value = "Stone Armor", label = "Stone Armor" },
+  { value = "Super Reflexes", label = "Super Reflexes" },
+  { value = "Super Strength", label = "Super Strength" },
+  { value = "Trick Arrow", label = "Trick Arrow" },
+]
+
+# ---- Sort orders; the first is the default ---------------------------------
+
+[[sorts]]
+key = "kind"
+label = "Type, name"
+fields = ["kind", "name"]
+
+[[sorts]]
+key = "name"
+label = "Name"
+fields = ["name"]
+
+[[sorts]]
+key = "powerset"
+label = "Powerset, name"
+fields = ["powersets", "name"]

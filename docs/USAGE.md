@@ -107,10 +107,17 @@ done.
 
 Your decks are listed first, followed by **Shared with you**: decks others have shared.
 
-- **New deck:** pick the game, then the investigator or hero (filterable by name or
+- **New deck:** pick the game, then what the deck is built around (filterable by name or
   trait, or "Only … in my collection"; hover a name to see the card), and optionally a
-  name. An Arkham investigator's required signature cards, or a Marvel hero's own cards,
-  are added for you.
+  name:
+
+  | Game | Built around | Added for you |
+  |---|---|---|
+  | Arkham Horror | investigator | required signature cards |
+  | Marvel Champions | hero | the hero's own cards |
+  | Star Wars LCG | affiliation | nothing |
+  | City of Heroes | hero | its two starting powers |
+  | Middle-earth CCG | nothing to pick | choose **Playing as** and **Game length** in the deck |
 - **Import:** paste an ArkhamDB URL (Arkham) or a MarvelCDB URL (Marvel Champions).
   Published decklists (`/decklist/view/…`) and shared decks (`/deck/view/…`) both work.
   Private decks can't be read through either site's API.
@@ -133,6 +140,20 @@ Three columns: **filters | cards | your deck**.
   - Investigator choices (secondary class, deck size, trait choice) are dropdowns under
     the investigator. Changing one re-checks the card list.
   - **Draw random basic weakness** adds one at random, as the rules require.
+  - **Star Wars LCG:** the list shows **objective sets**, not single cards: `+` adds a
+    whole set (objective and five command cards; click a set to see them). A deck needs
+    10 or more sets from its side, at most 2 of each (1 for "Limit 1 per objective
+    deck"); "[affiliation] affiliation only" sets need that affiliation. Printing prints
+    every card of every set.
+  - **City of Heroes:** at least 40 cards besides the hero and its starting powers, up to
+    3 of each. "Only powers my supers can use" shows powers from the hero's and your
+    sidekicks' powersets. Another hero's signature power gets a warning.
+  - **Middle-earth CCG:** a deck has four parts. Pick one under **Add to** (top of the
+    filters): **Play deck**, **Location deck** (sites), **Sideboard** or **Pool**
+    (starting characters and minor items). The list's + and − change that part; the
+    deck panel lists each part with its own controls. The checks follow the Council of
+    Elrond's rules for the alignment you're **Playing as**. Printing prints all four
+    parts.
   - **Marvel Champions:** choose the deck's **Aspect** under the hero (Spider-Woman
     gets two; Adam Warlock takes all four, so there's nothing to pick). "Only cards my
     hero can take" then shows the aspect's cards, basics, and any extra cards the hero

@@ -48,6 +48,7 @@
   <p class="small" style="color:var(--good)">Deck is legal.</p>
   {% endif %}
 
+  {% if main_label %}<h2 class="part">{{ main_label }} ({{ deck.total() }})</h2>{% endif %}
   {% for label, count, rows in groups %}
   <div class="group">
     <h3>{{ label }} ({{ count }})</h3>
@@ -55,6 +56,18 @@
   </div>
   {% else %}
   <p class="muted small">Add cards from the list.</p>
+  {% endfor %}
+  {# Other parts of the deck, for games that have them (plugin.sections()). #}
+  {% for key, label, total, part_groups in parts %}
+  <h2 class="part">{{ label }} ({{ total }})</h2>
+  {% for glabel, count, rows in part_groups %}
+  <div class="group">
+    <h3>{{ glabel }} ({{ count }})</h3>
+    {% for card, qty in rows %}{{ card_row(deck, card, plugin, pool, "dctl", card.id in flagged, key) }}{% endfor %}
+  </div>
+  {% else %}
+  <p class="muted small">Choose “{{ label }}” under “Add to” to add cards here.</p>
+  {% endfor %}
   {% endfor %}
 
   {% if can_edit %}
@@ -118,4 +131,4 @@
   {% endif %}
 </aside>
 
-{% for card in changed if card %}{{ qty_control(deck, card, plugin, "ctl", oob=True) }}{% endfor %}
+{% for card in changed if card %}{{ qty_control(deck, card, plugin, "ctl", oob=True, section=list_section or "main") }}{% endfor %}

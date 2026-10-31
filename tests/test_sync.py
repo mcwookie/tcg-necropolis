@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from tcgnecro import db, users
 from tcgnecro.cli import main as cli
 from tcgnecro.deckbuilder import registry, store, sync
-from tcgnecro.deckbuilder.model import Deck
+from tcgnecro.deckbuilder.model import DECK_FORMAT, Deck
 from tcgnecro.games import Card, CardVersion, Catalog, Pack
 from tests.test_deckbuilder import CARDS
 
@@ -65,7 +65,7 @@ def test_import_links_the_deck(client, fake):
     deck = store.load(import_deck(client, "https://arkhamdb.com/deck/view/100?deck_name=x"))
     assert deck.sync["provider"] == "arkhamdb" and deck.sync["remote_id"] == "100"
     assert deck.sync["status"] == "ok" and deck.slots == {"01006": 1, "01016": 2}
-    assert deck.format == 3 and not sync.has_local_changes(deck)
+    assert deck.format == DECK_FORMAT and not sync.has_local_changes(deck)
 
 
 def test_up_to_date_then_remote_edit_is_applied(client, fake):

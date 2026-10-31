@@ -4,22 +4,29 @@
 {# The −/qty/+ control. `prefix` keeps ids unique: "ctl" in the card list
    (these get out-of-band updates), "dctl" in the deck panel. With oob=True
    the control replaces the one with the same id wherever it is on the page. #}
-{% macro qty_control(deck, card, plugin, prefix="ctl", oob=False) -%}
-{% set n = deck.count(card.id) %}
+{% macro qty_control(deck, card, plugin, prefix="ctl", oob=False, section="main") -%}
+{# `section` is the part of the deck this control changes (games with several
+   parts, plugin.sections()); the list's "Add to" choice is sent along so the
+   card list's control is refreshed for the part it shows. #}
+{% set n = deck.count(card.id, section) %}
+{% set limit = plugin.section_limit(card, deck, section) if plugin.allowed_in(card, section) else 0 %}
+{% set url = "/decks/" ~ deck.id ~ "/slots/" ~ card.id ~ ("?section=" ~ section ~ "&" if section != "main" else "?") %}
 {% if not can_edit %}<span class="ctl"><span class="qty">{{ n }}</span></span>{% else %}
-<span class="ctl" id="{{ prefix }}-{{ card.id }}" {% if oob %}hx-swap-oob="true"{% endif %}>
+<span class="ctl" id="{{ prefix }}-{% if prefix != 'ctl' and section != 'main' %}{{ section }}-{% endif %}{{ card.id }}" {% if oob %}hx-swap-oob="true"{% endif %}>
   <button type="button" title="Remove one" {{ "disabled" if n == 0 }}
-          hx-post="/decks/{{ deck.id }}/slots/{{ card.id }}?delta=-1" hx-target="#deck" hx-swap="outerHTML">−</button>
+          hx-post="{{ url }}delta=-1" hx-vals='js:{list_section: (document.getElementById("add-to") || {}).value || "main"}'
+          hx-target="#deck" hx-swap="outerHTML">−</button>
   <span class="qty {{ 'zero' if n == 0 }}">{{ n }}</span>
-  <button type="button" title="Add one" {{ "disabled" if n >= plugin.max_copies(card, deck) }}
-          hx-post="/decks/{{ deck.id }}/slots/{{ card.id }}?delta=1" hx-target="#deck" hx-swap="outerHTML">+</button>
+  <button type="button" title="Add one" {{ "disabled" if n >= limit }}
+          hx-post="{{ url }}delta=1" hx-vals='js:{list_section: (document.getElementById("add-to") || {}).value || "main"}'
+          hx-target="#deck" hx-swap="outerHTML">+</button>
 </span>{% endif %}
 {%- endmacro %}
 
 {# One card row: color bar, name (click for details, hover for image), subtitle, badges. #}
-{% macro card_row(deck, card, plugin, pool, prefix="ctl", flagged=False) -%}
+{% macro card_row(deck, card, plugin, pool, prefix="ctl", flagged=False, section="main") -%}
 <div class="row {{ 'flagged' if flagged }}" style="--c: {{ plugin.row_color(card) or 'var(--line)' }}">
-  {{ qty_control(deck, card, plugin, prefix) }}
+  {{ qty_control(deck, card, plugin, prefix, section=section) }}
   <div style="min-width:0">
     <div class="name" hx-get="/decks/{{ deck.id }}/card/{{ card.id }}" hx-target="#detail-body"
          {% if pool.images.get(card.id) %}data-thumb="{{ thumb_url(pool.images[card.id], card.rotate) }}"{% if card.landscape %} data-landscape{% endif %}{% endif %}>{{ card.name }}

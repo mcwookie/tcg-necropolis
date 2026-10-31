@@ -1,0 +1,152 @@
+# Star Wars LCG deck builder config.
+#
+# The "cards" here are objective sets (SwlcgPlugin keeps one pool entry per
+# set, its objective). Rules live in deckbuilder.py.
+# Field reference: docs/DECKBUILDER.md ("Config reference").
+
+identity_label = "Affiliation"
+default_copies = 2
+color_field = "affiliation"
+subtitle_field = "summary"
+group_field = "affiliation"
+page_size = 100
+
+[colors]
+jedi = "#2f7ac4"
+rebel = "#c4302b"
+smugglers = "#c9a227"
+sith = "#a3202a"
+navy = "#5a6b7a"
+scum = "#3f8a3a"
+neutral = "#8a8a84"
+
+[[badges]]
+field = "set_number"
+title = "Objective set number"
+format = "#{}"
+
+[[badges]]
+field = "force"
+title = "Force icons in the set"
+format = "{}F"
+
+# ---- Deck list groups, in order -------------------------------------------
+
+[[groups]]
+value = "jedi"
+label = "Jedi"
+
+[[groups]]
+value = "rebel"
+label = "Rebel Alliance"
+
+[[groups]]
+value = "smugglers"
+label = "Smugglers and Spies"
+
+[[groups]]
+value = "sith"
+label = "Sith"
+
+[[groups]]
+value = "navy"
+label = "Imperial Navy"
+
+[[groups]]
+value = "scum"
+label = "Scum and Villainy"
+
+[[groups]]
+value = "neutral"
+label = "Neutral"
+
+# ---- Filters, top to bottom as shown ---------------------------------------
+
+[[filters]]
+key = "legal"
+label = "Only sets my affiliation can take"
+type = "toggle"
+default = true
+
+[[filters]]
+key = "owned"
+label = "Only sets I own"
+type = "toggle"
+default = false
+
+[[filters]]
+key = "q"
+label = "Search"
+type = "text"
+fields = ["name", "traits", "text"]
+help = "Matches the objective and every card in its set"
+
+[[filters]]
+key = "kind"
+label = "Show"
+type = "multiselect"
+field = "kind"
+# Command cards are in the pool only so decks can print them.
+default = ["objective"]
+options = [
+  { value = "objective", label = "Objective sets" },
+]
+
+[[filters]]
+key = "affiliation"
+label = "Affiliation"
+type = "multiselect"
+field = "affiliation"
+default = []
+options = [
+  { value = "jedi",      label = "Jedi",                color = "#2f7ac4" },
+  { value = "rebel",     label = "Rebel Alliance",      color = "#c4302b" },
+  { value = "smugglers", label = "Smugglers and Spies", color = "#c9a227" },
+  { value = "sith",      label = "Sith",                color = "#a3202a" },
+  { value = "navy",      label = "Imperial Navy",       color = "#5a6b7a" },
+  { value = "scum",      label = "Scum and Villainy",   color = "#3f8a3a" },
+  { value = "neutral",   label = "Neutral",             color = "#8a8a84" },
+]
+
+[[filters]]
+key = "types"
+label = "Contains"
+type = "multiselect"
+field = "types"
+options = [
+  { value = "unit",        label = "Units" },
+  { value = "event",       label = "Events" },
+  { value = "enhancement", label = "Enhancements" },
+  { value = "fate",        label = "Fate cards" },
+  { value = "mission",     label = "Missions" },
+]
+
+[[filters]]
+key = "force"
+label = "Force icons in set"
+type = "range"
+field = "force"
+min = 0
+max = 10
+
+# ---- Sort orders; the first is the default ---------------------------------
+
+[[sorts]]
+key = "affiliation"
+label = "Affiliation, set"
+fields = ["affiliation", "set_number"]
+
+[[sorts]]
+key = "set"
+label = "Set number"
+fields = ["set_number"]
+
+[[sorts]]
+key = "name"
+label = "Name"
+fields = ["name"]
+
+[[sorts]]
+key = "force"
+label = "Most Force icons"
+fields = ["-force", "set_number"]

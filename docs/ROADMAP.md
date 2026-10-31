@@ -56,8 +56,9 @@ Deck sync with ArkhamDB is done (one-way, following upgrades; see USAGE.md). Sti
 |---|---|---|
 | Marvel Champions deck builder: "current" format, campaign cards | S | Done otherwise. MarvelCDB's current format drops `pack_legacy` packs; campaign mode would allow a campaign's player cards behind a toggle |
 | LotR LCG, AGoT 1st/2nd, Netrunner, L5R, Warhammer, Call of Cthulhu | S each for proxies | Port upstream's adapters. Deck builders are M each, since each game builds decks differently (see docs/DECKBUILDER.md) |
-| SWLCG deck builder | M | Decks are built from objective sets of 6, so `+` adds a set, not a card. The plugin API supports this via `run_action` / a custom `start_deck`, but the card list would want to show sets |
-| MECCG | L | Card data exists in this workspace (separate project); rules are complex |
+| SWLCG deck builder: Balance of the Force | S | Done for standard play. Balance of the Force's multiplayer objectives (outside numbered sets) aren't offered |
+| MECCG deck builder: remaining rules | S | Done otherwise. Not checked: 10 extra sideboard cards vs Fallen-wizards, the Fallen-wizard split for hazards played as resources, the starting-company draft |
+| City of Heroes deck builder: Limited format | S | Constructed is done. Limited (506.3) would need the packs opened |
 
 ## Proxies
 

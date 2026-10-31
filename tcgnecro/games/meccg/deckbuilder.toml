@@ -1,0 +1,170 @@
+# Middle-earth CCG deck builder config.
+#
+# Data only; rules live in deckbuilder.py. A MECCG deck has no identity card:
+# the player picks an alignment ("Playing as") instead, and the deck has four
+# parts (play deck, location deck, sideboard, pool) chosen with "Add to".
+# Field reference: docs/DECKBUILDER.md ("Config reference").
+
+identity_label = "Alignment"
+identity_required = false
+default_copies = 3
+color_field = "alignment"
+subtitle_field = "subtype"
+group_field = "kind"
+page_size = 100
+
+[colors]
+hero = "#2f6fc4"
+minion = "#a3202a"
+"fallen-wizard" = "#7a4fc4"
+balrog = "#d9822b"
+stage = "#7a4fc4"
+dual = "#5a6b7a"
+neutral = "#3f8a3a"
+
+[[badges]]
+field = "mind"
+title = "Mind"
+
+[[badges]]
+field = "mp"
+title = "Marshalling points"
+format = "{}MP"
+
+# ---- Deck list groups, in order -------------------------------------------
+
+[[groups]]
+value = "avatar"
+label = "Avatars"
+
+[[groups]]
+value = "character"
+label = "Characters"
+
+[[groups]]
+value = "agent"
+label = "Agents"
+
+[[groups]]
+value = "ally"
+label = "Allies"
+
+[[groups]]
+value = "faction"
+label = "Factions"
+
+[[groups]]
+value = "item"
+label = "Items"
+
+[[groups]]
+value = "resource"
+label = "Events and other resources"
+
+[[groups]]
+value = "creature"
+label = "Creatures"
+
+[[groups]]
+value = "hazard"
+label = "Other hazards"
+
+[[groups]]
+value = "haven"
+label = "Havens"
+
+[[groups]]
+value = "site"
+label = "Sites"
+
+# ---- Filters, top to bottom as shown ---------------------------------------
+
+[[filters]]
+key = "legal"
+label = "Only cards my alignment can use"
+type = "toggle"
+default = true
+
+[[filters]]
+key = "owned"
+label = "Only cards I own"
+type = "toggle"
+default = false
+
+[[filters]]
+key = "q"
+label = "Search"
+type = "text"
+fields = ["name", "subtype", "keywords", "text"]
+help = "Matches name, type, keywords and text"
+
+[[filters]]
+key = "type"
+label = "Card type"
+type = "multiselect"
+field = "type"
+options = [
+  { value = "character", label = "Characters" },
+  { value = "resource",  label = "Resources" },
+  { value = "hazard",    label = "Hazards" },
+  { value = "site",      label = "Sites" },
+]
+
+[[filters]]
+key = "kind"
+label = "Kind"
+type = "multiselect"
+field = "kind"
+options = [
+  { value = "avatar",    label = "Avatar" },
+  { value = "character", label = "Character" },
+  { value = "agent",     label = "Agent" },
+  { value = "ally",      label = "Ally" },
+  { value = "faction",   label = "Faction" },
+  { value = "item",      label = "Item" },
+  { value = "resource",  label = "Event / other resource" },
+  { value = "creature",  label = "Creature" },
+  { value = "hazard",    label = "Other hazard" },
+  { value = "haven",     label = "Haven" },
+  { value = "site",      label = "Site" },
+]
+
+[[filters]]
+key = "alignment"
+label = "Alignment"
+type = "multiselect"
+field = "alignment"
+options = [
+  { value = "hero",          label = "Hero",          color = "#2f6fc4" },
+  { value = "minion",        label = "Minion",        color = "#a3202a" },
+  { value = "fallen-wizard", label = "Fallen-wizard", color = "#7a4fc4" },
+  { value = "stage",         label = "Stage",         color = "#7a4fc4" },
+  { value = "balrog",        label = "Balrog",        color = "#d9822b" },
+  { value = "dual",          label = "Dual",          color = "#5a6b7a" },
+  { value = "neutral",       label = "Neutral (hazards)", color = "#3f8a3a" },
+]
+
+[[filters]]
+key = "mind"
+label = "Mind"
+type = "range"
+field = "mind"
+min = 0
+max = 10
+
+# ---- Sort orders; the first is the default ---------------------------------
+
+[[sorts]]
+key = "kind"
+label = "Kind, name"
+fields = ["type", "kind", "name"]
+
+[[sorts]]
+key = "name"
+label = "Name"
+fields = ["name"]
+
+[[sorts]]
+key = "mind"
+label = "Mind, name"
+fields = ["mind", "name"]

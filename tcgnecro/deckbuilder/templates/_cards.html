@@ -6,7 +6,7 @@
 </div>
 {% endif %}
 {% for card in cards %}
-  {{ card_row(deck, card, plugin, pool) }}
+  {{ card_row(deck, card, plugin, pool, section=section) }}
 {% else %}
   <p class="muted">No cards match these filters.</p>
 {% endfor %}

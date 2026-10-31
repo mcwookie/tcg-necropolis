@@ -184,6 +184,19 @@ After editing:
 
 Commit the JSON changes; they are the source of truth for this game.
 
+The deck builder reads extra fields on each card (`is_limited`, `affiliation_lock`, cost,
+Force icons, resources, traits, text...; listed in `games/swlcg/__init__.py`). They came
+from the public-domain [swlcg-json](https://github.com/jgornick/swlcg-json) data set. A new
+card needs at least `objective_set_number`/`objective_set_sequence` (so it joins its set)
+and, on objectives, `is_limited` and `affiliation_lock`.
+
+**Middle-earth CCG and City of Heroes** work the same way: bundled JSON, then
+`tcgnecro catalog meccg` / `tcgnecro catalog city_of_heroes`. Their deck builders also read
+extra fields, documented in each game's `__init__.py`: for MECCG from the Council of
+Elrond's card database (uniqueness, avatars, agents, mind, subtypes, havens, stage
+points...), for City of Heroes from the Homecoming wiki's card pages (powersets, starting
+powers, signature powers' heroes...).
+
 ---
 
 ## Marvel Champions: two-sided cards named differently
