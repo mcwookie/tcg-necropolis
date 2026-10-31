@@ -43,8 +43,10 @@ ENCOUNTER_TYPES = {"minion", "main_scheme", "side_scheme", "attachment", "treach
                    "evidence_means", "evidence_motive", "evidence_opportunity"}
 
 # Landscape card types. Marvel Champions collections store them sideways,
-# turned 90° counter-clockwise (the opposite of Arkham's), on every side.
-LANDSCAPE_TYPES = {"main_scheme", "side_scheme"}
+# turned 90° counter-clockwise (the opposite of Arkham's). Rotation is decided
+# per face: the back of a two-sided card can be another type entirely
+# ("Open the Dungeons", a side scheme, has the attachment Jormungand on its back).
+LANDSCAPE_TYPES = {"main_scheme", "side_scheme", "player_side_scheme"}
 
 # The card fields kept for a future deck builder. MarvelCDB sends more (URLs,
 # OCTGN ids, image paths) that nothing here uses.
@@ -54,7 +56,7 @@ KEPT_FIELDS = {
     "type_code", "type_name", "faction_code", "faction_name", "stage",
     "card_set_code", "card_set_name", "card_set_type_name_code",
     "cost", "cost_per_hero", "cost_star", "resource_energy", "deck_limit", "is_unique",
-    "permanent", "double_sided", "duplicate_of_code", "linked_to_code",
+    "permanent", "double_sided", "duplicate_of_code", "linked_to_code", "back_type_code",
     "health_per_group", "health_per_hero", "base_threat_fixed", "base_threat_per_group",
     "base_threat_star", "escalation_threat_fixed", "threat_fixed", "threat_per_group",
     "attack_star", "thwart_star", "defense_star", "health_star", "recover_star",
@@ -87,8 +89,12 @@ def load_source(refresh: bool = False) -> tuple[list[dict], list[dict]]:
 
 
 def display_rotation(attrs: dict | None, side: str) -> int:
-    """Turn landscape cards 90° clockwise on screen (games.display_rotation)."""
-    return 90 if attrs and attrs.get("type_code") in LANDSCAPE_TYPES else 0
+    """Turn landscape faces 90° clockwise on screen (games.display_rotation).
+    A back face goes by its own type (back_type_code) when it has one."""
+    if not attrs:
+        return 0
+    type_code = (attrs.get("back_type_code") if side != "front" else None) or attrs.get("type_code")
+    return 90 if type_code in LANDSCAPE_TYPES else 0
 
 
 def back_group_for(card: dict) -> str | None:
@@ -199,8 +205,20 @@ def build(cards: list[dict]) -> tuple[list[Card], list[CardVersion]]:
     return catalog_cards, versions
 
 
+def with_back_types(cards: list[dict]) -> list[dict]:
+    """Copies of the cards with `back_type_code`: the type of the hidden face
+    a two-sided card links to (its ~back image), for per-face rotation."""
+    by_code = {c["code"]: c for c in cards}
+    out = []
+    for card in cards:
+        back = by_code.get(card.get("linked_to_code") or "")
+        out.append(card | {"back_type_code": back["type_code"]} if back else card)
+    return out
+
+
 def load_catalog(refresh: bool = False) -> Catalog:
     packs, cards = load_source(refresh)
+    cards = with_back_types(cards)
     catalog = Catalog(GAME_ID, NAME)
     # MarvelCDB packs carry no cycle, so the Collection page lists them by release date.
     catalog.packs = [Pack(p["code"], p["name"], p.get("available") or None) for p in packs]

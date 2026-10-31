@@ -2,7 +2,8 @@
 
 from tcgnecro import collections, db
 from tcgnecro.games import Catalog, Pack, display_rotation
-from tcgnecro.games.marvel_champions import back_group_for, build, card_titles, printed_cards
+from tcgnecro.games.marvel_champions import (back_group_for, build, card_titles, printed_cards,
+                                             with_back_types)
 
 
 def card(code, name, type_code="ally", pack="core", position=1, **extra):
@@ -60,6 +61,20 @@ def test_backs_and_landscape_rotation():
     assert display_rotation("marvel_champions", {"type_code": "main_scheme"}) == 90
     assert display_rotation("marvel_champions", {"type_code": "side_scheme"}, "back") == 90
     assert display_rotation("marvel_champions", {"type_code": "ally"}) == 0
+    assert display_rotation("marvel_champions", {"type_code": "player_side_scheme"}) == 90
+
+
+def test_back_faces_rotate_by_their_own_type():
+    cards = with_back_types([
+        card("21189a", "Open the Dungeons", "side_scheme", linked_to_code="21189b"),
+        card("21189b", "Jormungand", "attachment", hidden=True, linked_to_code="21189a"),
+        card("01097a", "The Break-In!", "main_scheme", linked_to_code="01097b"),
+        card("01097b", "The Break-In!", "main_scheme", hidden=True, linked_to_code="01097a"),
+    ])
+    dungeons, break_in = cards[0], cards[2]
+    assert display_rotation("marvel_champions", dungeons, "front") == 90
+    assert display_rotation("marvel_champions", dungeons, "back") == 0     # Jormungand is portrait
+    assert display_rotation("marvel_champions", break_in, "back") == 90
 
 
 def test_images_named_by_reprint_code_match_the_original(tmp_path, monkeypatch):

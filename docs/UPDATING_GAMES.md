@@ -185,6 +185,22 @@ Commit the JSON changes; they are the source of truth for this game.
 
 ---
 
+## Marvel Champions: two-sided cards named differently
+
+A two-sided Marvel card is its front code (`27088a`), with the other face as `~back`. Some
+collections file faces under the plain code (`27088@sm.jpg`) or the hidden second-face code
+(`27088b@sm.jpg`); those images match no card. To rename them:
+
+```bash
+python -m tcgnecro.games.marvel_champions.faces plan     # writes faces-plan.tsv + faces-review.html
+# open faces-review.html; in faces-plan.tsv change ACTION to front/skip where needed
+python -m tcgnecro.games.marvel_champions.faces apply faces-plan.tsv
+tcgnecro reindex                                         # or restart the Docker container
+```
+
+Renames whose right name is certain are planned as-is. A second face whose card has no
+front image is marked REVIEW, because a few of those files are really the front.
+
 ## Fixing or replacing a single image
 
 Overwrite the file in the collection folder, keeping its name. If the name changed, run
