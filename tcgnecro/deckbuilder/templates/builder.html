@@ -12,7 +12,7 @@
   <span>You're viewing <b>{{ owner_name }}</b>'s deck. It's read-only; copy it to make your own version.</span>
   <form method="post" action="/decks/{{ deck.id }}/copy"><button>Copy to my decks</button></form>
 </div>
-<div class="builder" style="grid-template-columns: minmax(0, 460px); justify-content: center">
+<div class="builder" style="grid-template-columns: minmax(0, 460px); grid-template-areas: 'deck'; justify-content: center">
   {% include "_deck.html" %}
 </div>
 {% else %}
@@ -22,10 +22,16 @@
         hx-get="/decks/{{ deck.id }}/cards" hx-target="#card-list"
         hx-trigger="input delay:250ms, change, filtersChanged from:body" hx-sync="this:replace">
     <input type="hidden" name="f" value="1">
+    {# Narrow screens: the filters fold away under this header (see app.css). #}
+    <div class="filters-head">
+      <b>Filters</b>
+      <button type="button" class="ghost" aria-expanded="false" aria-controls="filters"
+              onclick="const f = this.closest('form'); f.classList.toggle('open'); this.setAttribute('aria-expanded', f.classList.contains('open')); this.textContent = f.classList.contains('open') ? 'Hide' : 'Show'">Show</button>
+    </div>
     {% if sections %}
     {# Games whose decks have several parts: + and − in the list change this one. #}
-    <label class="f" for="add-to">Add to</label>
-    <select name="section" id="add-to">
+    <label class="f keep" for="add-to">Add to</label>
+    <select name="section" id="add-to" class="keep">
       {% for key, label in sections %}<option value="{{ key }}" {{ "selected" if key == section }}>{{ label }}</option>{% endfor %}
     </select>
     {% endif %}
@@ -37,8 +43,8 @@
       {% elif f.type == "toggle" %}
         <label class="check" style="margin-top:4px"><input type="checkbox" name="{{ f.key }}" value="1" {{ "checked" if v }}> {{ f.label }}</label>
       {% elif f.type == "text" %}
-        <label class="f" for="f-{{ f.key }}">{{ f.label }}</label>
-        <input type="search" id="f-{{ f.key }}" name="{{ f.key }}" value="{{ v }}" placeholder="{{ f.help or '' }}">
+        <label class="f keep" for="f-{{ f.key }}">{{ f.label }}</label>
+        <input type="search" class="keep" id="f-{{ f.key }}" name="{{ f.key }}" value="{{ v }}" placeholder="{{ f.help or '' }}">
       {% elif f.type == "multiselect" %}
         <label class="f">{{ f.label }}</label>
         <div class="opts">
@@ -65,7 +71,7 @@
     <p><a class="small" href="/decks/{{ deck.id }}">Reset filters</a></p>
   </form>
 
-  <section class="panel">
+  <section class="panel cards">
     <div id="card-list">{% include "_cards.html" %}</div>
   </section>
 

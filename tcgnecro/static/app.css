@@ -30,7 +30,9 @@ footer.site { text-align: center; color: var(--muted); font-size: 12px; padding:
 nav.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
 nav.tabs a { padding: 6px 12px; border-radius: 6px; text-decoration: none; color: var(--muted); border: 1px solid var(--line); }
 nav.tabs a.on { color: var(--text); background: var(--panel); font-weight: 600; }
-.pack-group { border: 1px solid var(--line); border-radius: 8px; margin: 12px 0; padding: 6px 12px 10px; }
+/* Pack groups flow into as many columns as fit (one on a phone). */
+.pack-groups { columns: 520px; column-gap: 16px; }
+.pack-group { border: 1px solid var(--line); border-radius: 8px; margin: 0 0 12px; padding: 6px 12px 10px; break-inside: avoid; }
 .pack-group legend { padding: 0 6px; font-weight: 600; }
 .pack-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 4px 16px; }
 .pack-list .check { display: block; }
@@ -59,8 +61,10 @@ button:disabled { opacity: .35; cursor: default; }
 
 /* ---- deck list page ---- */
 .wrap { max-width: 1100px; margin: 0 auto; padding: 20px; display: grid; gap: 20px; }
+.wrap > *, .two > * { min-width: 0; }   /* let wide tables scroll inside their panel */
 table.decks { width: 100%; border-collapse: collapse; }
 table.decks td, table.decks th { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+@media (max-width: 700px) { table.decks { display: block; overflow-x: auto; white-space: nowrap; } }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 @media (max-width: 800px) { .two { grid-template-columns: 1fr; } }
 .ident-list { max-height: 340px; overflow: auto; border: 1px solid var(--line); border-radius: 6px; margin-top: 6px; }
@@ -70,8 +74,35 @@ table.decks td, table.decks th { text-align: left; padding: 8px 6px; border-bott
 .ident img { width: 34px; border-radius: 3px; }
 
 /* ---- builder ---- */
-.builder { display: grid; grid-template-columns: 230px minmax(0, 1fr) 400px; gap: 16px; padding: 16px; align-items: start; }
-@media (max-width: 1150px) { .builder { grid-template-columns: 1fr; } }
+/* Filters | cards | deck on wide screens (the deck panel grows a little on very
+   wide ones); cards and deck side by side with the filters above the cards on
+   medium screens; one column on phones. */
+.builder { display: grid; grid-template-columns: 230px minmax(0, 1fr) clamp(380px, 24vw, 520px); gap: 16px;
+           padding: 16px; align-items: start; grid-template-areas: "filters cards deck"; }
+.builder > .filters { grid-area: filters; }
+.builder > .cards { grid-area: cards; }
+.builder > .deck { grid-area: deck; }
+@media (max-width: 1150px) {
+  .builder { grid-template-columns: minmax(0, 1fr) 360px; grid-template-areas: "filters deck" "cards deck"; }
+  .builder > .deck { grid-row: 1 / span 2; }
+}
+@media (max-width: 800px) {
+  .builder { grid-template-columns: minmax(0, 1fr); grid-template-areas: "filters" "cards" "deck"; padding: 10px; gap: 12px; }
+  .builder > .deck { grid-row: auto; position: static; max-height: none; }
+}
+/* The filters fold away on narrow screens, where they'd sit above the cards;
+   "Add to" (MECCG's deck parts) stays in view. */
+.filters-head { display: none; justify-content: space-between; align-items: center; }
+.filters-head button { margin: 0; padding: 4px 10px; font-size: 13px; }
+.to-deck { display: none; }
+@media (max-width: 1150px) {
+  .filters-head { display: flex; }
+  .filters:not(.open) > :not(.filters-head):not(.keep):not(input[type=hidden]) { display: none; }
+}
+@media (max-width: 800px) { .to-deck { display: inline; } }
+/* The card list flows into as many columns as fit (one on a phone). */
+#card-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); column-gap: 18px; }
+#card-list > :not(.row) { grid-column: 1 / -1; }
 .filters .opts { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 14px; }
 .filters .opts label { display: flex; gap: 4px; align-items: center; }
 .swatch { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }

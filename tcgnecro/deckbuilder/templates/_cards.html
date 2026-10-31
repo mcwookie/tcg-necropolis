@@ -3,6 +3,7 @@
 {% if offset == 0 %}
 <div class="list-head">
   <span class="muted small">{{ total }} card{{ "s" if total != 1 }}</span>
+  <a class="small to-deck" href="#deck">Deck ↓</a>
 </div>
 {% endif %}
 {% for card in cards %}

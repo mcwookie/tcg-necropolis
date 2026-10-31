@@ -124,7 +124,7 @@ Your decks are listed first, followed by **Shared with you**: decks others have 
 
 ### The builder
 
-Three columns: **filters | cards | your deck**.
+Three columns: **filters | cards | your deck**. On wide screens the card list itself flows into several columns; on tablets the deck sits beside the cards, and on phones everything stacks (the filters fold under a **Filters** bar, search stays in view, and **Deck ↓** jumps to your deck).
 
 - **Filters** come from the game's config. For Arkham, "Only cards my investigator can
   take" is on by default and applies the investigator's deckbuilding rules. **Only cards

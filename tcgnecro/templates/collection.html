@@ -2,7 +2,7 @@
 {# Pick the packs you own, per game. Groups come from the catalog (Arkham cycles). #}
 {% block title %}Collection{% endblock %}
 {% block body %}
-<div class="wrap" style="max-width:900px">
+<div class="wrap" style="max-width:1700px">
   <nav class="tabs">
     {% for gid, gname in games %}<a href="/collection/{{ gid }}" class="{{ 'on' if gid == game_id }}">{{ gname }}</a>{% endfor %}
   </nav>
@@ -20,6 +20,7 @@
       </span>
     </div>
 
+    <div class="pack-groups">
     {% for group, packs in groups %}
     <fieldset class="pack-group">
       <legend>
@@ -35,6 +36,7 @@
       </div>
     </fieldset>
     {% endfor %}
+    </div>
 
     <p class="deck-actions">
       <button>Save collection</button>
