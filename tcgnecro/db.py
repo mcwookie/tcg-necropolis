@@ -72,18 +72,45 @@ def collections_dir() -> Path:
     return data_dir() / "collections"
 
 
+def image_path(stored: str) -> Path:
+    """The file for an image path as stored in the index.
+
+    The index stores paths relative to the collections folder
+    ("ahlcg/ahlcg/01001@core.jpg"), so one index works for every install
+    sharing the data folder (this machine and a Docker container, say).
+    Indexes written before that hold absolute paths, possibly another
+    machine's ("/data/collections/..."); those are re-rooted at their
+    "collections" folder.
+    """
+    path = Path(stored)
+    if not path.is_absolute():
+        return collections_dir() / path
+    if path.is_relative_to(collections_dir()):
+        return path
+    parts = path.parts
+    if "collections" in parts:
+        cut = len(parts) - parts[::-1].index("collections")
+        return collections_dir().joinpath(*parts[cut:])
+    return path
+
+
+def collection_relative(path: str) -> str:
+    """An image's path relative to the collections folder."""
+    return str(image_path(path).relative_to(collections_dir()))
+
+
 def thumb_url(path: str, rotate: int = 0) -> str:
     """URL of the thumbnail for a collection image. Images are addressed by
     their path relative to the collections folder, so the thumbnail route
     can't be pointed at arbitrary files. `rotate`: clockwise degrees to turn
     the image so it reads upright (games.display_rotation)."""
-    url = "/thumb/" + str(Path(path).relative_to(collections_dir()))
+    url = "/thumb/" + collection_relative(path)
     return f"{url}?r={rotate}" if rotate else url
 
 
 def image_url(path: str, rotate: int = 0) -> str:
     """URL of a collection image at full size (same addressing as thumb_url)."""
-    url = "/image/" + str(Path(path).relative_to(collections_dir()))
+    url = "/image/" + collection_relative(path)
     return f"{url}?r={rotate}" if rotate else url
 
 

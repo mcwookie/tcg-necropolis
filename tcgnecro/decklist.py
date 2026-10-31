@@ -12,7 +12,7 @@ import json
 import sqlite3
 from dataclasses import dataclass, field
 
-from tcgnecro.db import normalize_title
+from tcgnecro.db import image_path, normalize_title
 from tcgnecro.games import display_rotation
 from tcgnecro.naming import side_sort_key
 
@@ -191,9 +191,9 @@ def available_printings(conn, game_id, titles) -> dict[str, list[Printing]]:
         side = sides[key].setdefault(
             r["side"], Side(rotate=display_rotation(game_id, attrs[key], r["side"])))
         if r["has_bleed"]:
-            side.bleed_image = r["file_path"]
+            side.bleed_image = str(image_path(r["file_path"]))
         else:
-            side.image = r["file_path"]
+            side.image = str(image_path(r["file_path"]))
 
     by_title: dict[str, list[Printing]] = {}
     for key, printing in printings.items():

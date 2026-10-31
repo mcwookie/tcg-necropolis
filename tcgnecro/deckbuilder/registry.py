@@ -71,7 +71,7 @@ def pool(conn: sqlite3.Connection, game_id: str) -> Pool:
     ):
         card_id = built.resolve(r["card_id"])
         if card_id in built.cards:
-            built.images[card_id] = r["file_path"]
+            built.images[card_id] = str(db.image_path(r["file_path"]))
 
     with _lock:
         _pools[game_id] = (version, built)

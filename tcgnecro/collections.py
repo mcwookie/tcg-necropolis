@@ -205,7 +205,7 @@ def reindex(conn: sqlite3.Connection, warn=print) -> dict[tuple[str, str], int]:
                     version["pack_id"] if version else None,
                     None if version else p.printing,
                     version["position"] if version else None,
-                    p.side, int(p.has_bleed), str(f),
+                    p.side, int(p.has_bleed), str(f.relative_to(db.collections_dir())),
                 ))
             conn.executemany("INSERT INTO images VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", rows)
             conn.execute(

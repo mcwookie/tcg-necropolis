@@ -71,3 +71,32 @@ def test_rotation_rule_is_per_game():
         == [270, 270, 270, 0, 0]
     assert display_rotation("ahlcg", {"type_code": "act"}, "back") == 270
     assert display_rotation("meccg", None) == display_rotation("swlcg", None) == 0
+
+
+def test_index_is_portable_between_installs_sharing_a_data_folder(client, tmp_path, monkeypatch):
+    """The Docker container and this PC share one data folder under different
+    paths (/data vs /mnt/...). An index written by either must work for both."""
+    import shutil
+    conn = db.connect()
+    stored = {r[0] for r in conn.execute("SELECT file_path FROM images")}
+    assert stored == {"ahlcg/scans/01001@core.png", "ahlcg/scans/01001@core~back.png",
+                      "ahlcg/scans/01016@core.png"}                    # relative, not absolute
+
+    elsewhere = tmp_path / "other-mount"                              # same files, another path
+    shutil.copytree(tmp_path / "collections", elsewhere / "collections")
+    shutil.copy(tmp_path / "index.db", elsewhere / "index.db")
+    shutil.copy(tmp_path / "users.json", elsewhere / "users.json")
+    shutil.copy(tmp_path / "secret.key", elsewhere / "secret.key")
+    monkeypatch.setenv("TCGNECRO_DATA", str(elsewhere))
+    users._cache = None
+    cards = client.post("/api/resolve", json={"game": "ahlcg", "decklist": "Machete"}).json()["cards"]
+    assert client.get(cards[0]["thumb"]).status_code == 200
+
+
+def test_old_absolute_paths_from_another_machine_are_re_rooted(tmp_path, monkeypatch):
+    monkeypatch.setenv("TCGNECRO_DATA", str(tmp_path / "data"))
+    assert db.image_path("/data/collections/ahlcg/ahlcg/03020@ptc.jpg") == \
+        tmp_path / "data" / "collections" / "ahlcg" / "ahlcg" / "03020@ptc.jpg"
+    assert db.thumb_url("/mnt/elsewhere/data/collections/ahlcg/ahlcg/03020@ptc.jpg") == \
+        "/thumb/ahlcg/ahlcg/03020@ptc.jpg"
+    assert db.image_path("ahlcg/ahlcg/03020@ptc.jpg") == tmp_path / "data" / "collections" / "ahlcg" / "ahlcg" / "03020@ptc.jpg"
