@@ -6,6 +6,8 @@ Ported from upstream's card_store.rs. Decklist lines look like:
     2 Gotal Outcast (48.2)   # comments are ignored
     Darth Vader [core-set]
     Darth Vader [core-set:12:swlcg]   # [printing:position:collection]
+
+The Proxies page's list sends exact printings instead (item_requests).
 """
 
 import json
@@ -151,15 +153,48 @@ def _resolve_names(conn, game_id, names) -> dict[str, sqlite3.Row]:
     return resolved
 
 
-def pack_requests(conn: sqlite3.Connection, game_id: str, pack_id: str) -> list[CardRequest]:
+def item_requests(conn: sqlite3.Connection, game_id: str,
+                  items: list[tuple[str, str | None, int | None, int]]) -> tuple[list[CardRequest], list[str]]:
+    """Proxy-list entries -> requests. Each entry is (card_id, pack_id,
+    position, quantity) and pins that exact printing, so a card reprinted in
+    several packs prints the art of the pack it was picked from."""
+    ids = list({card_id for card_id, *_ in items})
+    titles = {}
+    if ids:
+        marks = ",".join("?" * len(ids))
+        titles = {r["id"]: r["title"] for r in conn.execute(
+            f"SELECT id, title FROM cards WHERE game_id = ? AND id IN ({marks})", [game_id, *ids])}
+    requests, not_found = [], []
+    for card_id, pack_id, position, qty in items:
+        if card_id not in titles:
+            if card_id not in not_found:
+                not_found.append(card_id)
+            continue
+        requests.extend([CardRequest(titles[card_id], card_id, pack_id, position)] * qty)
+    return requests, not_found
+
+
+def pack_cards(conn: sqlite3.Connection, game_id: str, pack_id: str) -> list[tuple[CardRequest, int]]:
+    """(request, quantity in the pack) for each card in a pack, in pack order.
+    The quantity is the card's own count where the catalog has one (Arkham and
+    Marvel do), else 1."""
     rows = conn.execute(
-        """SELECT c.id, c.title, v.position FROM card_versions v
+        """SELECT c.id, c.title, c.attrs, v.position FROM card_versions v
            JOIN cards c ON c.game_id = v.game_id AND c.id = v.card_id
            WHERE v.game_id = ? AND v.pack_id = ?
            ORDER BY v.position, c.id""",
         (game_id, pack_id),
     )
-    return [CardRequest(r["title"], r["id"], pack_id, r["position"]) for r in rows]
+    out = []
+    for r in rows:
+        qty = (json.loads(r["attrs"]) if r["attrs"] else {}).get("quantity")
+        out.append((CardRequest(r["title"], r["id"], pack_id, r["position"]),
+                    qty if isinstance(qty, int) and qty > 0 else 1))
+    return out
+
+
+def pack_requests(conn: sqlite3.Connection, game_id: str, pack_id: str) -> list[CardRequest]:
+    return [request for request, _ in pack_cards(conn, game_id, pack_id)]
 
 
 def available_printings(conn, game_id, titles) -> dict[str, list[Printing]]:
@@ -219,13 +254,19 @@ def select_printing(request: CardRequest, printings: list[Printing]) -> Printing
     return min(printings, key=rank)
 
 
-def resolve(conn: sqlite3.Connection, game_id: str, requests: list[CardRequest], not_found=()) -> Resolution:
+def pick_printings(conn: sqlite3.Connection, game_id: str, requests: list[CardRequest]) -> list[Printing | None]:
+    """The printing to print for each request, or None where no collection
+    has an image of the card."""
     available = available_printings(conn, game_id, {r.title for r in requests})
+    return [select_printing(r, options) if (options := available.get(normalize_title(r.title))) else None
+            for r in requests]
+
+
+def resolve(conn: sqlite3.Connection, game_id: str, requests: list[CardRequest], not_found=()) -> Resolution:
     chosen, no_image = [], []
-    for request in requests:
-        options = available.get(normalize_title(request.title))
-        if options:
-            chosen.append(select_printing(request, options))
+    for request, printing in zip(requests, pick_printings(conn, game_id, requests)):
+        if printing:
+            chosen.append(printing)
         elif request.title not in no_image:
             no_image.append(request.title)
     return Resolution(chosen, list(not_found), no_image)

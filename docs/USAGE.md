@@ -34,8 +34,24 @@ First-time setup, if `data/` is empty:
 ## Proxies page
 
 1. Pick the game in the top bar.
-2. Either pick a **whole set**, or type a **decklist** (see below). The "Add a card" box
-   autocompletes card names and appends a `1x` line.
+2. Build the **proxy list** on the right. Three ways to add cards, which all land in the
+   same list:
+   - **Pick cards from a pack.** Choose a pack to see its cards in pack order, tick the
+     ones you want (or **Select all**), then **Add … to list**. Each card starts at its
+     count in the pack where the game's data has one (Arkham and Marvel), else 1. Greyed
+     cards have no image in any collection; "art from …" means the pack's own printing
+     has no image, so another printing's art stands in.
+     **Owned packs / All packs** switches the pack dropdown between the packs you've
+     marked on the Collection page and every pack. It starts on Owned packs for games
+     where you've set up a collection.
+   - **Add a card by name.** Autocompletes; Enter adds one copy.
+   - **Paste a decklist** (see the syntax below) and **Add to list**.
+
+   Each row prints that exact printing, so a card picked from a later pack prints that
+   pack's art. Use **−** and **+** (or type a number) to set how many copies; **−** at 1,
+   or **×**, removes the row. Adding a card that's already listed raises its count.
+   The list is kept in this browser per profile and game, so a reload or switching games
+   doesn't lose it; **Clear list** empties it.
 3. **Preview** shows what will print and which names weren't found. Click a card to see
    it full size: **Front**/**Back** switch sides, ←/→ (or the arrows) step through the
    preview, and Esc or a click outside closes it. **Open original** opens the scan itself

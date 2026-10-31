@@ -23,12 +23,13 @@ from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 from fastapi import Request
 from PIL import Image
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from tcgnecro import auth, collection_page, db
+from tcgnecro import auth, collection_page, db, users
 from tcgnecro.deckbuilder import sync
 from tcgnecro.deckbuilder.routes import router as deckbuilder_router
-from tcgnecro.decklist import DecklistError, pack_requests, parse_decklist, resolve
+from tcgnecro.decklist import (CardRequest, DecklistError, Printing, item_requests, pack_cards, pack_requests,
+                               parse_decklist, pick_printings, resolve)
 from tcgnecro.games import card_backs
 from tcgnecro.pdf import CUT_LINES, LAYOUTS, PAGE_SIZES, PdfOptions, generate_pdf
 from tcgnecro.templating import templates
@@ -69,8 +70,17 @@ app.include_router(deckbuilder_router)
 auth.install(app, https_only=os.environ.get("TCGNECRO_SECURE_COOKIES") == "1")
 
 
+class ListItem(BaseModel):
+    """One row of the Proxies page's list: an exact printing and how many."""
+    card_id: str
+    pack: str | None = None
+    position: int | None = None
+    qty: int = Field(1, ge=0, le=99)
+
+
 class DeckRequest(BaseModel):
     game: str
+    items: list[ListItem] = []
     decklist: str = ""
     pack: str | None = None
 
@@ -85,16 +95,36 @@ class PdfRequest(DeckRequest):
 
 
 def _resolve(req: DeckRequest):
+    """The list's items, then any decklist text, then a whole pack."""
     conn = db.connect()
     try:
+        requests, not_found = item_requests(
+            conn, req.game, [(i.card_id, i.pack, i.position, i.qty) for i in req.items])
+        if req.decklist.strip():
+            more, missing = parse_decklist(conn, req.game, req.decklist)
+            requests += more
+            not_found += [m for m in missing if m not in not_found]
         if req.pack:
-            return resolve(conn, req.game, pack_requests(conn, req.game, req.pack))
-        requests, not_found = parse_decklist(conn, req.game, req.decklist)
+            requests += pack_requests(conn, req.game, req.pack)
         return resolve(conn, req.game, requests, not_found)
     except DecklistError as e:
         raise HTTPException(400, str(e))
     finally:
         conn.close()
+
+
+def _list_item(request: CardRequest, printing: Printing | None, qty: int) -> dict:
+    """A proxy-list row: the printing asked for, plus what the page shows."""
+    front = printing.front.best(False) if printing else None
+    return {
+        "card_id": request.card_id, "pack": request.printing, "position": request.position, "qty": qty,
+        "title": request.title,
+        "has_image": printing is not None,
+        "thumb": db.thumb_url(front[0], printing.front.rotate) if front else None,
+        "landscape": bool(printing) and printing.front.rotate in (90, 270),
+        # When the pack's own printing has no image, another pack's art stands in.
+        "art_from": printing.label if printing and printing.pack_id != request.printing else None,
+    }
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -113,7 +143,7 @@ def index(request: Request):
 
 
 @app.get("/api/games/{game}")
-def game_info(game: str):
+def game_info(game: str, request: Request):
     conn = db.connect()
     packs = conn.execute(
         """SELECT p.id, p.name, COUNT(DISTINCT i.card_id) AS printable
@@ -127,11 +157,60 @@ def game_info(game: str):
         (game,),
     )]
     conn.close()
+    owned = users.owned_packs(request.state.user, game)   # None: no collection set up for this game
     return {
-        "packs": [dict(p) for p in packs],
+        "packs": [dict(p) | {"owned": owned is not None and p["id"] in owned} for p in packs],
+        "has_collection": owned is not None,
         "names": names,
         "back_labels": sorted({b.label for b in card_backs(game)}),
     }
+
+
+@app.get("/api/games/{game}/packs/{pack}/cards")
+def pack_card_list(game: str, pack: str):
+    """A pack's cards for the picker, in pack order, each with its quantity in
+    the pack and the image that would print."""
+    conn = db.connect()
+    try:
+        cards = pack_cards(conn, game, pack)
+        printings = pick_printings(conn, game, [r for r, _ in cards])
+    finally:
+        conn.close()
+    if not cards:
+        raise HTTPException(404, "No such pack")
+    return {"cards": [_list_item(r, p, qty) for (r, qty), p in zip(cards, printings)]}
+
+
+class ImportRequest(BaseModel):
+    game: str
+    decklist: str
+
+
+@app.post("/api/parse")
+def parse_into_list(req: ImportRequest):
+    """Decklist text -> proxy-list rows, one per printing chosen (quantities
+    added up), so pasted lists land in the same list as picked cards."""
+    conn = db.connect()
+    try:
+        requests, not_found = parse_decklist(conn, req.game, req.decklist)
+        printings = pick_printings(conn, req.game, requests)
+    except DecklistError as e:
+        raise HTTPException(400, str(e))
+    finally:
+        conn.close()
+    rows, no_image = {}, []
+    for request, printing in zip(requests, printings):
+        if printing is None:
+            if request.title not in no_image:
+                no_image.append(request.title)
+            continue
+        exact = CardRequest(printing.title, printing.card_id, printing.pack_id, printing.position)
+        key = (exact.card_id, exact.printing, exact.position)
+        if key in rows:
+            rows[key]["qty"] += 1
+        else:
+            rows[key] = _list_item(exact, printing, 1)
+    return {"items": list(rows.values()), "not_found": not_found, "no_image": no_image}
 
 
 @app.post("/api/resolve")
@@ -171,7 +250,7 @@ def make_pdf(req: PdfRequest):
         double_sided=req.double_sided, back_label=req.back_label or None, compact=req.compact,
     )
     pdf = generate_pdf(res.printings, options, req.game)
-    name = f"{req.game}-{req.pack or 'deck'}.pdf"
+    name = f"{req.game}-{req.pack or 'proxies'}.pdf"
     return Response(pdf, media_type="application/pdf",
                     headers={"Content-Disposition": f'attachment; filename="{name}"'})
 

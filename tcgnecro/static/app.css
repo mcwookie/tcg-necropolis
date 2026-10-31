@@ -14,7 +14,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, sans-serif; }
 a { color: var(--accent); }
-header.top { padding: 12px 20px; border-bottom: 1px solid var(--line); display: flex; gap: 20px; align-items: center; }
+header.top { padding: 12px 20px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; }
 header.top h1 { font-size: 18px; margin: 0; white-space: nowrap; }
 header.top nav a { margin-right: 14px; text-decoration: none; color: var(--muted); }
 header.top nav a.on { color: var(--text); font-weight: 600; }

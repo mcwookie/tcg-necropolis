@@ -78,8 +78,9 @@ cp ~/scans/tskc/*.jpg data/collections/ahlcg/ahlcg-tskc/
 .venv/bin/tcgnecro list                         # image counts per collection
 ```
 
-In the web app, the Proxies page's "Whole set" dropdown shows `(N)` printable cards per
-pack, and in the deck builder, cards without images show no thumbnail on hover.
+In the web app, the Proxies page's pack picker greys out cards without an image (and marks
+packs with none as "(no images)"), and in the deck builder, cards without images show no
+thumbnail on hover.
 
 Images whose code doesn't match any card still index, but they can't be printed by
 name. The usual cause is a typo in the code, or a card ArkhamDB marks hidden.

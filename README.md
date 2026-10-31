@@ -2,7 +2,7 @@
 
 Build decks and print proxies for out-of-print card games, using your own card scans.
 
-- **Proxies:** turn a decklist (or a whole set) into a print-and-play PDF.
+- **Proxies:** pick cards from packs (or paste a decklist), set how many of each, and get a print-and-play PDF.
 - **Decks:** a deck builder with per-game rules, filters and validation. It currently
   supports Arkham Horror: The Card Game, and any deck goes straight to the proxy printer.
 - **Profiles:** each person signs in to their own profile and owns their decks, which
