@@ -2,6 +2,7 @@
 #
 #   docker compose up -d                    # the app on http://127.0.0.1:8000
 #   docker compose --profile https up -d    # plus Caddy: HTTPS + password gate
+#   docker compose --profile tunnel up -d   # plus a Cloudflare Tunnel (docs/DOCKER.md)
 #
 # Settings come from a .env file next to this one (copy deploy/env.example).
 
@@ -22,8 +23,13 @@ services:
       TCGNECRO_SOURCE_URL: ${TCGNECRO_SOURCE_URL:-https://github.com/mcwookie/tcg-necropolis}
       # How often to sync decks linked to ArkhamDB; 0 turns it off.
       TCGNECRO_SYNC_MINUTES: ${TCGNECRO_SYNC_MINUTES:-60}
-      # Trust X-Forwarded-* headers from the Caddy container.
+      # Trust X-Forwarded-* headers from the Caddy or tunnel container.
       FORWARDED_ALLOW_IPS: "*"
+      # Sign-in through Cloudflare Access (docs/ACCOUNTS.md): your Zero Trust
+      # team name and the Access application's audience (AUD) tag. With both
+      # set, the app only serves requests Cloudflare signed in.
+      TCGNECRO_CF_ACCESS_TEAM: ${TCGNECRO_CF_ACCESS_TEAM:-}
+      TCGNECRO_CF_ACCESS_AUD: ${TCGNECRO_CF_ACCESS_AUD:-}
     ports:
       # Only this machine by default. Caddy reaches the app over the compose
       # network; for direct LAN access set TCGNECRO_BIND=0.0.0.0.
@@ -47,6 +53,18 @@ services:
       - ./deploy/caddy-users:/etc/caddy/users:ro
       - caddy_data:/data
       - caddy_config:/config
+
+  # Cloudflare Tunnel: makes the app reachable at your Cloudflare hostname
+  # without opening ports. In the tunnel's settings, point the public hostname
+  # at http://app:8000. Put Cloudflare Access in front of that hostname.
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    profiles: ["tunnel"]
+    restart: unless-stopped
+    depends_on: [app]
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}   # from .env
 
 volumes:
   caddy_data:     # certificates; keep it, or Let's Encrypt rate limits can bite

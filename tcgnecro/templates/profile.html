@@ -11,8 +11,13 @@
     <form method="post" action="/profile">
       <label class="f" for="name">Name</label>
       <input type="text" id="name" name="name" value="{{ user.name }}" required>
-      <label class="f" for="email">Email <span class="muted">(optional; will be used for Google sign-in later)</span></label>
+      {% if cloudflare %}
+      <label class="f">Email</label>
+      <p style="margin:4px 0">{{ user.email }} <span class="muted small">(how Cloudflare signs you in; an admin can change it)</span></p>
+      {% else %}
+      <label class="f" for="email">Email <span class="muted">(optional; used for sign-in through Cloudflare Access)</span></label>
       <input type="text" id="email" name="email" value="{{ user.email or '' }}">
+      {% endif %}
       <label class="f" for="timezone">Time zone for dates and times</label>
       <select id="timezone" name="timezone">
         <option value="">Automatic: this device's time zone</option>
@@ -26,9 +31,14 @@
   <section class="panel">
     <h2 style="margin-top:0">Profiles</h2>
     <table class="decks">
-      <tr><th>Name</th><th>Role</th><th>Decks</th><th>Since</th></tr>
+      <tr><th>Name</th><th>Email (sign-in)</th><th>Role</th><th>Decks</th><th>Since</th></tr>
       {% for p in profiles %}
-      <tr><td>{{ p.name }}</td><td class="small">{{ "admin" if p.is_admin else "member" }}</td>
+      <tr><td>{{ p.name }}</td>
+          <td><form method="post" action="/profile/users/{{ p.id }}/email" class="range" style="gap:6px">
+                <input type="email" name="email" value="{{ p.email or '' }}" placeholder="friend@example.com"
+                       aria-label="{{ p.name }}'s email" style="min-width:12em">
+                <button class="ghost">Save</button></form></td>
+          <td class="small">{{ "admin" if p.is_admin else "member" }}</td>
           <td>{{ deck_counts.get(p.id, 0) }}</td><td class="muted small">{{ when(p.created, "date") }}</td></tr>
       {% endfor %}
     </table>
@@ -36,11 +46,14 @@
       <label class="f" for="new-name">Add a profile</label>
       <div class="range" style="gap:10px">
         <input type="text" id="new-name" name="name" required placeholder="Friend's name">
+        <input type="email" name="email" placeholder="Their email" aria-label="Their email">
         <label class="check" style="white-space:nowrap"><input type="checkbox" name="is_admin" value="true"> admin</label>
         <button>Add</button>
       </div>
     </form>
-    <p class="muted small">Renaming or removing other profiles: <code>tcgnecro user --help</code>.</p>
+    <p class="muted small">{% if cloudflare %}People sign in through Cloudflare with the email on their profile, so
+       each friend needs one here (and on the Cloudflare Access policy). {% endif %}Renaming or removing other
+       profiles: <code>tcgnecro user --help</code>.</p>
   </section>
   {% endif %}
 </div>

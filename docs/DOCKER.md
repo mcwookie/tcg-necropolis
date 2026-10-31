@@ -78,6 +78,8 @@ pulling it, use `docker compose up -d --build`.
 | `TCGNECRO_SOURCE_URL` | your GitHub repo | The footer's "Source code" link (AGPL) |
 | `TCGNECRO_REBUILD_INDEX` | `1` | Set `0` to skip the catalog reload and reindex on start |
 | `TCGNECRO_SYNC_MINUTES` | `60` | Minutes between automatic syncs of decks linked to ArkhamDB; `0` turns it off |
+| `CLOUDFLARE_TUNNEL_TOKEN` | (none) | `tunnel` profile: the tunnel's token from the Zero Trust dashboard |
+| `TCGNECRO_CF_ACCESS_TEAM`, `TCGNECRO_CF_ACCESS_AUD` | (none) | Sign in through Cloudflare Access: team name and the application's audience tag. See below |
 
 ## HTTPS and a password gate (internet-facing servers)
 
@@ -104,6 +106,54 @@ is still a profile picker (see [ACCOUNTS.md](ACCOUNTS.md)).
 To add or change a password later: edit `deploy/caddy-users`, then
 `docker compose restart caddy`. `.env` and `deploy/caddy-users` are in `.gitignore`, so
 they never get committed.
+
+## Internet access with Cloudflare Tunnel and Access (no open ports)
+
+For a home server: Cloudflare Tunnel makes the app reachable at a hostname on your
+domain without opening ports on your router, and Cloudflare Access signs people in
+(Google, GitHub, or a code emailed to them) before any request reaches the app. The
+app then trusts Access's signed token and signs each person in as the profile with
+their email: no profile picker. You need a domain on Cloudflare and the free Zero
+Trust plan (up to 50 users).
+
+```
+browser ──HTTPS──► Cloudflare ── Access sign-in ── tunnel ──► cloudflared ──► app:8000
+```
+
+1. **Create the tunnel.** Zero Trust dashboard → Networks → Tunnels → create a
+   *Cloudflared* tunnel (e.g. `tcgnecro`). Copy its token; skip the install steps.
+2. **Give the tunnel a public hostname**, e.g. `necro.example.com`, with service
+   `http://app:8000` (the app's name on the compose network).
+3. **Protect that hostname with Access** *before* sharing it: Access → Applications →
+   add a *self-hosted* application for `necro.example.com`, with a policy that allows
+   your friends' email addresses. Choose the login methods under Settings →
+   Authentication (the emailed one-time code needs no setup). Copy the application's
+   **Audience (AUD) tag** from its settings.
+4. **Fill in `.env`** next to `compose.yaml`:
+
+   ```
+   CLOUDFLARE_TUNNEL_TOKEN=eyJh...
+   TCGNECRO_CF_ACCESS_TEAM=myteam          # the "myteam" in myteam.cloudflareaccess.com
+   TCGNECRO_CF_ACCESS_AUD=4714c1358e65...  # the application's audience tag
+   TCGNECRO_SECURE_COOKIES=1
+   ```
+
+5. **Give every profile its email**: Profile → Profiles (admins can edit each one), or
+   `tcgnecro user email "Friend" friend@example.com`. The email must match the one
+   they sign in to Cloudflare with. **Do your own first**, before step 6, or you'll be
+   locked out. (On a fresh install with no profiles, the first person through Access
+   creates the admin profile with their email.)
+6. **Start it:** `docker compose --profile tunnel up -d` (or add `tunnel` to
+   `COMPOSE_PROFILES` in `.env` so the update job keeps it running).
+
+Once `TCGNECRO_CF_ACCESS_*` are set, the app refuses every request that doesn't carry a
+valid Access token, including direct visits to its port on your network: use the
+Cloudflare address at home too. To go back to the profile picker, remove those two
+lines and restart. You can also set `TCGNECRO_BIND=127.0.0.1` so the port isn't
+reachable from the network at all.
+
+Cloudflare ends a response after about 100 seconds; very large PDFs at full quality
+can hit that, which **Compact images** avoids.
 
 ## Publishing images (GitHub Actions)
 

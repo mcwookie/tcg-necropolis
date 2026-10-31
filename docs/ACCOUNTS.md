@@ -13,24 +13,33 @@
 - **Admins** can add profiles (Profile page, or the CLI). Admins **cannot** see other
   people's private decks.
 
-## ⚠️ The sign-in method is a profile picker, which is not secure
+## Signing in: the profile picker, or Cloudflare Access
 
-You sign in by clicking your profile on the "Who's using TCG Necropolis?" page. There
-are no passwords, so **anyone who can reach the page can sign in as anyone**. That's fine
-on a home network with people you trust. Don't put it on the internet like this.
+**Profile picker (default).** You sign in by clicking your profile on the "Who's using
+TCG Necropolis?" page. There are no passwords, so **anyone who can reach the page can
+sign in as anyone**. That's fine on a home network with people you trust. Don't put it
+on the internet like this.
 
-The plan for internet access is to replace the picker with real sign-in. Either:
+**Cloudflare Access (for internet access).** Set `TCGNECRO_CF_ACCESS_TEAM` and
+`TCGNECRO_CF_ACCESS_AUD` (setup: [DOCKER.md](DOCKER.md), "Internet access with
+Cloudflare Tunnel and Access"). Cloudflare signs people in before they reach the app and
+sends a signed token with every request. The app checks the token (signed with your
+team's keys, for this application, not expired) and signs the person in as the profile
+whose **email** matches; there's no picker.
 
-- **Google / GitHub sign-in inside the app** (Authlib, OAuth). The app keeps a guest
-  list (emails or GitHub usernames) and links each provider account to a profile
-  through the profile's `identities` field, which is already reserved.
-- **Cloudflare Access in front of the app.** Cloudflare handles Google/GitHub login
-  and the guest list, and passes a verified email to the app in a request header. The
-  app maps that email to a profile.
+- Each person needs their email on their profile (admins edit them under Profile →
+  Profiles, or `tcgnecro user email`), and on the Access policy.
+- A verified email with no profile gets a page saying to ask an admin.
+- With no profiles yet, the first person through Access creates the admin profile, with
+  their email.
+- Requests without a valid token are refused, so the app can't be reached around
+  Cloudflare (for example on its port on your network).
+- Your own email is fixed on your profile page in this mode, so you can't lock yourself
+  out by mistyping it; change it with `tcgnecro user email` if you must.
+- **Sign out** ends the Cloudflare session (`/cdn-cgi/access/logout`).
 
-Either way, only the routes in `tcgnecro/auth.py` change. Everything else asks
-`request.state.user` who is signed in. See [ROADMAP.md](ROADMAP.md) for the remaining
-steps (HTTPS hosting, rate limits).
+Google/GitHub sign-in inside the app (Authlib) remains an option for setups without
+Cloudflare; the profile's `identities` field is reserved for it.
 
 ## First run
 
@@ -46,13 +55,14 @@ steps (HTTPS hosting, rate limits).
 tcgnecro user list                         # profiles, roles, how many decks each owns
 tcgnecro user add "Friend" [--email E] [--admin]
 tcgnecro user rename "Friend" "Alex"
+tcgnecro user email "Alex" alex@example.com    # the email Cloudflare Access signs them in with
 tcgnecro user admin "Alex"                 # make an admin; --off to undo
 tcgnecro user remove "Alex" --decks-to "Brian"
 ```
 
 - Removing a profile that owns decks requires `--decks-to`, so no deck is ever orphaned.
 - The last admin can't be removed or demoted.
-- If someone loses access when real sign-in exists, this CLI is the recovery path.
+- If someone loses access (a wrong email with Cloudflare Access), this CLI is the recovery path.
 
 ## Where it's stored
 
@@ -73,6 +83,7 @@ automatically.
 | Environment variable | Default | Purpose |
 |---|---|---|
 | `TCGNECRO_SECURE_COOKIES=1` | off | Only send the session cookie over HTTPS. Turn on when serving over HTTPS |
+| `TCGNECRO_CF_ACCESS_TEAM`, `TCGNECRO_CF_ACCESS_AUD` | off | Sign in through Cloudflare Access (above) |
 | `TCGNECRO_SOURCE_URL` | this project's GitHub | Where the footer's "Source code" link points. The AGPL requires it to lead to the code you're actually running |
 
 ## How it works (for code changes)

@@ -6,7 +6,9 @@ Build decks and print proxies for out-of-print card games, using your own card s
 - **Decks:** a deck builder with per-game rules, filters and validation for every game
   here, and any deck goes straight to the proxy printer.
 - **Profiles:** each person signs in to their own profile and owns their decks, which
-  they can keep private or share read-only with everyone on the server.
+  they can keep private or share read-only with everyone on the server. On a home
+  network, people pick their profile; for internet access, Cloudflare Tunnel and Access
+  sign them in by email ([docs/DOCKER.md](docs/DOCKER.md)).
 - **Collection:** tick the packs you own, per game. The deck builder can then show only
   cards you own, and print proxies of just the cards you don't.
 

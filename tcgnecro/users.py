@@ -86,6 +86,28 @@ def by_name(name: str) -> User | None:
     return next((u for u in _read().values() if u.name.lower() == name), None)
 
 
+def normalize_email(email: str | None) -> str | None:
+    email = (email or "").strip().lower()
+    return email or None
+
+
+def by_email(email: str | None) -> User | None:
+    """The profile with this email (case doesn't matter), e.g. the address a
+    sign-in provider vouched for (auth.py)."""
+    email = normalize_email(email)
+    return next((u for u in _read().values() if email and normalize_email(u.email) == email), None) if email else None
+
+
+def _check_email(users: dict[str, User], email: str | None, user_id: str | None) -> str | None:
+    """A normalized email, refusing one another profile already uses."""
+    email = normalize_email(email)
+    if email and "@" not in email:
+        raise UserError(f"'{email}' doesn't look like an email address")
+    if email and any(normalize_email(u.email) == email and u.id != user_id for u in users.values()):
+        raise UserError(f"Another profile already uses {email}")
+    return email
+
+
 def find(name_or_id: str) -> User:
     user = get(name_or_id) or by_name(name_or_id)
     if user is None:
@@ -106,7 +128,8 @@ def create(name: str, email: str | None = None, is_admin: bool = False) -> User:
         if any(u.name.lower() == name.lower() for u in users.values()):
             raise UserError(f"There is already a profile named '{name}'")
         first = not users
-        user = User(id=uuid.uuid4().hex[:12], name=name, email=email or None, is_admin=is_admin or first)
+        email = _check_email(users, email, None)
+        user = User(id=uuid.uuid4().hex[:12], name=name, email=email, is_admin=is_admin or first)
         users[user.id] = user
         _write(users)
     if first:
@@ -126,6 +149,8 @@ def update(user_id: str, **changes) -> User:
             if any(u.name.lower() == name.lower() and u.id != user_id for u in users.values()):
                 raise UserError(f"There is already a profile named '{name}'")
             changes["name"] = name
+        if "email" in changes:
+            changes["email"] = _check_email(users, changes["email"], user_id)
         user = User(**(asdict(users[user_id]) | changes))
         users[user_id] = user
         _write(users)

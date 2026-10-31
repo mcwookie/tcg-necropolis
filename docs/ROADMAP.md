@@ -19,13 +19,13 @@ L = several sessions.
 
 ## Accounts (next steps toward internet access)
 
-Done: profiles, deck ownership, private/shared decks, a profile picker sign-in, and the
+Done: profiles, deck ownership, private/shared decks, a profile picker sign-in,
+Cloudflare Access sign-in with a Cloudflare Tunnel service for internet access, and the
 AGPL source link. See [ACCOUNTS.md](ACCOUNTS.md).
 
 | Item | Size | Notes |
 |---|---|---|
-| Real sign-in | S–M | Replace the profile picker, either with Google/GitHub in-app (Authlib, plus a guest list of emails or usernames mapped through `User.identities`) or with Cloudflare Access (trust its verified-email header). Only `auth.py` changes |
-| Hosting over HTTPS | S | Cloudflare Tunnel (no port forwarding) or Caddy. Set `TCGNECRO_SECURE_COOKIES=1`, run uvicorn with `--proxy-headers`, keep it bound to localhost, and drop the LAN firewall rule |
+| In-app Google/GitHub sign-in | M | For setups without Cloudflare (Authlib, a guest list mapped through `User.identities`). Cloudflare Access sign-in is done |
 | Limit concurrent PDF builds per user | S | PDF generation is CPU-heavy |
 | Per-profile settings | S each | Owned packs are done (Collection page). Still to do: default filters, default print options |
 | Share a deck by link | S | A "public link" visibility for people without a profile |

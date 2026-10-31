@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {#
   Sign-in. While no profiles exist this is the first-run setup form; after
-  that it's the profile picker (see auth.py for why that's LAN-only).
+  that it's the profile picker (see auth.py for why that's LAN-only). With
+  Cloudflare Access, Cloudflare signs people in, so this page only shows up
+  for first-run setup or a verified email no profile has.
 #}
 {% block title %}Sign in{% endblock %}
 {% block body %}
@@ -12,11 +14,19 @@
     <h2 style="margin-top:0">Welcome</h2>
     <p>Create the first profile. It will be the admin, and it takes ownership of any decks
        that already exist.</p>
+    {% if cloudflare %}<p class="muted small">You'll sign in as <b>{{ cf_email }}</b>, the email Cloudflare verified.</p>{% endif %}
     <form method="post" action="/login/setup">
       <label class="f" for="name">Your name</label>
       <input type="text" id="name" name="name" required autofocus>
       <p><button>Create profile</button></p>
     </form>
+  </section>
+  {% elif cloudflare %}
+  <section class="panel">
+    <h2 style="margin-top:0">No profile for {{ cf_email }}</h2>
+    <p>Cloudflare signed you in as <b>{{ cf_email }}</b>, but no profile here uses that email.
+       Ask an admin to add it to your profile (Profile → Profiles).</p>
+    <form method="post" action="/logout"><button class="ghost">Sign out of Cloudflare</button></form>
   </section>
   {% else %}
   <section class="panel">

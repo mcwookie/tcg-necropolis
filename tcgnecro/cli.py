@@ -107,6 +107,11 @@ def cmd_user_rename(args):
     print(f"Renamed to {user.name}")
 
 
+def cmd_user_email(args):
+    user = users.update(users.find(args.name).id, email=args.email or None)
+    print(f"{user.name}'s email is {user.email}" if user.email else f"{user.name} has no email now")
+
+
 def cmd_user_admin(args):
     user = users.find(args.name)
     if args.off and user.is_admin and sum(u.is_admin for u in users.list_users()) == 1:
@@ -195,6 +200,10 @@ def main(argv=None):
     q.add_argument("name")
     q.add_argument("new_name")
     q.set_defaults(func=cmd_user_rename)
+    q = usub.add_parser("email", help="set the email a profile signs in with through Cloudflare Access ('' clears it)")
+    q.add_argument("name")
+    q.add_argument("email")
+    q.set_defaults(func=cmd_user_email)
     q = usub.add_parser("admin", help="make a profile an admin (--off to undo)")
     q.add_argument("name")
     q.add_argument("--off", action="store_true")

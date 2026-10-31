@@ -127,6 +127,12 @@ def _list_item(request: CardRequest, printing: Printing | None, qty: int) -> dic
     }
 
 
+@app.get("/healthz")
+def healthz():
+    """For the container health check: up, whichever sign-in method is on."""
+    return Response("ok", media_type="text/plain")
+
+
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
     conn = db.connect()

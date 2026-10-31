@@ -18,6 +18,7 @@ dependencies = [
     "python-multipart>=0.0.9,<1",  # HTML form posts in the deck builder
     "itsdangerous>=2,<3",          # signed session cookies (Starlette SessionMiddleware)
     "tzdata",                      # time zone names where the OS has none (e.g. slim Docker images)
+    "pyjwt[crypto]>=2.8,<3",       # verifying Cloudflare Access sign-in tokens (auth.py)
 ]
 
 [project.optional-dependencies]
