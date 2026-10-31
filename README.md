@@ -4,7 +4,8 @@ Build decks and print proxies for out-of-print card games, using your own card s
 
 - **Proxies:** pick cards from packs (or paste a decklist), set how many of each, and get a print-and-play PDF.
 - **Decks:** a deck builder with per-game rules, filters and validation. It currently
-  supports Arkham Horror: The Card Game, and any deck goes straight to the proxy printer.
+  supports Arkham Horror: The Card Game and Marvel Champions, and any deck goes straight
+  to the proxy printer.
 - **Profiles:** each person signs in to their own profile and owns their decks, which
   they can keep private or share read-only with everyone on the server.
 - **Collection:** tick the packs you own, per game. The deck builder can then show only
@@ -17,6 +18,7 @@ Proxy Nexus `.pnx` collection files as-is.
 | Game | Proxies | Deck builder | Card data |
 |---|---|---|---|
 | Arkham Horror: The Card Game (`ahlcg`) | yes | yes | ArkhamDB, downloaded and cached |
+| Marvel Champions (`marvel_champions`) | yes | yes | MarvelCDB, downloaded and cached |
 | Star Wars LCG (`swlcg`) | yes | not yet | bundled JSON |
 | Middle-earth CCG (`meccg`) | yes | not yet | bundled JSON |
 
@@ -46,7 +48,7 @@ trust.** Real sign-in for internet access is planned; see
 |---|---|
 | [docs/USAGE.md](docs/USAGE.md) | Using the web app and the CLI, decklist syntax, where data lives, backups |
 | [docs/ACCOUNTS.md](docs/ACCOUNTS.md) | Profiles, sign-in, deck ownership and sharing, managing profiles |
-| [docs/DECKBUILDER.md](docs/DECKBUILDER.md) | How the deck builder works: plugins, the TOML config reference, the Arkham rules engine |
+| [docs/DECKBUILDER.md](docs/DECKBUILDER.md) | How the deck builder works: plugins, the TOML config reference, the Arkham and Marvel rules engines |
 | [docs/DOCKER.md](docs/DOCKER.md) | Docker image and compose, HTTPS with Caddy, automatic updates from `main` |
 | [docs/DEPLOY_VPS.md](docs/DEPLOY_VPS.md) | Hosting it on a rented server: HTTPS, a password gate, backups, updates |
 | [docs/UPDATING_GAMES.md](docs/UPDATING_GAMES.md) | Keeping a game current: new expansions, new images, new rules |

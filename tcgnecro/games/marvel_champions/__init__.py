@@ -48,8 +48,9 @@ ENCOUNTER_TYPES = {"minion", "main_scheme", "side_scheme", "attachment", "treach
 # ("Open the Dungeons", a side scheme, has the attachment Jormungand on its back).
 LANDSCAPE_TYPES = {"main_scheme", "side_scheme", "player_side_scheme"}
 
-# The card fields kept for a future deck builder. MarvelCDB sends more (URLs,
-# OCTGN ids, image paths) that nothing here uses.
+# The card fields kept for the deck builder. MarvelCDB sends more (URLs,
+# OCTGN ids, image paths) that nothing here uses. "back_name" and "reprints"
+# are added here (with_back_types, build).
 KEPT_FIELDS = {
     "code", "name", "real_name", "subname", "traits", "text", "real_text", "flavor",
     "pack_code", "pack_name", "pack_legacy", "position", "set_position", "quantity",
@@ -61,6 +62,9 @@ KEPT_FIELDS = {
     "base_threat_star", "escalation_threat_fixed", "threat_fixed", "threat_per_group",
     "attack_star", "thwart_star", "defense_star", "health_star", "recover_star",
     "scheme_star", "boost_star", "threat_star", "escalation_threat_star",
+    # for the deck builder (deckbuilder.py)
+    "resource_mental", "resource_physical", "resource_wild", "deck_requirements", "deck_options",
+    "attack", "thwart", "defense", "recover", "scheme", "hand_size", "health", "back_name", "reprints",
 }
 
 
@@ -190,15 +194,23 @@ def build(cards: list[dict]) -> tuple[list[Card], list[CardVersion]]:
     code as api_id, which is what collection filenames name it by."""
     titles = card_titles(cards)
     by_code = {c["code"]: c for c in cards}
+    reprints: dict[str, list[str]] = {}
+    for card in cards:
+        first = original(by_code, card)["code"]
+        if first != card["code"]:
+            reprints.setdefault(first, []).append(card["code"])
     catalog_cards, versions = [], []
     for card in cards:
         first = original(by_code, card)
         if first["code"] == card["code"]:
+            # A reprint's own code (which decks on MarvelCDB may list) is kept
+            # on the original, so the deck builder can map it back.
+            extra = {"reprints": reprints[card["code"]]} if card["code"] in reprints else {}
             catalog_cards.append(Card(
                 card["code"],
                 titles[card["code"]],
                 back_group_for(card),
-                {k: v for k, v in card.items() if k in KEPT_FIELDS},
+                {k: v for k, v in card.items() if k in KEPT_FIELDS} | extra,
             ))
         versions.append(CardVersion(first["code"], card["pack_code"], card.get("position"),
                                     api_id=card["code"]))
@@ -206,13 +218,14 @@ def build(cards: list[dict]) -> tuple[list[Card], list[CardVersion]]:
 
 
 def with_back_types(cards: list[dict]) -> list[dict]:
-    """Copies of the cards with `back_type_code`: the type of the hidden face
-    a two-sided card links to (its ~back image), for per-face rotation."""
+    """Copies of the cards with `back_type_code` and `back_name`: the type and
+    name of the hidden face a two-sided card links to (its ~back image), for
+    per-face rotation and for naming heroes by their alter ego."""
     by_code = {c["code"]: c for c in cards}
     out = []
     for card in cards:
         back = by_code.get(card.get("linked_to_code") or "")
-        out.append(card | {"back_type_code": back["type_code"]} if back else card)
+        out.append(card | {"back_type_code": back["type_code"], "back_name": back["name"]} if back else card)
     return out
 
 

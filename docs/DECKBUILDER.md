@@ -318,7 +318,58 @@ legal (Zoey, Ursula, Lucius, Jenny with Underworld Support, Joe Diamond with 40 
 Not yet handled: taboo lists, customizable upgrades, parallel investigator front/back
 choices. See [ROADMAP.md](ROADMAP.md).
 
+## The Marvel Champions rules (`games/marvel_champions/deckbuilder.py`)
+
+Marvel's rules follow MarvelCDB's own deck validation (`app.deck.js` in its source), so a
+deck that's legal there is legal here.
+
+- **The hero is the identity.** Each hero is listed once, by its main code (`01001a`)
+  and named with its alter ego ("Spider-Man (Peter Parker)"). Third forms (Ant-Man,
+  Wasp and Archangel's `c` cards) aren't separate heroes.
+- **The hero's own set** (its `card_set_code`, set type `hero`) is added at printed
+  quantities when the deck is started, is always allowed, and is grouped as "Hero
+  cards". "Hero special" set-aside cards aren't deck cards.
+- **Never allowed:** encounter cards, other heroes' cards, and any other card that
+  belongs to a set (campaign cards, Civil War leaders). **Always allowed:** basic cards.
+- **Aspect** is a dropdown (`deck.meta["aspect"]`, as on MarvelCDB): Aggression,
+  Justice, Leadership, Protection or 'Pool. Until one is picked every aspect is open,
+  and validation warns.
+- **Hero exceptions are data on the hero card:**
+
+  | Data | Hero | Effect |
+  |---|---|---|
+  | `deck_requirements {"aspects": 2}` | Spider-Woman | two aspects (`aspect`, `aspect2`), equal counts |
+  | `deck_requirements {"aspects": 4, "limit": 1}` | Adam Warlock | all four aspects in equal counts, exactly one copy of each card |
+  | `deck_options [{type, trait, resource, limit}]` | Gamora, Cyclops, Cable, Wonder Man | extra cards from any aspect, offered in order with their limits |
+  | `deck_options [{name_limit, use_deck_limit}]` | Maria Hill | up to N different S.H.I.E.L.D. supports |
+
+- **Deck size** is 40–50, hero cards included and permanents not.
+- **Copy limits** are per card: `deck_limit`, usually 3, or 1 for "Max 1 per deck".
+  Reprints are one card, so the core *Energy* and a reprint share the limit. Different
+  cards that share a name each have their own limit, like the Peter Parker and Miles
+  Morales *Spider-Man* allies. MarvelCDB does the same.
+- **Codes from MarvelCDB decks** are mapped: a reprint's code (`35024` → `01088`) and a
+  two-sided card's back code (`34002b` → `34002a`) stand for the card. The catalog keeps
+  each card's reprint codes as `attrs["reprints"]` for this.
+- **Printing:** the deck's **Print** choice can add the hero's obligation and nemesis
+  set (`<hero set>_nemesis`), which you need to play. They're in the pool as kind
+  `encounter`, never legal in a deck.
+- **Import and sync** use MarvelCDB's public API, which matches ArkhamDB's
+  (`/api/public/decklist/N`, `/api/public/deck/N`; `hero_code`, `slots`, `meta` with the
+  aspect). Sync works the same as for Arkham.
+
+**Checked against real data:** 2,977 decklists published on MarvelCDB over 60 days.
+2,947 validate legal, including every deck for the special heroes above. The other 30
+break MarvelCDB's own rules too (32- to 92-card decks, off-aspect cards, a "Max 1" card
+twice); MarvelCDB lets them be published anyway.
+
+Not yet: MarvelCDB's "current" format (legacy packs excluded) and campaign-mode cards.
+
 ## Tests
+
+`tests/test_marvel_deckbuilder.py` does the same for Marvel Champions (hero sets,
+aspects, Spider-Woman, Adam Warlock, Gamora's limit, MarvelCDB code mapping, printing
+the obligation and nemesis, and the web page).
 
 `tests/test_deckbuilder.py` uses small synthetic Arkham cards, so it runs offline. It
 covers:

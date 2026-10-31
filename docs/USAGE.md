@@ -107,11 +107,13 @@ done.
 
 Your decks are listed first, followed by **Shared with you**: decks others have shared.
 
-- **New deck:** pick the game, then the investigator (filterable by name or trait, or
-  "Only … in my collection"; hover a name to see the card), and optionally a name. The investigator's required
-  signature cards are added for you.
-- **Import:** paste an ArkhamDB URL. Published decklists (`/decklist/view/…`) and shared
-  decks (`/deck/view/…`) both work. Private decks can't be read through ArkhamDB's API.
+- **New deck:** pick the game, then the investigator or hero (filterable by name or
+  trait, or "Only … in my collection"; hover a name to see the card), and optionally a
+  name. An Arkham investigator's required signature cards, or a Marvel hero's own cards,
+  are added for you.
+- **Import:** paste an ArkhamDB URL (Arkham) or a MarvelCDB URL (Marvel Champions).
+  Published decklists (`/decklist/view/…`) and shared decks (`/deck/view/…`) both work.
+  Private decks can't be read through either site's API.
 
 ### The builder
 
@@ -131,6 +133,11 @@ Three columns: **filters | cards | your deck**.
   - Investigator choices (secondary class, deck size, trait choice) are dropdowns under
     the investigator. Changing one re-checks the card list.
   - **Draw random basic weakness** adds one at random, as the rules require.
+  - **Marvel Champions:** choose the deck's **Aspect** under the hero (Spider-Woman
+    gets two; Adam Warlock takes all four, so there's nothing to pick). "Only cards my
+    hero can take" then shows the aspect's cards, basics, and any extra cards the hero
+    allows. The hero's own cards are fixed at their printed quantities. **Print** chooses
+    whether proxies include the hero's obligation and nemesis set.
   - **Print proxies** opens the PDF options and prints the whole deck, including the
     investigator, signatures and weaknesses. It warns if some cards have no image. With a
     collection saved, **Only cards I don't own** prints just the proxies you need. The deck
@@ -143,10 +150,11 @@ Three columns: **filters | cards | your deck**.
     decks**, but not change yours.
   - The deck name (top) and **Notes** (bottom) save when you leave the field.
 
-### Keeping decks in sync with ArkhamDB
+### Keeping decks in sync with ArkhamDB and MarvelCDB
 
-Decks imported from ArkhamDB stay **linked**: when the deck changes there, the change
-comes here.
+Decks imported from ArkhamDB or MarvelCDB stay **linked**: when the deck changes there,
+the change comes here. (Below, "ArkhamDB" stands for either; MarvelCDB decks have no
+experience or upgrades.)
 
 - **What syncs:** the cards, side deck, investigator choices and campaign experience
   (shown as **XP to spend**: earned for the current upgrade, plus adjustments, minus

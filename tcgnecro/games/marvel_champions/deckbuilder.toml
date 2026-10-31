@@ -1,0 +1,173 @@
+# Marvel Champions deck builder config.
+#
+# Data only: what the filter panel offers and its defaults, how cards look,
+# how the deck list is grouped. Rules live in deckbuilder.py.
+# Field reference: docs/DECKBUILDER.md ("Config reference").
+#
+# The `field` names below are keys of DeckCard.attrs, which
+# MarvelChampionsPlugin.build_card fills in.
+
+identity_label = "Hero"
+default_copies = 3
+color_field = "aspect"
+subtitle_field = "traits"
+group_field = "kind"
+page_size = 100
+
+[colors]
+aggression = "#c4302b"
+justice = "#d9a91a"
+leadership = "#2f6fc4"
+protection = "#2e9a4a"
+pool = "#d6559a"
+basic = "#8a8a84"
+hero = "#555555"
+
+[[badges]]
+field = "cost"
+title = "Cost"
+
+# ---- Deck list groups, in order ------------------------------------------------
+# The hero's own cards are grouped under "hero" (MarvelChampionsPlugin.group_of).
+
+[[groups]]
+value = "hero"
+label = "Hero cards"
+
+[[groups]]
+value = "ally"
+label = "Allies"
+
+[[groups]]
+value = "event"
+label = "Events"
+
+[[groups]]
+value = "support"
+label = "Supports"
+
+[[groups]]
+value = "upgrade"
+label = "Upgrades"
+
+[[groups]]
+value = "resource"
+label = "Resources"
+
+[[groups]]
+value = "player_side_scheme"
+label = "Player side schemes"
+
+# ---- Filters, top to bottom as shown ---------------------------------------
+
+[[filters]]
+key = "legal"
+label = "Only cards my hero can take"
+type = "toggle"
+default = true
+
+[[filters]]
+key = "owned"
+label = "Only cards I own"
+type = "toggle"
+# Handled by the core (filters.py), not the plugin. Starts switched on once
+# the profile has saved a collection on the Collection page.
+default = false
+
+[[filters]]
+key = "q"
+label = "Search"
+type = "text"
+fields = ["name", "traits", "text"]
+help = "Matches name, traits and card text"
+
+[[filters]]
+key = "aspect"
+label = "Aspect"
+type = "multiselect"
+field = "aspect"
+default = []
+options = [
+  { value = "aggression", label = "Aggression", color = "#c4302b" },
+  { value = "justice",    label = "Justice",    color = "#d9a91a" },
+  { value = "leadership", label = "Leadership", color = "#2f6fc4" },
+  { value = "protection", label = "Protection", color = "#2e9a4a" },
+  { value = "pool",       label = "'Pool",      color = "#d6559a" },
+  { value = "basic",      label = "Basic",      color = "#8a8a84" },
+  { value = "hero",       label = "Hero cards", color = "#555555" },
+]
+
+[[filters]]
+key = "kind"
+label = "Type"
+type = "multiselect"
+field = "kind"
+# Heroes (identities) and the obligation/nemesis cards kept for printing
+# aren't deck cards, so they're left out of the default.
+default = ["ally", "event", "support", "upgrade", "resource", "player_side_scheme"]
+options = [
+  { value = "ally",               label = "Ally" },
+  { value = "event",              label = "Event" },
+  { value = "support",            label = "Support" },
+  { value = "upgrade",            label = "Upgrade" },
+  { value = "resource",           label = "Resource" },
+  { value = "player_side_scheme", label = "Player side scheme" },
+]
+
+[[filters]]
+key = "cost"
+label = "Cost"
+type = "range"
+field = "cost"
+min = 0
+max = 6
+# Resources and X-cost cards have no cost; keep them unless the range is narrowed.
+none_passes = true
+
+[[filters]]
+key = "resource"
+label = "Resource icons"
+type = "multiselect"
+field = "resource_icons"
+options = [
+  { value = "energy",   label = "Energy" },
+  { value = "mental",   label = "Mental" },
+  { value = "physical", label = "Physical" },
+  { value = "wild",     label = "Wild" },
+]
+
+# ---- Sort orders; the first is the default ---------------------------------
+
+[[sorts]]
+key = "aspect"
+label = "Aspect, name"
+fields = ["aspect", "name"]
+
+[[sorts]]
+key = "name"
+label = "Name"
+fields = ["name"]
+
+[[sorts]]
+key = "cost"
+label = "Cost, name"
+fields = ["cost", "name"]
+
+# ---- [tokens] in card text -------------------------------------------------
+# Drawn as small text badges (plain text, so the repo carries no icon font).
+
+[icons]
+star = { label = "★", title = "Star ability" }
+per_hero = { label = "ʰ", title = "Per player" }
+per_group = { label = "ᵍ", title = "Per group" }
+energy = { label = "Energy", css = "skill" }
+mental = { label = "Mental", css = "skill" }
+physical = { label = "Physical", css = "skill" }
+wild = { label = "Wild", css = "skill" }
+boost = { label = "Boost", css = "token" }
+crisis = { label = "Crisis", css = "token" }
+acceleration = { label = "Acceleration", css = "token" }
+amplify = { label = "Amplify", css = "token" }
+hazard = { label = "Hazard", css = "token" }
+cost = { label = "Cost", css = "token" }
+unique = { label = "✦", title = "Unique" }
