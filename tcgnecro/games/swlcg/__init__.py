@@ -41,6 +41,20 @@ NAME = "Star Wars LCG"
 HERE = Path(__file__).parent
 
 
+# Landscape card types. Collections store them turned so the title reads
+# bottom to top, in a portrait slot.
+LANDSCAPE_TYPES = {"Objective", "Mission"}
+
+
+def display_rotation(attrs: dict | None, side: str) -> int:
+    """Show landscape cards (objectives, missions) turned 90° clockwise
+    (games.display_rotation). Scans already stored landscape are shown as is
+    (web._open)."""
+    if side == "front" and attrs and attrs.get("card_type") in LANDSCAPE_TYPES:
+        return 90
+    return 0
+
+
 def back_group_for(pack_code: str, side: str, objective_set_number: int | None) -> str | None:
     # Balance of the Force cards outside objective sets have their own backs.
     botf = pack_code == "balance-of-the-force" and objective_set_number is None

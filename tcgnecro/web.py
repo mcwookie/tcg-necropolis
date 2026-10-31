@@ -287,7 +287,12 @@ def _cache_path(src: Path, kind: str, r: int) -> Path:
 
 
 def _open(src: Path, r: int) -> Image.Image:
+    """The scan turned r degrees clockwise. A quarter turn is for showing a
+    landscape card stored sideways in a portrait slot, so a scan that's
+    already landscape (a few collections store some that way) is left as is."""
     img = Image.open(src)
+    if r in (90, 270) and img.width > img.height:
+        return img
     return img.transpose(ROTATIONS[r]) if r else img
 
 

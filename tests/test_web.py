@@ -169,3 +169,13 @@ def test_pasted_decklist_becomes_list_rows(two_packs):
     assert rows == {("01016", "core"): 3, ("01016", "rcore"): 1}     # unpinned Machete takes the newest printing
     assert res["no_image"] == ["Knife"] and res["not_found"] == ["Nobody"]
     assert two_packs.post("/api/parse", json={"game": "ahlcg", "decklist": "Machete [core"}).status_code == 400
+
+
+def test_scans_already_landscape_are_not_turned(tmp_path):
+    from tcgnecro.web import _open
+    tall, wide = tmp_path / "tall.png", tmp_path / "wide.png"
+    Image.new("RGB", (63, 88)).save(tall)
+    Image.new("RGB", (88, 63)).save(wide)
+    assert _open(tall, 90).size == (88, 63)        # stored sideways: turned
+    assert _open(wide, 90).size == (88, 63)        # already landscape: as is
+    assert _open(wide, 180).size == (88, 63)

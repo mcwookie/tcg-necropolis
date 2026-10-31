@@ -28,8 +28,10 @@
 <div class="row {{ 'flagged' if flagged }}" style="--c: {{ plugin.row_color(card) or 'var(--line)' }}">
   {{ qty_control(deck, card, plugin, prefix, section=section) }}
   <div style="min-width:0">
+    {% set related = plugin.related_cards(card, pool) %}
     <div class="name" hx-get="/decks/{{ deck.id }}/card/{{ card.id }}" hx-target="#detail-body"
-         {% if pool.images.get(card.id) %}data-thumb="{{ thumb_url(pool.images[card.id], card.rotate) }}"{% if card.landscape %} data-landscape{% endif %}{% endif %}>{{ card.name }}
+         {% if pool.images.get(card.id) %}data-thumb="{{ thumb_url(pool.images[card.id], card.rotate) }}"{% if card.landscape %} data-landscape{% endif %}{% endif %}
+         {%- if related %} data-thumbs='{{ thumb_list([card] + related, pool)|tojson }}'{% endif %}>{{ card.name }}
       {%- if owned is defined and owned is not none and card.id not in owned %}<span class="not-owned" title="Not in your collection">not owned</span>{% endif %}</div>
     {% set sub = plugin.subtitle(card) %}{% if sub %}<div class="sub">{{ sub }}</div>{% endif %}
   </div>

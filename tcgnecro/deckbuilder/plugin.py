@@ -145,6 +145,15 @@ class DeckbuilderPlugin:
         """(label, value) pairs for the card detail view."""
         return []
 
+    def related_cards(self, card: DeckCard, pool: Pool) -> list[DeckCard]:
+        """Cards that come with this one, shown beside it on hover and in its
+        detail view (SWLCG: the five command cards of an objective set)."""
+        return []
+
+    def related_label(self) -> str:
+        """Heading for the related cards in the detail view."""
+        return "Comes with"
+
     # ----- import / export --------------------------------------------------
 
     def import_deck(self, source: str, pool: Pool) -> Deck:

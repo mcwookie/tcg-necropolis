@@ -34,7 +34,7 @@
 </footer>
 
 <dialog id="detail"><div id="detail-body"></div></dialog>
-<img id="hover-thumb" alt="">
+<div id="hover-thumb"></div>
 <script>
   // Card detail: any element with hx-target="#detail-body" opens the dialog.
   document.body.addEventListener('htmx:afterSwap', e => {
@@ -45,13 +45,25 @@
   });
 
   // Hovering anything with data-thumb shows the card image beside the cursor
-  // (wider for landscape cards, marked data-landscape).
+  // (wider for landscape cards, marked data-landscape). data-thumbs, a JSON
+  // list of [url, landscape], shows a card with the cards that come with it
+  // (an objective set): the first on top, the rest in a row beneath.
   const thumb = document.getElementById('hover-thumb');
+  let shownKey = null;
   document.addEventListener('mouseover', e => {
-    const el = e.target.closest('[data-thumb]');
-    if (!el || !el.dataset.thumb) { thumb.style.display = 'none'; return; }
-    if (thumb.getAttribute('src') !== el.dataset.thumb) thumb.src = el.dataset.thumb;
-    thumb.classList.toggle('landscape', 'landscape' in el.dataset);
+    const el = e.target.closest('[data-thumb], [data-thumbs]');
+    if (!el || !(el.dataset.thumb || el.dataset.thumbs)) { thumb.style.display = 'none'; return; }
+    const list = el.dataset.thumbs ? JSON.parse(el.dataset.thumbs) : [[el.dataset.thumb, 'landscape' in el.dataset]];
+    const key = JSON.stringify(list);
+    if (key !== shownKey) {
+      shownKey = key;
+      const img = ([src, land]) => `<img src="${src}" alt="" class="${land ? 'landscape' : ''}">`;
+      thumb.innerHTML = list.length > 1
+        ? `<div class="lead">${img(list[0])}</div><div class="members">${list.slice(1).map(img).join('')}</div>`
+        : img(list[0]);
+      thumb.classList.toggle('set', list.length > 1);
+      thumb.classList.toggle('landscape', list.length === 1 && !!list[0][1]);
+    }
     thumb.style.display = 'block';
   });
   document.addEventListener('mousemove', e => {

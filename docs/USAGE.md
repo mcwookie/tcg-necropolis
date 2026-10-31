@@ -141,7 +141,8 @@ Three columns: **filters | cards | your deck**.
     the investigator. Changing one re-checks the card list.
   - **Draw random basic weakness** adds one at random, as the rules require.
   - **Star Wars LCG:** the list shows **objective sets**, not single cards: `+` adds a
-    whole set (objective and five command cards; click a set to see them). A deck needs
+    whole set (objective and five command cards). Hover a set to see all six cards;
+    click it for the set at full size, each card opening larger in a new tab. A deck needs
     10 or more sets from its side, at most 2 of each (1 for "Limit 1 per objective
     deck"); "[affiliation] affiliation only" sets need that affiliation. Printing prints
     every card of every set.

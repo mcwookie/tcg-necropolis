@@ -91,3 +91,14 @@ def test_printing_expands_each_set(pool, monkeypatch):
     rows = dict(SW.print_list(deck(_0011=2, _0051=1)))
     assert rows["2001"] == 1 and rows["0011"] == 2 and rows["0016"] == 2 and rows["0056"] == 1
     assert len(rows) == 1 + 12
+
+
+def test_sets_show_their_cards_and_objectives_turn_upright(pool):
+    hero = pool.get("0011")
+    assert [c.id for c in SW.related_cards(hero, pool)] == ["0012", "0013", "0014", "0015", "0016"]
+    assert SW.related_cards(pool.get("2001"), pool) == []                 # affiliations come alone
+    from tcgnecro.games import display_rotation
+    assert display_rotation("swlcg", {"card_type": "Objective"}) == 90
+    assert display_rotation("swlcg", {"card_type": "Mission"}) == 90
+    assert display_rotation("swlcg", {"card_type": "Unit"}) == 0
+    assert display_rotation("swlcg", {"card_type": "Objective"}, "back") == 0

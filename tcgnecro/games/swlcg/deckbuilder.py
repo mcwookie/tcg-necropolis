@@ -214,6 +214,13 @@ class SwlcgPlugin(DeckbuilderPlugin):
             fields.append((("✦ " if m["unique"] else "") + m["name"], " · ".join(bits)))
         return [(k, str(v)) for k, v in fields if v]
 
+    def related_label(self) -> str:
+        return "Cards in this set"
+
+    def related_cards(self, card: DeckCard, pool: Pool) -> list[DeckCard]:
+        """An objective set's five command cards, in set order."""
+        return [m for member in card.get("members") if (m := pool.get(member["id"]))]
+
     # ----- printing ---------------------------------------------------------
 
     def print_list(self, deck: Deck) -> list[tuple[str, int]]:

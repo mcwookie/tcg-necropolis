@@ -67,5 +67,12 @@ def when(context, stamp: str | None, fmt: str = "datetime") -> Markup:
     return Markup(f'<time datetime="{escape(stamp)}" data-fmt="{escape(fmt)}">{escape(text)}</time>')
 
 
-templates.env.globals.update(thumb_url=db.thumb_url, image_url=db.image_url, source_url=SOURCE_URL,
+def thumb_list(cards, pool) -> list[list]:
+    """[[thumbnail url, landscape?], ...] for the cards with an image: the
+    hover preview of a card shown with the cards that come with it
+    (plugin.related_cards; data-thumbs in the builder)."""
+    return [[db.thumb_url(pool.images[c.id], c.rotate), c.landscape] for c in cards if pool.images.get(c.id)]
+
+
+templates.env.globals.update(thumb_list=thumb_list, thumb_url=db.thumb_url, image_url=db.image_url, source_url=SOURCE_URL,
                              ago=ago, when=when, user_timezone=user_timezone)

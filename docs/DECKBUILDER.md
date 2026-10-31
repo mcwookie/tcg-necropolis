@@ -85,6 +85,7 @@ Only `build_card` is required. Every other hook has a default that gives a plain
 | `row_color`, `subtitle`, `badges` | from TOML | Card row appearance |
 | `render_text(text)` | `markup.render` with TOML icons | Card text HTML |
 | `detail_fields(card)` | `[]` | (label, value) rows in the card dialog |
+| `related_cards(card, pool)` / `related_label()` | `[]` / "Comes with" | Cards shown with this one on hover and in its dialog (SWLCG: a set's command cards) |
 | `import_deck(source, pool) -> Deck` | not supported | Build a deck from a URL or text (one-off copy) |
 | `sync_link(source) -> dict \| None` | `None` | If an import URL can be kept in sync, the link to store (provider, kind, remote_id) |
 | `fetch_remote(link, pool) -> RemoteDeck` | not supported | The newest version of a linked deck, following the site's upgrade chain |
@@ -401,6 +402,11 @@ From the Core Set rulebook:
   objective says "[affiliation] affiliation only" (`affiliation_lock`).
 - **At most 2 copies** of a set, or 1 if it says "Limit 1 per objective deck"
   (`is_limited`).
+
+Hovering a set shows the objective with its five cards; clicking it opens the set, every
+card's image included (`plugin.related_cards`, a hook any game can use for cards that
+come together). Objectives and missions are landscape cards, shown upright everywhere
+(`display_rotation`); a scan already stored landscape is shown as is (`web._open`).
 
 The sets are searchable by every card in them, and filterable by what they contain and
 their Force icons. Balance of the Force's multiplayer objectives (outside numbered sets)

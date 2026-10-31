@@ -18,3 +18,18 @@
     <p><button type="button" class="ghost" onclick="this.closest('dialog').close()">Close</button></p>
   </div>
 </div>
+{% set related = plugin.related_cards(card, pool) %}
+{% if related %}
+{# Cards that come with this one (an objective set's command cards). #}
+<h4 class="related-head">{{ plugin.related_label() }}</h4>
+<div class="related">
+  {% for r in related %}
+  <figure class="{{ 'landscape' if r.landscape }}">
+    {% if pool.images.get(r.id) %}<a href="{{ image_url(pool.images[r.id], r.rotate) }}" target="_blank" rel="noopener" title="Open full size">
+      <img loading="lazy" src="{{ thumb_url(pool.images[r.id], r.rotate) }}" alt="{{ r.name }}"></a>
+    {% else %}<div class="noimg muted small">No image</div>{% endif %}
+    <figcaption>{{ r.name }}{% set sub = plugin.subtitle(r) %}{% if sub %}<span class="muted"> · {{ sub }}</span>{% endif %}</figcaption>
+  </figure>
+  {% endfor %}
+</div>
+{% endif %}
