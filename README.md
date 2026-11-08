@@ -9,6 +9,8 @@ Build decks and print proxies for out-of-print card games, using your own card s
   they can keep private or share read-only with everyone on the server. On a home
   network, people pick their profile; for internet access, Cloudflare Tunnel and Access
   sign them in by email ([docs/DOCKER.md](docs/DOCKER.md)).
+- **Custom cards:** add fan-made scenarios, homebrew investigators or missing cards to
+  any game, and they work like official ones ([docs/CUSTOM_CARDS.md](docs/CUSTOM_CARDS.md)).
 - **Collection:** tick the packs you own, per game. The deck builder can then show only
   cards you own, and print proxies of just the cards you don't.
 
@@ -54,6 +56,7 @@ trust.** Real sign-in for internet access is planned; see
 | [docs/DOCKER.md](docs/DOCKER.md) | Docker image and compose, HTTPS with Caddy, automatic updates from `main` |
 | [docs/DEPLOY_VPS.md](docs/DEPLOY_VPS.md) | Hosting it on a rented server: HTTPS, a password gate, backups, updates |
 | [docs/UPDATING_GAMES.md](docs/UPDATING_GAMES.md) | Keeping a game current: new expansions, new images, new rules |
+| [docs/CUSTOM_CARDS.md](docs/CUSTOM_CARDS.md) | Adding your own cards, packs and scenarios to any game |
 | [docs/ADDING_A_GAME.md](docs/ADDING_A_GAME.md) | Supporting a new game, for proxies and optionally deck building |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | What's left to do, known limitations, ideas |
 

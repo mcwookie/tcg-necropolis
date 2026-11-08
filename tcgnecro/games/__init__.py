@@ -3,8 +3,15 @@
 Each game is a package under `tcgnecro/games/<id>/` exposing:
 
 - `GAME_ID`, `NAME`
-- `load_catalog(refresh: bool = False) -> Catalog`. `refresh` asks games that
-  download their data to fetch it again instead of using the local cache.
+- `load_source(refresh: bool = False) -> (packs, cards)`, the raw records, and
+  `build_catalog(packs, cards) -> Catalog`. `refresh` asks games that download
+  their data to fetch it again instead of using the local cache. Loading goes
+  through `games.load_catalog`, which adds the game's custom cards
+  (data/custom/<id>/, see custom.py) between the two, in the game's own record
+  format. Optionally `CUSTOM_ID_FIELD`, `CUSTOM_TITLE_FIELD`, `CUSTOM_REQUIRED`,
+  `CUSTOM_PACK_REQUIRED` describe that format for the checks.
+- or just `load_catalog(refresh: bool = False) -> Catalog`; custom cards then
+  use a generic format (custom.merge_catalog).
 - optionally a `backs/` folder of generic card backs, named
   `{back_group}_{label}[.bleed].{ext}` (same convention as upstream)
 - optionally `display_rotation(attrs, side) -> int`: clockwise degrees
@@ -60,6 +67,7 @@ class Catalog:
     packs: list[Pack] = field(default_factory=list)
     cards: list[Card] = field(default_factory=list)
     versions: list[CardVersion] = field(default_factory=list)
+    custom_cards: int = 0   # how many came from data/custom/ (games.load_catalog)
 
 
 @dataclass(frozen=True)
@@ -74,6 +82,32 @@ def get_game(game_id: str):
     if game_id not in GAME_MODULES:
         raise KeyError(f"Unknown game '{game_id}'. Known: {', '.join(GAME_MODULES)}")
     return import_module(f"tcgnecro.games.{game_id}")
+
+
+def load_catalog(game_id: str, refresh: bool = False, warn=None) -> Catalog:
+    """A game's catalog: its official data plus its custom cards. Problems
+    with custom content are reported through `warn` and never stop the
+    official cards loading."""
+    from tcgnecro.games import custom
+
+    warn = warn or (lambda message: None)
+    module = get_game(game_id)
+    if hasattr(module, "load_source") and hasattr(module, "build_catalog"):
+        packs, cards = module.load_source(refresh)
+        all_packs, all_cards, added = custom.merge(game_id, module, packs, cards, warn)
+        if not added and len(all_packs) == len(packs):
+            return module.build_catalog(packs, cards)
+        try:
+            catalog = module.build_catalog(all_packs, all_cards)
+        except Exception as e:  # a custom record the game's code can't handle
+            warn(f"custom {game_id}: couldn't build the catalog with the custom cards "
+                 f"({type(e).__name__}: {e}); loaded the official cards only")
+            return module.build_catalog(packs, cards)
+        catalog.custom_cards = added
+        return catalog
+    catalog = module.load_catalog(refresh=refresh)
+    catalog.custom_cards = custom.merge_catalog(game_id, catalog, warn)
+    return catalog
 
 
 def display_rotation(game_id: str, attrs: dict | None, side: str = "front") -> int:

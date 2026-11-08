@@ -229,8 +229,17 @@ def with_back_types(cards: list[dict]) -> list[dict]:
     return out
 
 
+# Custom cards (data/custom/marvel_champions/, see games/custom.py) use MarvelCDB's fields.
+CUSTOM_REQUIRED = ("code", "name", "pack_code", "position", "type_code")
+CUSTOM_PACK_REQUIRED = ("code", "name")
+
+
 def load_catalog(refresh: bool = False) -> Catalog:
-    packs, cards = load_source(refresh)
+    return build_catalog(*load_source(refresh))
+
+
+def build_catalog(packs: list[dict], cards: list[dict]) -> Catalog:
+    """The catalog from MarvelCDB-style packs and cards (official plus custom)."""
     cards = with_back_types(cards)
     catalog = Catalog(GAME_ID, NAME)
     # MarvelCDB packs carry no cycle, so the Collection page lists them by release date.

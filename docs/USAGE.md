@@ -244,6 +244,7 @@ Everything is under `data/` (or the folder in `TCGNECRO_DATA`):
 | `data/users.json` | profiles | **yes** |
 | `data/secret.key` | session signing key | optional; losing it just signs everyone out |
 | `data/collections/` | card images | yes, unless you still have the archives |
+| `data/custom/` | your custom cards and packs ([CUSTOM_CARDS.md](CUSTOM_CARDS.md)) | **yes**, the only copy |
 | `data/cache/` | downloaded card data | no, re-downloads |
 | `data/index.db` | search index | no, rebuild with `catalog` + `reindex` |
 

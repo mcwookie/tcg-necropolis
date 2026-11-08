@@ -20,7 +20,12 @@ GAME_ID = "marvel_champions"
 NAME = "Marvel Champions"
 
 
-def load_catalog(refresh: bool = False) -> Catalog:
+def load_source(refresh: bool = False) -> tuple[list[dict], list[dict]]:
+    """The raw (packs, cards) records, downloaded or read from bundled JSON."""
+    ...
+
+
+def build_catalog(packs: list[dict], cards: list[dict]) -> Catalog:
     catalog = Catalog(GAME_ID, NAME)
     # Pack(id, name, sort_key, group=None, group_order=0): sort_key orders packs;
     # newer must sort higher (a release date "2019-11-01" or zero-padded position
@@ -30,7 +35,25 @@ def load_catalog(refresh: bool = False) -> Catalog:
     #   attrs: the full card record if you'll add a deck builder, else None.
     # CardVersion(card_id, pack_id, position): one per printing of a card in a pack.
     return catalog
+
+
+def load_catalog(refresh: bool = False) -> Catalog:
+    return build_catalog(*load_source(refresh))
+
+
+# Custom cards (data/custom/<id>/, docs/CUSTOM_CARDS.md) use the same record format.
+CUSTOM_ID_FIELD = "code"                 # the field holding a card's id
+CUSTOM_REQUIRED = ("code", "name", "pack_code", "position", "type_code")
+CUSTOM_PACK_REQUIRED = ("code", "name")
+# CUSTOM_TITLE_FIELD = "label"  # if build_catalog takes titles from a field, so
+#                               # clashing custom names can be made unique there
 ```
+
+Splitting loading into `load_source` and `build_catalog` is what lets custom cards
+work: `games.load_catalog` (used by `tcgnecro catalog`) adds the records from
+`data/custom/<id>/` between the two, after checking them against the `CUSTOM_*`
+settings, so custom cards go through exactly the same code as official ones. A module
+with only `load_catalog` still works, and its custom cards use a generic format.
 
 Look at `games/swlcg` (static JSON in the repo) and `games/ahlcg` (downloaded and cached
 under `data/cache/<id>/`, honoring `refresh`) for the two common shapes. If upstream

@@ -247,7 +247,7 @@ page (or `tcgnecro user add`).
 sudo tee /etc/cron.daily/tcgnecro-backup <<'EOF'
 #!/bin/sh
 mkdir -p /var/backups/tcgnecro
-tar -czf /var/backups/tcgnecro/userdata-$(date +%F).tgz -C /srv/tcgnecro decks users.json
+tar -czf /var/backups/tcgnecro/userdata-$(date +%F).tgz --ignore-failed-read -C /srv/tcgnecro decks users.json custom
 find /var/backups/tcgnecro -name 'userdata-*.tgz' -mtime +30 -delete
 EOF
 sudo chmod +x /etc/cron.daily/tcgnecro-backup

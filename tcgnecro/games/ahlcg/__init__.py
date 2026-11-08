@@ -208,8 +208,17 @@ def cycle_labels(packs: list[dict]) -> dict[int, str]:
     return labels
 
 
+# Custom cards (data/custom/ahlcg/, see games/custom.py) use ArkhamDB's fields.
+CUSTOM_REQUIRED = ("code", "name", "pack_code", "position", "type_code")
+CUSTOM_PACK_REQUIRED = ("code", "name")
+
+
 def load_catalog(refresh: bool = False) -> Catalog:
-    packs, cards = load_source(refresh)
+    return build_catalog(*load_source(refresh))
+
+
+def build_catalog(packs: list[dict], cards: list[dict]) -> Catalog:
+    """The catalog from ArkhamDB-style packs and cards (official plus custom)."""
     titles = card_titles(cards)
 
     catalog = Catalog(GAME_ID, NAME)

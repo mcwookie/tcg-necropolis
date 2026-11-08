@@ -7,7 +7,7 @@ from pathlib import Path
 
 from tcgnecro import collections, db, users
 from tcgnecro.decklist import pack_requests, parse_decklist, resolve
-from tcgnecro.games import GAME_MODULES, get_game
+from tcgnecro.games import GAME_MODULES, load_catalog
 from tcgnecro.pdf import CUT_LINES, LAYOUTS, PAGE_SIZES, PdfOptions, generate_pdf
 
 
@@ -15,13 +15,15 @@ def cmd_catalog(args):
     conn = db.connect()
     for game_id in args.games or GAME_MODULES:
         try:
-            catalog = get_game(game_id).load_catalog(refresh=args.refresh)
+            catalog = load_catalog(game_id, refresh=args.refresh,
+                                   warn=lambda m: print(f"  warning: {m}", file=sys.stderr))
         except (urllib.error.URLError, TimeoutError) as e:
             print(f"{game_id}: couldn't download card data ({e}); keeping what was loaded before",
                   file=sys.stderr)
             continue
         db.store_catalog(conn, catalog)
-        print(f"{catalog.name}: {len(catalog.packs)} packs, {len(catalog.cards)} cards")
+        custom = f" (including {catalog.custom_cards} custom)" if catalog.custom_cards else ""
+        print(f"{catalog.name}: {len(catalog.packs)} packs, {len(catalog.cards)} cards{custom}")
 
 
 def cmd_import(args):

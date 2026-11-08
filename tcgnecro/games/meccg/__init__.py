@@ -56,17 +56,31 @@ def back_group_for(card_type: str) -> str:
     return "eye"
 
 
-def load_catalog(refresh: bool = False) -> Catalog:
-    # Static data bundled with the code, so there is nothing to refresh.
-    packs = json.loads((HERE / "meccg_packs.json").read_text())
-    cards = json.loads((HERE / "meccg_cards.json").read_text())
+# Custom cards (data/custom/meccg/, see games/custom.py) use the fields above.
+# `label` may be left out: it defaults to the name, made unique if it clashes.
+CUSTOM_ID_FIELD = "unique_id"
+CUSTOM_TITLE_FIELD = "label"
+CUSTOM_REQUIRED = ("unique_id", "name", "pack_code", "card_type", "alignment", "card_number")
+CUSTOM_PACK_REQUIRED = ("code", "name", "position")
 
+
+def load_source(refresh: bool = False) -> tuple[list[dict], list[dict]]:
+    # Static data bundled with the code, so there is nothing to refresh.
+    return (json.loads((HERE / "meccg_packs.json").read_text()),
+            json.loads((HERE / "meccg_cards.json").read_text()))
+
+
+def load_catalog(refresh: bool = False) -> Catalog:
+    return build_catalog(*load_source(refresh))
+
+
+def build_catalog(packs: list[dict], cards: list[dict]) -> Catalog:
     catalog = Catalog(GAME_ID, NAME)
     catalog.packs = [Pack(p["code"], p["name"], f"{p['position']:02}") for p in packs]
     for c in cards:
         catalog.cards.append(Card(
             c["unique_id"],
-            c["label"],
+            c.get("label") or c["name"],
             back_group_for(c["card_type"]),
             {k: v for k, v in c.items() if k != "label"},   # for the deck builder
         ))

@@ -64,18 +64,32 @@ def back_group_for(pack_code: str, side: str, objective_set_number: int | None) 
     return None
 
 
-def load_catalog(refresh: bool = False) -> Catalog:
-    # Static data bundled with the code, so there is nothing to refresh.
-    packs = json.loads((HERE / "swlcg_packs.json").read_text())
-    cards = json.loads((HERE / "swlcg_cards.json").read_text())
+# Custom cards (data/custom/swlcg/, see games/custom.py) use the fields above.
+# `label` may be left out: it defaults to the name, made unique if it clashes.
+CUSTOM_ID_FIELD = "unique_id"
+CUSTOM_TITLE_FIELD = "label"
+CUSTOM_REQUIRED = ("unique_id", "name", "pack_code", "card_type", "side")
+CUSTOM_PACK_REQUIRED = ("code", "name", "position")
 
+
+def load_source(refresh: bool = False) -> tuple[list[dict], list[dict]]:
+    # Static data bundled with the code, so there is nothing to refresh.
+    return (json.loads((HERE / "swlcg_packs.json").read_text()),
+            json.loads((HERE / "swlcg_cards.json").read_text()))
+
+
+def load_catalog(refresh: bool = False) -> Catalog:
+    return build_catalog(*load_source(refresh))
+
+
+def build_catalog(packs: list[dict], cards: list[dict]) -> Catalog:
     catalog = Catalog(GAME_ID, NAME)
     catalog.packs = [Pack(p["code"], p["name"], f"{p['position']:02}") for p in packs]
     for c in cards:
         catalog.cards.append(Card(
             c["unique_id"],
-            c["label"],
-            back_group_for(c["pack_code"], c["side"], c["objective_set_number"]),
+            c.get("label") or c["name"],
+            back_group_for(c["pack_code"], c["side"], c.get("objective_set_number")),
             {k: v for k, v in c.items() if k != "label"},   # for the deck builder
         ))
         position = int(c["unique_id"]) if c["unique_id"].isdigit() else None

@@ -37,20 +37,33 @@ NAME = "City of Heroes CCG"
 
 HERE = Path(__file__).parent
 
-def load_catalog(refresh: bool = False) -> Catalog:
-    # Static data bundled with the code, so there is nothing to refresh.
-    packs = json.loads((HERE / "coh_packs.json").read_text())
-    cards = json.loads((HERE / "coh_cards.json").read_text())
+# Custom cards (data/custom/city_of_heroes/, see games/custom.py) use the
+# fields above. A custom card whose name clashes gets a unique `label` title.
+CUSTOM_ID_FIELD = "id"
+CUSTOM_TITLE_FIELD = "label"
+CUSTOM_REQUIRED = ("id", "name", "pack_code", "number", "type")
+CUSTOM_PACK_REQUIRED = ("code", "name", "position")
 
+
+def load_source(refresh: bool = False) -> tuple[list[dict], list[dict]]:
+    # Static data bundled with the code, so there is nothing to refresh.
+    return (json.loads((HERE / "coh_packs.json").read_text()),
+            json.loads((HERE / "coh_cards.json").read_text()))
+
+
+def load_catalog(refresh: bool = False) -> Catalog:
+    return build_catalog(*load_source(refresh))
+
+
+def build_catalog(packs: list[dict], cards: list[dict]) -> Catalog:
     catalog = Catalog(GAME_ID, NAME)
     catalog.packs = [Pack(p["code"], p["name"], f"{p['position']:02}") for p in packs]
     for c in cards:
         catalog.cards.append(Card(
             c["id"],
-            c["name"],
+            c.get("label") or c["name"],
             "back",  # all cards have the same back
             c,       # for the deck builder
         ))
         catalog.versions.append(CardVersion(c["id"], c["pack_code"], c["number"]))
     return catalog
-

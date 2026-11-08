@@ -31,6 +31,7 @@ Everything you own lives in one folder on the host, mounted into the container a
 data/
   collections/{game}/{name}/   card images
   decks/  users.json           decks and profiles (back these up)
+  custom/                      your custom cards and packs (back up too; docs/CUSTOM_CARDS.md)
   cache/                       ArkhamDB downloads
   secret.key                   session key (generated if missing)
   index.db  thumbs/            caches, rebuilt automatically
@@ -256,7 +257,7 @@ docker compose exec app tcgnecro decks sync           # sync linked decks with A
 docker compose restart app                            # restart (also rebuilds the index)
 ```
 
-**Backups:** copy `decks/` and `users.json` from the data folder. They're the only
+**Backups:** copy `decks/`, `users.json` and `custom/` from the data folder. They're the only
 copies of users' work. A provider snapshot or nightly `tar` (as in
 [DEPLOY_VPS.md](DEPLOY_VPS.md#9-backups)) works the same with Docker.
 
