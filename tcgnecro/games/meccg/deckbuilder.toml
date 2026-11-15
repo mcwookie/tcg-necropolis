@@ -11,7 +11,6 @@ default_copies = 3
 color_field = "alignment"
 subtitle_field = "subtype"
 group_field = "kind"
-page_size = 100
 
 [colors]
 hero = "#2f6fc4"
@@ -155,14 +154,14 @@ max = 10
 # ---- Sort orders; the first is the default ---------------------------------
 
 [[sorts]]
-key = "kind"
-label = "Kind, name"
-fields = ["type", "kind", "name"]
-
-[[sorts]]
 key = "name"
 label = "Name"
 fields = ["name"]
+
+[[sorts]]
+key = "kind"
+label = "Kind, name"
+fields = ["type", "kind", "name"]
 
 [[sorts]]
 key = "mind"

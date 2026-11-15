@@ -128,7 +128,7 @@ Top-level keys:
 | `color_field` | none | `attrs` key whose value picks a row color from `[colors]` (lists use their first value) |
 | `subtitle_field` | none | `attrs` key shown under each card name |
 | `group_field` | `"kind"` | `attrs` key the deck list is grouped by |
-| `page_size` | `100` | Card rows per "Show more" |
+| `page_size` | `0` | `0` lists every matching card at once (grouped by type). A number pages the list, with "Show more" |
 
 Tables:
 

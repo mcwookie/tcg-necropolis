@@ -85,7 +85,7 @@ class GameConfig(BaseModel):
     groups: list[GroupConfig] = Field(default_factory=list)  # order + labels
     filters: list[FilterConfig] = Field(default_factory=list)
     sorts: list[SortConfig] = Field(default_factory=list)
-    page_size: int = 100               # card rows per "load more"
+    page_size: int = 0                 # card rows per "Show more"; 0 shows every card at once
     icons: dict[str, IconConfig] = Field(default_factory=dict)
 
     @classmethod

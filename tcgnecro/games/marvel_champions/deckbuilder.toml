@@ -12,7 +12,6 @@ default_copies = 3
 color_field = "aspect"
 subtitle_field = "traits"
 group_field = "kind"
-page_size = 100
 
 [colors]
 aggression = "#c4302b"
@@ -139,14 +138,14 @@ options = [
 # ---- Sort orders; the first is the default ---------------------------------
 
 [[sorts]]
-key = "aspect"
-label = "Aspect, name"
-fields = ["aspect", "name"]
-
-[[sorts]]
 key = "name"
 label = "Name"
 fields = ["name"]
+
+[[sorts]]
+key = "aspect"
+label = "Aspect, name"
+fields = ["aspect", "name"]
 
 [[sorts]]
 key = "cost"

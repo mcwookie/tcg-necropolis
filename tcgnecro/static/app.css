@@ -74,16 +74,16 @@ table.decks td, table.decks th { text-align: left; padding: 8px 6px; border-bott
 .ident img { width: 34px; border-radius: 3px; }
 
 /* ---- builder ---- */
-/* Filters | cards | deck on wide screens (the deck panel grows a little on very
-   wide ones); cards and deck side by side with the filters above the cards on
-   medium screens; one column on phones. */
-.builder { display: grid; grid-template-columns: 230px minmax(0, 1fr) clamp(380px, 24vw, 520px); gap: 16px;
-           padding: 16px; align-items: start; grid-template-areas: "filters cards deck"; }
+/* Deck | cards | filters on wide screens (the deck panel grows a little on very
+   wide ones); deck beside the cards with the filters above the cards on medium
+   screens; one column on phones (filters, cards, then the deck). */
+.builder { display: grid; grid-template-columns: clamp(380px, 24vw, 520px) minmax(0, 1fr) 230px; gap: 16px;
+           padding: 16px; align-items: start; grid-template-areas: "deck cards filters"; }
 .builder > .filters { grid-area: filters; }
 .builder > .cards { grid-area: cards; }
 .builder > .deck { grid-area: deck; }
 @media (max-width: 1150px) {
-  .builder { grid-template-columns: minmax(0, 1fr) 360px; grid-template-areas: "filters deck" "cards deck"; }
+  .builder { grid-template-columns: 360px minmax(0, 1fr); grid-template-areas: "deck filters" "deck cards"; }
   .builder > .deck { grid-row: 1 / span 2; }
 }
 @media (max-width: 800px) {
@@ -100,9 +100,13 @@ table.decks td, table.decks th { text-align: left; padding: 8px 6px; border-bott
   .filters:not(.open) > :not(.filters-head):not(.keep):not(input[type=hidden]) { display: none; }
 }
 @media (max-width: 800px) { .to-deck { display: inline; } }
-/* The card list flows into as many columns as fit (one on a phone). */
-#card-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); column-gap: 18px; }
-#card-list > :not(.row) { grid-column: 1 / -1; }
+/* The card list is grouped like the deck; each group's cards flow down as
+   many columns as fit, so a sorted list reads top to bottom (one on a phone). */
+#card-list .group-cards { columns: 320px; column-gap: 18px; }
+#card-list .group-cards .row { break-inside: avoid; }
+#card-list .list-group { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted);
+                         margin: 16px 0 4px; }
+#card-list .list-head + .list-group { margin-top: 4px; }
 .filters .opts { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 14px; }
 .filters .opts label { display: flex; gap: 4px; align-items: center; }
 .swatch { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }

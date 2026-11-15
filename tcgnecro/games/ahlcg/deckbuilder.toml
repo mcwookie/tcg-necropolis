@@ -12,7 +12,6 @@ default_copies = 2
 color_field = "faction"
 subtitle_field = "traits"
 group_field = "kind"
-page_size = 100
 
 [colors]
 guardian = "#2b80c5"
@@ -156,14 +155,14 @@ options = [
 # ---- Sort orders; the first is the default ---------------------------------
 
 [[sorts]]
-key = "class"
-label = "Class, name"
-fields = ["faction", "name"]
-
-[[sorts]]
 key = "name"
 label = "Name"
 fields = ["name"]
+
+[[sorts]]
+key = "class"
+label = "Class, name"
+fields = ["faction", "name"]
 
 [[sorts]]
 key = "level"

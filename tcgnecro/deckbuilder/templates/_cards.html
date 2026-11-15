@@ -6,8 +6,12 @@
   <a class="small to-deck" href="#deck">Deck ↓</a>
 </div>
 {% endif %}
-{% for card in cards %}
-  {{ card_row(deck, card, plugin, pool, section=section) }}
+{# Grouped like the deck; each group's cards flow down its columns. #}
+{% for heading, group_cards in page_groups %}
+  {% if heading %}<h3 class="list-group">{{ heading }}</h3>{% endif %}
+  <div class="group-cards">
+  {% for card in group_cards %}{{ card_row(deck, card, plugin, pool, section=section) }}{% endfor %}
+  </div>
 {% else %}
   <p class="muted">No cards match these filters.</p>
 {% endfor %}

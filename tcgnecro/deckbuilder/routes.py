@@ -137,7 +137,14 @@ def _card_rows(request: Request, deck: Deck, plugin, pool, offset: int = 0) -> d
     sort_key = request.query_params.get("sort")
     section = _section(plugin, request.query_params.get("section"))
     cards = filters.sort(filters.apply(plugin, values, deck, pool, owned), plugin.config, sort_key)
-    size = plugin.config.page_size
+    # Grouped like the deck (Assets, Events...): by group, in the config's
+    # order, then the chosen sort within each group (the sort is stable).
+    group_of = {c.id: plugin.group_of(c) for c in cards}
+    cards.sort(key=lambda c: (plugin.config.group_order(group_of[c.id]), group_of[c.id]))
+    group_counts: dict[str, int] = {}
+    for c in cards:
+        group_counts[group_of[c.id]] = group_counts.get(group_of[c.id], 0) + 1
+    size = plugin.config.page_size or max(len(cards), 1)   # 0: the whole list at once
     qs = (filters.query_string(plugin.config, values) + ([("sort", sort_key)] if sort_key else [])
           + ([("section", section)] if section != MAIN else []))
     return {
@@ -145,6 +152,7 @@ def _card_rows(request: Request, deck: Deck, plugin, pool, offset: int = 0) -> d
         "plugin": plugin,
         "pool": pool,
         "cards": cards[offset:offset + size],
+        "page_groups": _page_groups(cards, offset, size, group_of, group_counts, plugin),
         "total": len(cards),
         "offset": offset,
         "next_offset": offset + size if offset + size < len(cards) else None,
@@ -162,6 +170,22 @@ def _card_rows(request: Request, deck: Deck, plugin, pool, offset: int = 0) -> d
 def _section(plugin, key: str | None) -> str:
     """A section key the game has, else MAIN."""
     return key if key and any(s.key == key for s in plugin.sections()) else MAIN
+
+
+def _page_groups(cards, offset, size, group_of, group_counts, plugin) -> list[tuple[str | None, list]]:
+    """One page of the card list as [(heading, cards)]. A page that carries on
+    the previous page's group continues it without a heading (None)."""
+    out: list[tuple[str | None, list]] = []
+    previous = group_of[cards[offset - 1].id] if 0 < offset <= len(cards) else None
+    for card in cards[offset:offset + size]:
+        group = group_of[card.id]
+        if not out or group != previous:
+            heading = None if not out and group == previous else \
+                f"{plugin.config.group_label(group)} ({group_counts[group]})"
+            out.append((heading, []))
+            previous = group
+        out[-1][1].append(card)
+    return out
 
 
 def _deck_fragment(request: Request, deck: Deck, plugin, pool, changed: list[str] = (),

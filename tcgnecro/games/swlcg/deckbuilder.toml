@@ -9,7 +9,6 @@ default_copies = 2
 color_field = "affiliation"
 subtitle_field = "summary"
 group_field = "affiliation"
-page_size = 100
 
 [colors]
 jedi = "#2f7ac4"
@@ -132,6 +131,11 @@ max = 10
 # ---- Sort orders; the first is the default ---------------------------------
 
 [[sorts]]
+key = "name"
+label = "Name"
+fields = ["name"]
+
+[[sorts]]
 key = "affiliation"
 label = "Affiliation, set"
 fields = ["affiliation", "set_number"]
@@ -140,11 +144,6 @@ fields = ["affiliation", "set_number"]
 key = "set"
 label = "Set number"
 fields = ["set_number"]
-
-[[sorts]]
-key = "name"
-label = "Name"
-fields = ["name"]
 
 [[sorts]]
 key = "force"

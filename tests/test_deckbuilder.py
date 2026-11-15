@@ -306,3 +306,26 @@ def test_landscape_cards_show_upright_in_the_builder(client):
     assert "/image/ahlcg/scans/01001@core.png?r=270" in detail and 'class="detail landscape"' in detail
     picker = client.get("/decks/identities?game=ahlcg").text
     assert "01001@core.png?r=270" in picker and "data-landscape" in picker
+
+
+def test_card_list_is_grouped_by_type_and_sorted_by_name(client, monkeypatch):
+    import re
+    r = client.post("/decks", data={"game": "ahlcg", "identity": "01001"}, follow_redirects=False)
+    deck_id = r.headers["location"].rsplit("/", 1)[1]
+    page = client.get(f"/decks/{deck_id}/cards?f=1&kind=asset&kind=event&kind=skill").text
+    headings = re.findall(r'<h3 class="list-group">([^<]+)</h3>', page)
+    assert [h.split(" (")[0] for h in headings] == ["Assets", "Events", "Skills"]   # the config's group order
+    n_assets = int(headings[0].split("(")[1].rstrip(")"))
+    names = [n.strip() for n in re.findall(r'<div class="name"[^>]*>([^<]+)', page)]
+    assets = names[:n_assets]
+    assert assets == sorted(assets, key=lambda n: n.lower().lstrip(".\'\""))
+    assert names[n_assets:n_assets + 2] == ["Emergency Cache", "Lucky Break"]
+
+    # A page that carries on a group continues it without repeating the heading.
+    plugin = registry.plugin("ahlcg")
+    monkeypatch.setattr(plugin.config, "page_size", 4)
+    first = client.get(f"/decks/{deck_id}/cards?f=1&kind=asset&kind=event&kind=skill").text
+    second = client.get(f"/decks/{deck_id}/cards?f=1&kind=asset&kind=event&kind=skill&offset=4").text
+    assert re.findall(r'class="list-group">([^<]+)<', first) == [headings[0]]
+    assert re.findall(r'class="list-group">([^<]+)<', second) == [headings[1]]     # the rest of the assets continue unheaded
+    assert second.index('class="group-cards"') < second.index(headings[1])

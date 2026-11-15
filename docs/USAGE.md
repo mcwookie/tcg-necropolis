@@ -124,7 +124,7 @@ Your decks are listed first, followed by **Shared with you**: decks others have 
 
 ### The builder
 
-Three columns: **filters | cards | your deck**. On wide screens the card list itself flows into several columns; on tablets the deck sits beside the cards, and on phones everything stacks (the filters fold under a **Filters** bar, search stays in view, and **Deck ↓** jumps to your deck).
+Three columns: **your deck | cards | filters**. The card list is grouped by type, like the deck (Assets, Events, Skills... with a count each), and sorted by name within each group (the **Sort** filter offers other orders); on wide screens each group flows down several columns. On tablets the filters sit above the cards, beside the deck, and on phones everything stacks (the filters fold under a **Filters** bar, search stays in view, and **Deck ↓** jumps to your deck).
 
 - **Filters** come from the game's config. For Arkham, "Only cards my investigator can
   take" is on by default and applies the investigator's deckbuilding rules. **Only cards
@@ -134,7 +134,7 @@ Three columns: **filters | cards | your deck**. On wide screens the card list it
   Type to add a story weakness or a story asset your campaign gave you. Neither counts
   toward deck size.
 - **Cards:** `+`/`−` change copies (capped at the card's deck limit). Hover a name for
-  its image; click it for full text and stats. "Show more" loads the next 100.
+  its image; click it for full text and stats. The list shows every matching card at once, grouped by type.
 - **Your deck:** live counts (cards toward deck size, XP, weaknesses), problems in red
   (errors) or orange (warnings), and cards grouped by type. Problem cards are highlighted.
   - Investigator choices (secondary class, deck size, trait choice) are dropdowns under

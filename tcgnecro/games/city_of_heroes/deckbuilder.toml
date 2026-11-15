@@ -7,7 +7,6 @@ identity_label = "Hero"
 default_copies = 3
 color_field = "inspiration"
 group_field = "kind"
-page_size = 100
 
 [colors]
 insight = "#2f7ac4"
@@ -150,14 +149,14 @@ options = [
 # ---- Sort orders; the first is the default ---------------------------------
 
 [[sorts]]
-key = "kind"
-label = "Type, name"
-fields = ["kind", "name"]
-
-[[sorts]]
 key = "name"
 label = "Name"
 fields = ["name"]
+
+[[sorts]]
+key = "kind"
+label = "Type, name"
+fields = ["kind", "name"]
 
 [[sorts]]
 key = "powerset"
