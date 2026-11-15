@@ -4,6 +4,7 @@ Templates are looked up in tcgnecro/templates/ (site-wide pages: base layout,
 login, profile, Proxies) and then tcgnecro/deckbuilder/templates/.
 """
 
+import hashlib
 import os
 from datetime import datetime, timezone
 from pathlib import Path
@@ -74,5 +75,25 @@ def thumb_list(cards, pool) -> list[list]:
     return [[db.thumb_url(pool.images[c.id], c.rotate), c.landscape] for c in cards if pool.images.get(c.id)]
 
 
-templates.env.globals.update(thumb_list=thumb_list, thumb_url=db.thumb_url, image_url=db.image_url, source_url=SOURCE_URL,
+_STATIC = Path(__file__).parent / "static"
+_static_versions: dict[str, tuple[float, str]] = {}
+
+
+def static_url(name: str) -> str:
+    """/static/<name>?v=<fingerprint of its contents>. The address changes
+    whenever the file does, so browsers and Cloudflare, which may keep static
+    files for hours, fetch a new stylesheet or script after every update."""
+    path = _STATIC / name
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        return f"/static/{name}"
+    cached = _static_versions.get(name)
+    if not cached or cached[0] != mtime:
+        cached = (mtime, hashlib.sha1(path.read_bytes()).hexdigest()[:10])
+        _static_versions[name] = cached
+    return f"/static/{name}?v={cached[1]}"
+
+
+templates.env.globals.update(static_url=static_url, thumb_list=thumb_list, thumb_url=db.thumb_url, image_url=db.image_url, source_url=SOURCE_URL,
                              ago=ago, when=when, user_timezone=user_timezone)

@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}TCG Necropolis{% endblock %} · TCG Necropolis</title>
-<link rel="stylesheet" href="/static/app.css">
-<script src="/static/htmx.min.js"></script>
+<link rel="stylesheet" href="{{ static_url('app.css') }}">
+<script src="{{ static_url('htmx.min.js') }}"></script>
 </head>
 <body data-tz="{{ user_timezone(request) or '' }}">
 {#

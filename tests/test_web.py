@@ -179,3 +179,12 @@ def test_scans_already_landscape_are_not_turned(tmp_path):
     assert _open(tall, 90).size == (88, 63)        # stored sideways: turned
     assert _open(wide, 90).size == (88, 63)        # already landscape: as is
     assert _open(wide, 180).size == (88, 63)
+
+
+def test_static_files_are_linked_with_a_content_fingerprint(client):
+    import re
+    from tcgnecro.templating import static_url
+    page = client.get("/profile").text
+    css = re.search(r'href="(/static/app\.css\?v=[0-9a-f]{10})"', page).group(1)
+    assert re.search(r'src="/static/htmx\.min\.js\?v=[0-9a-f]{10}"', page)
+    assert css == static_url("app.css") and client.get(css).status_code == 200
