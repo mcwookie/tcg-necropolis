@@ -1,0 +1,52 @@
+# Chaos bags offered by the Arkham deck simulator (simulate.py).
+#
+# Each [[bags]] entry is one campaign at one difficulty. Tokens are written as
+# on the campaign guide's setup page: numbers (+1, 0, -1 ...) and the symbol
+# tokens skull, cultist, tablet, elder_thing, auto_fail and elder_sign.
+# Symbol tokens (skull, cultist, tablet, elder_thing) count as the value you set
+# on the Simulate page, since their effect depends on the scenario. The elder
+# sign uses the investigator's own elder sign bonus.
+#
+# The Simulate page also takes a typed-in bag, so a campaign missing here can
+# be used without editing this file. Add campaigns here to offer them to
+# everyone on the server.
+
+[[bags]]
+key = "notz-easy"
+label = "Night of the Zealot · Easy"
+tokens = "+1 +1 0 0 0 -1 -1 -1 -2 -2 skull skull cultist tablet auto_fail elder_sign"
+
+[[bags]]
+key = "notz-standard"
+label = "Night of the Zealot · Standard"
+tokens = "+1 0 0 -1 -1 -1 -2 -2 -3 -4 skull skull cultist tablet auto_fail elder_sign"
+
+[[bags]]
+key = "notz-hard"
+label = "Night of the Zealot · Hard"
+tokens = "0 0 0 -1 -1 -2 -2 -3 -3 -4 -5 skull skull cultist tablet auto_fail elder_sign"
+
+[[bags]]
+key = "notz-expert"
+label = "Night of the Zealot · Expert"
+tokens = "0 -1 -1 -2 -2 -3 -3 -4 -4 -5 -6 -8 skull skull cultist tablet auto_fail elder_sign"
+
+[[bags]]
+key = "dunwich-easy"
+label = "The Dunwich Legacy · Easy"
+tokens = "+1 +1 0 0 0 -1 -1 -1 -2 -2 skull skull cultist elder_thing auto_fail elder_sign"
+
+[[bags]]
+key = "dunwich-standard"
+label = "The Dunwich Legacy · Standard"
+tokens = "+1 0 0 -1 -1 -1 -2 -2 -3 -4 skull skull cultist elder_thing auto_fail elder_sign"
+
+[[bags]]
+key = "dunwich-hard"
+label = "The Dunwich Legacy · Hard"
+tokens = "0 0 0 -1 -1 -2 -2 -3 -3 -4 -5 skull skull cultist elder_thing auto_fail elder_sign"
+
+[[bags]]
+key = "dunwich-expert"
+label = "The Dunwich Legacy · Expert"
+tokens = "0 -1 -1 -2 -2 -3 -3 -4 -4 -5 -6 -8 skull skull cultist elder_thing auto_fail elder_sign"

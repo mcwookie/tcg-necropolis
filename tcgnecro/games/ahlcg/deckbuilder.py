@@ -547,6 +547,18 @@ class AhlcgPlugin(DeckbuilderPlugin):
         deck.set_count(card.id, deck.count(card.id) + 1)
         return f"Drew {card.name}"
 
+    # ----- simulation (simulate.py) -------------------------------------------
+
+    def sim_settings(self, deck: Deck, pool: Pool) -> list:
+        if not self._identity(deck, pool):
+            return []
+        from tcgnecro.games.ahlcg import simulate
+        return simulate.settings()
+
+    def simulate(self, deck: Deck, pool: Pool, values: dict):
+        from tcgnecro.games.ahlcg import simulate
+        return simulate.run(deck, pool, values)
+
     # ----- display ----------------------------------------------------------
 
     def detail_fields(self, card: DeckCard) -> list[tuple[str, str]]:
