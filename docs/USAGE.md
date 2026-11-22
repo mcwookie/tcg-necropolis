@@ -193,6 +193,9 @@ Three columns: **your deck | cards | filters**. The card list is grouped by type
     investigator, signatures and weaknesses. It warns if some cards have no image. With a
     collection saved, **Only cards I don't own** prints just the proxies you need. The deck
     summary's **Not owned** figure tells you how many that is.
+  - **Simulate** (Arkham) plays the deck solo many times and reports how often it passes
+    tests at each difficulty, how the hand and resources hold up, and when assets and
+    weaknesses turn up. See [Simulating a deck](#simulating-a-deck-arkham) below.
   - **Text list** is a plain decklist that pastes into the Proxies page or
     `tcgnecro pdf --deck`.
   - **JSON** downloads the deck file. **Copy** duplicates the deck. **Delete** asks first.
@@ -200,6 +203,24 @@ Three columns: **your deck | cards | filters**. The card list is grouped by type
     Shared decks are read-only for others. They can print, export or **Copy to my
     decks**, but not change yours.
   - The deck name (top) and **Notes** (bottom) save when you leave the field.
+
+### Simulating a deck (Arkham)
+
+**Simulate** on an Arkham deck opens a page with settings on the left and results on the
+right. Choose what spare actions go to (investigating, fighting or evading) and at what
+difficulty, a treachery test each round, the chaos bag (or type one in), and how hard to
+commit cards, then **Run simulation**. It plays 1,000 ten-round games in a second or two.
+
+The results show the chance to pass each kind of test at difficulties 1–6, clues (or
+damage) per game, hand size and resources by round, when each asset comes into play and
+when each weakness is drawn, and which cards the simulator only counts for their icons.
+The settings stay in the page address, and a **Random seed** makes runs repeatable, so
+you can change a card and compare. Anyone who can see a deck can simulate it.
+
+The simulated player follows simple fixed rules and doesn't face enemies or a real
+encounter deck: use it to compare versions of a deck, not to predict a game.
+[SIMULATOR.md](SIMULATOR.md) explains the model, and how to add effects for cards it
+doesn't know yet.
 
 ### Keeping decks in sync with ArkhamDB and MarvelCDB
 
@@ -273,7 +294,7 @@ Everything is under `data/` (or the folder in `TCGNECRO_DATA`):
 | `data/users.json` | profiles | **yes** |
 | `data/secret.key` | session signing key | optional; losing it just signs everyone out |
 | `data/collections/` | card images | yes, unless you still have the archives |
-| `data/custom/` | your custom cards and packs ([CUSTOM_CARDS.md](CUSTOM_CARDS.md)) | **yes**, the only copy |
+| `data/custom/` | your custom cards and packs ([CUSTOM_CARDS.md](CUSTOM_CARDS.md)), and Arkham simulator card effects (`ahlcg/sim_effects.json`, [SIMULATOR.md](SIMULATOR.md)) | **yes**, the only copy |
 | `data/cache/` | downloaded card data | no, re-downloads |
 | `data/index.db` | search index | no, rebuild with `catalog` + `reindex` |
 

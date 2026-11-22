@@ -50,6 +50,23 @@ Deck sync with ArkhamDB is done (one-way, following upgrades; see USAGE.md). Sti
 | Undo | S | Keep the last N `slots` states in deck meta |
 | Icon font / SVG icons | S | Icons are text badges today, so the repo carries no third-party font. Undrawn tokens are scenario-only (seals, runes, day/night). Swapping to SVGs means a new `IconConfig` field and a template change |
 
+## Deck simulator (Arkham)
+
+Done: solo Monte Carlo runs with a fixed policy, exact chance-to-pass probes, hand,
+resource, asset and weakness reports, a starter effects table (~180 cards) that servers
+can extend, typed-in chaos bags. See [SIMULATOR.md](SIMULATOR.md).
+
+| Item | Size | Notes |
+|---|---|---|
+| More card effects | ongoing | Add the most-played cards of each cycle to `sim_effects.json`. The results page lists a deck's unmodelled cards, which shows what's missing |
+| Investigator abilities | M | A per-investigator effects entry (Roland's clue on defeat, Daisy's extra Tome action...). Same format, keyed by investigator code |
+| Compare two decks | S | Run two decks (or two versions) with one seed and show the figures side by side |
+| More chaos bags | S | Only Night of the Zealot and The Dunwich Legacy are listed; typed-in bags cover the rest |
+| Enemies and the encounter deck | L | Enemy attacks, damage and horror, so soak, healing and defeat matter. Needs a simple scenario model |
+| Multiplayer | L | Other investigators committing cards and sharing work |
+| Smarter policy | M | E.g. hold resources for a key asset, play around weaknesses. Each change shifts every figure, so keep the default simple and offer others as settings |
+| Background runs with progress | S | Fine at today's speed (~1.5 s for 1,000 games); worth it if runs grow |
+
 ## More games
 
 | Game | Size | Notes |
