@@ -18,6 +18,11 @@ from tcgnecro.games import Card, CardVersion, Catalog, Pack
 
 GAME_ID = "marvel_champions"
 NAME = "Marvel Champions"
+# Optional, for the game's page (/games/<id>): a short description, and the text
+# tile shown until static/logos/<id>.png (or .svg/.webp/.jpg) exists:
+# title, subtitle, background color, text color.
+DESCRIPTION = "A cooperative Living Card Game where each player is a Marvel hero..."
+LOGO_TILE = ("Marvel", "Champions", "#A32D2D", "#FCEBEB")
 
 
 def load_source(refresh: bool = False) -> tuple[list[dict], list[dict]]:

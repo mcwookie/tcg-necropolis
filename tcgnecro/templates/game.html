@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{# A game's page: what it is, how much of it the app supports, and the way into
+   proxies, decks and the collection for this game. #}
+{% from "_logo.html" import logo %}
+{% block title %}{{ game.name }}{% endblock %}
+{% block body %}
+<div class="wrap">
+  <section class="game-hero">
+    {{ logo(game, "big") }}
+    <div>
+      <h2>{{ game.name }}</h2>
+      {% if game.description %}<p class="muted">{{ game.description }}</p>{% endif %}
+      <div class="stats">
+        <div class="stat"><span>Expansions</span><b>{{ "{:,}".format(game.packs) }}</b></div>
+        <div class="stat"><span>Cards</span><b>{{ "{:,}".format(game.cards) }}</b></div>
+        <div class="stat"><span>Cards with scans</span><b>{{ "{:,}".format(game.printable) }}</b></div>
+        <div class="stat"><span>You own</span><b>{% if owned is none %}—{% else %}{{ owned|length }} pack{{ "s" if owned|length != 1 }}{% endif %}</b></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="game-actions">
+    {% if game.printable %}<a class="btn" href="/proxies?game={{ game.id }}">Print proxies</a>{% endif %}
+    {% if game.has_builder %}<a class="btn ghost" href="/decks?game={{ game.id }}#new">+ New deck</a>{% endif %}
+    <a class="btn ghost" href="/collection/{{ game.id }}">Manage collection</a>
+  </div>
+
+  <div class="game-panels">
+    <section class="panel">
+      <h3>Your decks <span class="muted">· {{ deck_total }}</span></h3>
+      {% if decks %}
+      <ul class="deck-rows">
+        {% for deck, identity in decks %}
+        <li><span class="what"><a href="/decks/{{ deck.id }}">{{ deck.name }}</a>
+          {%- if deck.sync %} <span class="tag" title="Kept in sync with {{ deck.sync.provider_name }}">{{ deck.sync.provider_name }}</span>{% endif %}
+          {%- if identity and identity.name != deck.name %} <span class="muted small">{{ identity.name }}</span>{% endif %}</span>
+          <span class="muted small">{{ when(deck.updated, "date") }}</span></li>
+        {% endfor %}
+      </ul>
+      {% elif game.has_builder %}
+      <p class="muted">No decks for this game yet. <a href="/decks?game={{ game.id }}#new">Start one</a> or import one from a deck site.</p>
+      {% else %}
+      <p class="muted">This game has no deck builder yet.</p>
+      {% endif %}
+      {% if game.has_builder and (deck_total > decks|length or shared_total) %}
+      <p class="small" style="margin-bottom:0"><a href="/decks?game={{ game.id }}">Show all {{ deck_total }} deck{{ "s" if deck_total != 1 }}{% if shared_total %} and {{ shared_total }} shared with you{% endif %} →</a></p>
+      {% endif %}
+    </section>
+
+    <div class="game-side">
+      <section class="panel">
+        <h3>Your collection</h3>
+        {% if owned is none %}
+        <p class="muted small">Not set up yet. Tick the packs you own, and the deck builder and proxy printer can filter by them.</p>
+        {% else %}
+        <p class="muted small" style="margin:0 0 6px">{{ owned|length }} of {{ game.packs }} packs owned</p>
+        <div class="bar"><div style="width: {{ (100 * owned|length / game.packs)|round|int if game.packs else 0 }}%"></div></div>
+        {% if owned_groups %}<p class="muted small">{{ owned_groups[:4]|join(" · ") }}{% if owned_groups|length > 4 %} · +{{ owned_groups|length - 4 }} more{% endif %}</p>{% endif %}
+        {% endif %}
+        <a class="small" href="/collection/{{ game.id }}">Manage collection →</a>
+      </section>
+      <section class="panel">
+        <h3>Proxies</h3>
+        {% if game.printable %}
+        <p class="muted small">Print any deck, a pasted decklist, or cards picked from packs.</p>
+        <a class="small" href="/proxies?game={{ game.id }}">Open the proxy printer →</a>
+        {% else %}
+        <p class="muted small">No card scans for this game yet. Import a collection with <code>tcgnecro import</code>.</p>
+        {% endif %}
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}

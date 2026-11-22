@@ -95,5 +95,14 @@ def static_url(name: str) -> str:
     return f"/static/{name}?v={cached[1]}"
 
 
-templates.env.globals.update(static_url=static_url, thumb_list=thumb_list, thumb_url=db.thumb_url, image_url=db.image_url, source_url=SOURCE_URL,
+def game_name(game_id: str) -> str:
+    """A game's display name (its module's NAME), or the id for an unknown game."""
+    from tcgnecro.games import get_game
+    try:
+        return get_game(game_id).NAME
+    except (KeyError, AttributeError):
+        return game_id
+
+
+templates.env.globals.update(game_name=game_name, static_url=static_url, thumb_list=thumb_list, thumb_url=db.thumb_url, image_url=db.image_url, source_url=SOURCE_URL,
                              ago=ago, when=when, user_timezone=user_timezone)

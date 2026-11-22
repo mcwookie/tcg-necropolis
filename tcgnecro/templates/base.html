@@ -9,18 +9,15 @@
 </head>
 <body data-tz="{{ user_timezone(request) or '' }}">
 {#
-  Site layout. Pages set `nav` to "proxies" / "decks" / "" to highlight the
-  menu. request.state.user is the signed-in profile (None on /login).
+  Site layout. The site name leads back to the landing page (/). Pages about
+  one game set `crumb_game` to its id, which adds a link to that game's page.
+  request.state.user is the signed-in profile (None on /login).
 #}
 {% set user = request.state.user %}
 <header class="top">
-  <h1>TCG Necropolis</h1>
+  <h1><a href="/">TCG Necropolis</a></h1>
+  {% if crumb_game %}<a class="crumb" href="/games/{{ crumb_game }}">/ {{ game_name(crumb_game) }}</a>{% endif %}
   {% if user %}
-  <nav>
-    <a href="/" class="{{ 'on' if nav == 'proxies' }}">Proxies</a>
-    <a href="/decks" class="{{ 'on' if nav == 'decks' }}">Decks</a>
-    <a href="/collection" class="{{ 'on' if nav == 'collection' }}">Collection</a>
-  </nav>
   <div class="who">
     <a href="/profile">{{ user.name }}</a>
     <form method="post" action="/logout"><button class="link">Sign out</button></form>

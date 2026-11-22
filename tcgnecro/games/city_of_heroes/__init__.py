@@ -34,6 +34,13 @@ from tcgnecro.games import Card, CardVersion, Catalog, Pack
 
 GAME_ID = "city_of_heroes"
 NAME = "City of Heroes CCG"
+# Shown on the game's page (/games/<id>).
+DESCRIPTION = (
+    "A collectible card game based on the City of Heroes online game. Players build a team of heroes "
+    "or villains and battle for control of Paragon City."
+)
+# Logo tile used until static/logos/<id>.(svg|png|webp|jpg) exists: title, subtitle, background, text.
+LOGO_TILE = ('City of Heroes', 'CCG', '#0C447C', '#E6F1FB')
 
 HERE = Path(__file__).parent
 

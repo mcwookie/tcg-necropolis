@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{# The landing page: a grid of games; each tile leads to that game's page. #}
+{% from "_logo.html" import logo %}
+{% block title %}Games{% endblock %}
+{% block body %}
+<div class="wrap">
+  <div>
+    <h2 class="welcome">Welcome back, {{ request.state.user.name }}</h2>
+    <p class="muted" style="margin:0">Pick a game to build decks, print proxies, or track your collection.</p>
+  </div>
+  {% if games %}
+  <div class="game-grid">
+    {% for g in games %}
+    <a class="game-tile" href="/games/{{ g.id }}">
+      {{ logo(g) }}
+      <span class="meta">
+        <span>{{ deck_counts[g.id] }} deck{{ "s" if deck_counts[g.id] != 1 }}</span>
+        <span>{% if owned[g.id] is not none %}{{ owned[g.id]|length }} / {% endif %}{{ g.packs }} packs</span>
+      </span>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <section class="panel"><p>No games are loaded yet. Run <code>tcgnecro catalog</code>, then import card images.</p></section>
+  {% endif %}
+</div>
+{% endblock %}

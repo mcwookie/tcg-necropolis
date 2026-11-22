@@ -14,8 +14,9 @@
   header { padding: 14px 20px; border-bottom: 1px solid var(--line); display: flex; gap: 16px; align-items: center; }
   header h1 { font-size: 18px; margin: 0; white-space: nowrap; }
   header select { width: auto; min-width: 200px; }
-  header nav a { margin-right: 14px; text-decoration: none; color: var(--muted); }
-  header nav a.on { color: var(--text); font-weight: 600; }
+  header h1 a { color: inherit; text-decoration: none; }
+  header .crumb { color: var(--muted); text-decoration: none; }
+  header h1 a:hover, header .crumb:hover { text-decoration: underline; }
   header .who { margin-left: auto; display: flex; gap: 12px; align-items: center; font-size: 14px; }
   header .who form { margin: 0; }
   button.link { background: none; border: 0; padding: 0; margin: 0; color: var(--accent); cursor: pointer; font: inherit; }
@@ -113,11 +114,11 @@
 </style>
 </head>
 <body>
-<header><h1>TCG Necropolis</h1>
-  <nav><a href="/" class="on">Proxies</a><a href="/decks">Decks</a><a href="/collection">Collection</a></nav>
+<header><h1><a href="/">TCG Necropolis</a></h1>
+  {% if selected %}<a class="crumb" id="crumb" href="/games/{{ selected }}">/ {{ game_name(selected) }}</a>{% endif %}
   <div class="who"><a href="/profile">{{ request.state.user.name }}</a>
     <form method="post" action="/logout"><button class="link">Sign out</button></form></div>
-  <select id="game">{% for g in games %}<option value="{{ g.id }}">{{ g.name }}</option>{% endfor %}</select>
+  <select id="game">{% for g in games %}<option value="{{ g.id }}"{% if g.id == selected %} selected{% endif %}>{{ g.name }}</option>{% endfor %}</select>
 </header>
 <main>
   <section class="panel">
@@ -229,10 +230,10 @@ function fillPacks() {
   let packs = info.packs, hint = '';
   if (owned && !info.has_collection) {
     hint = 'You haven’t marked which packs you own for this game yet, so every pack is listed. ' +
-           '<a href="/collection">Set up your collection</a>.';
+           '<a href="/collection/' + $('game').value + '">Set up your collection</a>.';
   } else if (owned) {
     packs = info.packs.filter(p => p.owned);
-    if (!packs.length) hint = 'You don’t own any packs for this game. <a href="/collection">Mark them</a>, or show all packs.';
+    if (!packs.length) hint = 'You don’t own any packs for this game. <a href="/collection/' + $('game').value + '">Mark them</a>, or show all packs.';
   }
   $('own-hint').innerHTML = hint;
   $('own-hint').hidden = !hint;
@@ -502,7 +503,14 @@ async function download() {
   btn.disabled = false;
 }
 
-$('game').addEventListener('change', loadGame);
+$('game').addEventListener('change', () => {
+  // Keep the address and the game-page link in step with the chosen game.
+  const g = $('game').value;
+  history.replaceState(null, '', `/proxies?game=${encodeURIComponent(g)}`);
+  const crumb = $('crumb');
+  if (crumb) { crumb.href = `/games/${g}`; crumb.textContent = '/ ' + $('game').selectedOptions[0].text; }
+  loadGame();
+});
 $('preview').addEventListener('click', preview);
 $('download').addEventListener('click', download);
 renderList();

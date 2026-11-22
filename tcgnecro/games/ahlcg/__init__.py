@@ -25,6 +25,14 @@ from tcgnecro.games import Card, CardVersion, Catalog, Pack
 
 GAME_ID = "ahlcg"
 NAME = "Arkham Horror: The Card Game"
+# Shown on the game's page (/games/<id>).
+DESCRIPTION = (
+    "A cooperative Living Card Game of investigators facing cosmic horror in 1920s New England. Each "
+    "player builds a deck around an investigator and plays linked scenarios through a campaign, "
+    "carrying experience and trauma from one game to the next."
+)
+# Logo tile used until static/logos/<id>.(svg|png|webp|jpg) exists: title, subtitle, background, text.
+LOGO_TILE = ('Arkham Horror', 'The Card Game', '#173404', '#C0DD97')
 
 API = "https://arkhamdb.com/api/public"
 USER_AGENT = "tcgnecro (+https://github.com/mcwookie/tcg-necropolis)"

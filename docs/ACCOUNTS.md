@@ -94,7 +94,7 @@ automatically.
 | Session cookie, sign-in-required middleware, `/login`, `/logout`, `/profile` | `tcgnecro/auth.py` |
 | Who may see or edit a deck | `Deck.viewable_by` / `Deck.editable_by` in `deckbuilder/model.py` |
 | Enforcement | `_load(request, deck_id, edit=...)` in `deckbuilder/routes.py`: 404 if you can't see a deck, 403 if you can see but not edit it |
-| Shared layout, user menu, footer | `tcgnecro/templates/base.html` |
+| Shared layout, header (site name, game link, profile), footer | `tcgnecro/templates/base.html` |
 
 HTMX requests from a page whose session has expired get an `HX-Redirect` to `/login`
 instead of a login page swapped into part of the page.

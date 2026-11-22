@@ -31,9 +31,35 @@ First-time setup, if `data/` is empty:
 .venv/bin/tcgnecro import /path/to/ahlcg.pnx
 ```
 
+## Getting around
+
+After signing in you land on the **games page**: a grid of every loaded game's logo,
+with how many decks you have and how many packs you own in each. Click a logo to open
+that **game's page**, which shows:
+
+- the game's logo and description, and how many expansions, cards and card scans the
+  app has for it, plus how many packs you own;
+- buttons to **Print proxies**, start a **New deck**, and **Manage collection**, each
+  opened on this game;
+- your five most recently changed decks for the game, with a link to all of them (and
+  to decks others have shared with you);
+- a summary of your collection for the game.
+
+Click **TCG Necropolis** at the top left on any page to go back to the games page. Pages
+about one game also show its name next to it, linking back to that game's page.
+
+### Logos
+
+Put a game's logo in `tcgnecro/static/logos/<game id>.svg` (or `.png`, `.webp`, `.jpg`),
+for example `static/logos/ahlcg.png`. A game without one gets a text tile in its
+colors, set by `LOGO_TILE` in `tcgnecro/games/<id>/__init__.py`; its description is
+`DESCRIPTION` in the same file. A wide image around 2:1 fits the tiles best.
+
 ## Proxies page
 
-1. Pick the game in the top bar.
+Open it with **Print proxies** on a game's page (`/proxies?game=<id>`).
+
+1. The game you came from is selected; you can switch games in the top bar.
 2. Build the **proxy list** on the right. Three ways to add cards, which all land in the
    same list:
    - **Pick cards from a pack.** Choose a pack to see its cards in pack order, tick the
@@ -88,8 +114,8 @@ or `Daisy Walker (rod 1)` in Arkham. Use the autocomplete to find the exact titl
 
 ## Collection page
 
-**Collection** (top bar) records which packs you own, separately for each game (tabs at
-the top). Packs are grouped by cycle; tick a cycle's name to select all of it. Save when
+**Manage collection** on a game's page records which packs you own, separately for each
+game (tabs at the top switch games). Packs are grouped by cycle; tick a cycle's name to select all of it. Save when
 done.
 
 - Owning a repackaged box, like *The Dunwich Legacy Investigator Expansion*, counts as
@@ -102,6 +128,9 @@ done.
   unticked.
 
 ## Decks page
+
+Open it from a game's page: **+ New deck** or **Show all decks** list that game's decks
+(`/decks?game=<id>`), and **Show decks for every game** lists them all.
 
 ### Starting a deck
 
