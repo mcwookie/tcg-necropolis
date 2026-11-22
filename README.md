@@ -76,15 +76,16 @@ tcgnecro/
   collections.py  archive import, folder scan (reindex)
   decklist.py     decklist parsing, name resolution, printing selection
   pdf.py          page layout, cut lines, double-sided backs
-  web.py          FastAPI app: Proxies page + mounts the deck builder and sign-in
+  web.py          FastAPI app: Proxies page (/proxies) + mounts everything else
+  home.py         the games page (/) and each game's page (/games/<id>)
   auth.py         sign-in, sessions, profile pages
   users.py        profile store (and per-profile settings such as owned packs)
   ownership.py    owned packs -> owned cards
   collection_page.py  the Collection page
   templating.py   the shared Jinja environment
   cli.py          the `tcgnecro` command
-  templates/      site layout, Proxies, sign-in and profile pages
-  static/         shared CSS, vendored htmx
+  templates/      site layout, games and game pages, Proxies, sign-in and profile pages
+  static/         shared CSS, vendored htmx, logos/ (one image per game, optional)
   deckbuilder/    game-agnostic deck builder core (see docs/DECKBUILDER.md)
   games/<id>/     one package per game: catalog, card backs, optional deck builder
 tests/            pytest; run with `.venv/bin/python -m pytest`

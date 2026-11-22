@@ -40,6 +40,14 @@ from tcgnecro.games import Card, CardVersion, Catalog, Pack
 
 GAME_ID = "meccg"
 NAME = "Middle-earth CCG"
+# Shown on the game's page (/games/<id>).
+DESCRIPTION = (
+    "A collectible card game set in Tolkien's Middle-earth. Wizards, Ringwraiths and others gather "
+    "companies, travel between sites, and race to win the war against Sauron, or to bring the One "
+    "Ring to him."
+)
+# Logo tile used until static/logos/<id>.(svg|png|webp|jpg) exists: title, subtitle, background, text.
+LOGO_TILE = ('Middle-earth', 'Collectible Card Game', '#633806', '#FAEEDA')
 
 HERE = Path(__file__).parent
 

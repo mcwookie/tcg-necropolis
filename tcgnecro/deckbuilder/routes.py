@@ -204,15 +204,20 @@ def _deck_fragment(request: Request, deck: Deck, plugin, pool, changed: list[str
 # ----- deck list, create, import -----------------------------------------------
 
 @router.get("", response_class=HTMLResponse)
-def deck_index(request: Request, error: str | None = None):
+def deck_index(request: Request, error: str | None = None, game: str | None = None):
+    """Every deck you can see, or just one game's (?game=, from its game page)."""
     conn = db.connect()
     loaded = {r["id"]: r["name"] for r in conn.execute("SELECT id, name FROM games")}
     conn.close()
     games = [(gid, loaded[gid]) for gid in registry.plugins() if gid in loaded]
+    if game not in dict(games):
+        game = None
+    elif games[0][0] != game:   # the forms start on this game
+        games.sort(key=lambda g: g[0] != game)
     user = current_user(request)
     mine, shared = [], []
     for deck in store.list_decks():
-        if not deck.viewable_by(user):
+        if not deck.viewable_by(user) or (game and deck.game != game):
             continue
         if deck.game not in loaded or deck.game not in registry.plugins():
             row = (deck, None, None)
@@ -224,7 +229,7 @@ def deck_index(request: Request, error: str | None = None):
         (mine if deck.editable_by(user) else shared).append(row)
     return templates.TemplateResponse(request, "decks.html", {
         "games": games, "game_names": loaded, "decks": mine, "shared": shared,
-        "owner_names": {u.id: u.name for u in users.list_users()}, "error": error, "nav": "decks",
+        "owner_names": {u.id: u.name for u in users.list_users()}, "error": error, "crumb_game": game,
     })
 
 
@@ -247,7 +252,7 @@ def create_deck(request: Request, game: str = Form(...), identity: str = Form(""
     plugin, pool = _game(game)
     card = pool.get(identity) if identity else None
     if plugin.config.identity_required and card is None:
-        return RedirectResponse(f"/decks?error=Choose+an+{plugin.config.identity_label.lower()}", 303)
+        return RedirectResponse("/decks?" + urlencode({"game": game, "error": f"Choose an {plugin.config.identity_label.lower()}"}) + "#new", 303)
     deck = Deck(id=store.new_id(), game=game, name=name.strip() or (card.raw.get("name") if card else "New deck"),
                 identity=card.id if card else None, owner=current_user(request).id)
     plugin.start_deck(deck, pool)
@@ -261,7 +266,7 @@ def import_deck(request: Request, game: str = Form(...), source: str = Form(...)
     try:
         deck = sync.import_and_link(plugin, source, pool)   # linked for syncing when possible
     except Exception as e:  # network errors, bad URLs, private decks
-        return RedirectResponse("/decks?" + urlencode({"error": f"Import failed: {e}"}), 303)
+        return RedirectResponse("/decks?" + urlencode({"game": game, "error": f"Import failed: {e}"}), 303)
     deck.id = store.new_id()
     deck.owner = current_user(request).id
     deck.visibility = "private"
@@ -281,7 +286,7 @@ def builder(request: Request, deck_id: str):
         "page_sizes": list(PAGE_SIZES), "layouts": LAYOUTS, "cut_lines": CUT_LINES,
         "back_labels": sorted({b.label for b in card_backs(deck.game)}),
         "changed": [],
-        "nav": "decks",
+        "crumb_game": deck.game,
     }
     return templates.TemplateResponse(request, "builder.html", ctx)
 

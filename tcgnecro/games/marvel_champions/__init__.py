@@ -30,6 +30,14 @@ from tcgnecro.games import Card, CardVersion, Catalog, Pack
 
 GAME_ID = "marvel_champions"
 NAME = "Marvel Champions"
+# Shown on the game's page (/games/<id>).
+DESCRIPTION = (
+    "A cooperative Living Card Game where each player is a Marvel hero, switching between hero and "
+    "alter-ego to stop a villain's scheme. Decks pair a hero's own cards with an aspect: Aggression, "
+    "Justice, Leadership, Protection or Pool."
+)
+# Logo tile used until static/logos/<id>.(svg|png|webp|jpg) exists: title, subtitle, background, text.
+LOGO_TILE = ('Marvel', 'Champions', '#A32D2D', '#FCEBEB')
 
 API = "https://marvelcdb.com/api/public"
 USER_AGENT = "tcgnecro (+https://github.com/mcwookie/tcg-necropolis)"

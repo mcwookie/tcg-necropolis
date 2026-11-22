@@ -1,5 +1,6 @@
-"""Web app: the Proxies page (this module), the deck builder (mounted from
-tcgnecro.deckbuilder.routes under /decks), and sign-in (tcgnecro.auth).
+"""Web app: the Proxies page (/proxies, this module), the landing page and game
+pages (tcgnecro.home), the deck builder (mounted from tcgnecro.deckbuilder.routes
+under /decks), the Collection page, and sign-in (tcgnecro.auth).
 Every page except /login requires a signed-in profile. Everything happens
 server-side.
 
@@ -25,7 +26,7 @@ from fastapi import Request
 from PIL import Image
 from pydantic import BaseModel, Field
 
-from tcgnecro import auth, collection_page, db, users
+from tcgnecro import auth, collection_page, db, home, users
 from tcgnecro.deckbuilder import sync
 from tcgnecro.deckbuilder.routes import router as deckbuilder_router
 from tcgnecro.decklist import (CardRequest, DecklistError, Printing, item_requests, pack_cards, pack_requests,
@@ -65,6 +66,7 @@ async def lifespan(app):
 app = FastAPI(title="TCG Necropolis", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 app.include_router(auth.router)
+app.include_router(home.router)
 app.include_router(collection_page.router)
 app.include_router(deckbuilder_router)
 auth.install(app, https_only=os.environ.get("TCGNECRO_SECURE_COOKIES") == "1")
@@ -133,15 +135,17 @@ def healthz():
     return Response("ok", media_type="text/plain")
 
 
-@app.get("/", response_class=HTMLResponse)
-def index(request: Request):
+@app.get("/proxies", response_class=HTMLResponse)
+def index(request: Request, game: str | None = None):
+    """The proxy printer, opened on `game` (from its game page) when given."""
     conn = db.connect()
     games = conn.execute(
         "SELECT g.id, g.name FROM games g WHERE EXISTS (SELECT 1 FROM images i WHERE i.game_id = g.id)"
     ).fetchall()
     conn.close()
+    selected = game if any(g["id"] == game for g in games) else (games[0]["id"] if games else None)
     return templates.TemplateResponse(request, "index.html", {
-        "games": games,
+        "games": games, "selected": selected,
         "page_sizes": list(PAGE_SIZES),
         "layouts": LAYOUTS,
         "cut_lines": CUT_LINES,

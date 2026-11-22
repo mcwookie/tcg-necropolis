@@ -1,11 +1,16 @@
 """Proxies page endpoints: preview data and image serving."""
 
+import re
+
 import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
 from tcgnecro import collections, db, users
 from tcgnecro.games import Card, CardVersion, Catalog, Pack
+from tests.test_deckbuilder import ROLAND, card
+
+MACHETE = card("01016", "Machete", traits="Item. Weapon. Melee.")
 
 
 @pytest.fixture
@@ -14,8 +19,8 @@ def client(tmp_path, monkeypatch):
     users._cache = None
     conn = db.connect()
     catalog = Catalog("ahlcg", "Arkham", packs=[Pack("core", "Core Set", "2016")])
-    catalog.cards = [Card("01001", "Roland Banks", "player", {"type_code": "investigator"}),
-                     Card("01016", "Machete", "player", {"type_code": "asset"})]
+    catalog.cards = [Card("01001", "Roland Banks", "player", ROLAND),
+                     Card("01016", "Machete", "player", MACHETE)]
     catalog.versions = [CardVersion("01001", "core", 1), CardVersion("01016", "core", 16)]
     db.store_catalog(conn, catalog)
     folder = tmp_path / "collections" / "ahlcg" / "scans"
@@ -188,3 +193,55 @@ def test_static_files_are_linked_with_a_content_fingerprint(client):
     css = re.search(r'href="(/static/app\.css\?v=[0-9a-f]{10})"', page).group(1)
     assert re.search(r'src="/static/htmx\.min\.js\?v=[0-9a-f]{10}"', page)
     assert css == static_url("app.css") and client.get(css).status_code == 200
+
+
+# ----- landing page and game pages (home.py) -----------------------------------
+
+def test_landing_page_is_a_grid_of_games_without_the_old_menu(client):
+    page = client.get("/").text
+    assert 'href="/games/ahlcg"' in page
+    assert "Arkham Horror" in page and "0 decks" in page and "1 packs" in page
+    for old in ('href="/decks"', 'href="/collection"', ">Proxies</a>"):
+        assert old not in page
+    assert '<h1><a href="/">TCG Necropolis</a></h1>' in page
+
+
+def test_game_page_shows_stats_and_links_scoped_to_the_game(client):
+    page = client.get("/games/ahlcg").text
+    assert "Arkham Horror: The Card Game" in page and "cosmic horror" in page   # the module's NAME and DESCRIPTION
+    stats = dict(re.findall(r"<span>([^<]+)</span><b>([^<]+)</b>", page))
+    assert stats == {"Expansions": "1", "Cards": "2", "Cards with scans": "2", "You own": "—"}
+    for link in ("/proxies?game=ahlcg", "/decks?game=ahlcg#new", "/collection/ahlcg"):
+        assert f'href="{link}"' in page
+    assert 'class="crumb" href="/games/ahlcg"' in page
+    assert client.get("/games/nope").status_code == 404
+
+
+def test_game_page_lists_your_decks_and_collection(client):
+    client.post("/decks", data={"game": "ahlcg", "identity": "01001", "name": "Roland goes north"})
+    client.post("/collection/ahlcg", data={"pack": "core"})
+    page = client.get("/games/ahlcg").text
+    assert "Roland goes north" in page and "Your decks <span class=\"muted\">· 1</span>" in page
+    assert "1 of 1 packs owned" in page and "Core Set" in page
+    assert "1 deck<" in client.get("/").text and "1 / 1 packs" in client.get("/").text
+
+
+def test_decks_page_filters_by_game_and_proxies_open_on_it(client):
+    client.post("/decks", data={"game": "ahlcg", "identity": "01001", "name": "Roland goes north"})
+    assert "Roland goes north" in client.get("/decks?game=ahlcg").text
+    assert "Your Arkham" in client.get("/decks?game=ahlcg").text
+    assert "Show decks for every game" not in client.get("/decks").text
+    proxies = client.get("/proxies?game=ahlcg").text
+    assert '<option value="ahlcg" selected>' in proxies and 'href="/games/ahlcg"' in proxies
+    assert client.get("/proxies?game=bogus").status_code == 200   # falls back to the first game
+
+
+def test_a_logo_file_replaces_the_text_tile(client, tmp_path, monkeypatch):
+    from tcgnecro import home
+    monkeypatch.setattr(home, "LOGO_DIR", tmp_path / "logos")
+    (tmp_path / "logos").mkdir()
+    assert 'class="logo tile-text' in client.get("/").text
+    (tmp_path / "logos" / "ahlcg.png").write_bytes(b"png")
+    monkeypatch.setattr(home, "static_url", lambda name: f"/static/{name}")
+    page = client.get("/").text
+    assert '<img class="logo " src="/static/logos/ahlcg.png"' in page and "tile-text" not in page

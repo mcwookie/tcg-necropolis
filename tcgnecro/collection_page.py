@@ -44,7 +44,7 @@ def collection(request: Request, game_id: str, message: str | None = None):
         conn.close()
     owned = users.owned_packs(user, game_id)
     return templates.TemplateResponse(request, "collection.html", {
-        "nav": "collection", "games": games, "game_id": game_id, "groups": groups,
+        "crumb_game": game_id, "games": games, "game_id": game_id, "groups": groups,
         "owned": owned or set(), "configured": owned is not None,
         "total": sum(len(packs) for _, packs in groups), "message": message,
     })

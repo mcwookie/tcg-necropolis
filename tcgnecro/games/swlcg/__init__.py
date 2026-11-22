@@ -37,6 +37,14 @@ from tcgnecro.games import Card, CardVersion, Catalog, Pack
 
 GAME_ID = "swlcg"
 NAME = "Star Wars LCG"
+# Shown on the game's page (/games/<id>).
+DESCRIPTION = (
+    "A two-player Living Card Game of the Galactic Civil War, Light Side against Dark Side. Decks are "
+    "built from objective sets of six cards, and the Death Star dial counts down to the Dark Side's "
+    "victory."
+)
+# Logo tile used until static/logos/<id>.(svg|png|webp|jpg) exists: title, subtitle, background, text.
+LOGO_TILE = ('Star Wars', 'The Card Game', '#2C2C2A', '#FAC775')
 
 HERE = Path(__file__).parent
 
