@@ -150,6 +150,12 @@ to `LANDSCAPE_TYPES` in `games/ahlcg/__init__.py` so it displays upright.
 `[[filters]]` `options` list (and `[colors]` for a class) in `deckbuilder.toml`.
 Otherwise the cards still appear, but can't be selected by that filter.
 
+**f) Deck simulator effects.** New cards count for their icons, cost and slots straight
+away. For the expansion's most-played cards with simple effects (skill bonuses,
+weapons, card draw, resources), add entries to `games/ahlcg/sim_effects.json` in the
+format described in [SIMULATOR.md](SIMULATOR.md). A new campaign's chaos bags go in
+`games/ahlcg/chaos_bags.toml`. `tests/test_ahlcg_simulate.py` checks the effects table.
+
 Finally:
 
 ```bash
@@ -227,4 +233,5 @@ modification time.
 - [ ] Images named `{code}@{pack}.ext`, in a collection folder; `tcgnecro reindex`; no warnings
 - [ ] Arkham: no unknown `deck_options` keys; deckbuilding cards added to `DECKBUILDING_CARDS`
 - [ ] New `[icons]`, filter options and colors in `deckbuilder.toml` if needed
+- [ ] Arkham: simulator effects for popular new cards; the new campaign's chaos bags
 - [ ] `pytest` passes; spot-check a new investigator's deck in the builder

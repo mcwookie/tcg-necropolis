@@ -9,6 +9,9 @@ Build decks and print proxies for out-of-print card games, using your own card s
   they can keep private or share read-only with everyone on the server. On a home
   network, people pick their profile; for internet access, Cloudflare Tunnel and Access
   sign them in by email ([docs/DOCKER.md](docs/DOCKER.md)).
+- **Deck simulator (Arkham):** play a deck solo a thousand times and see how often it
+  passes investigate, fight, evade and treachery tests, how its hand and resources hold
+  up, and when its assets and weaknesses show up ([docs/SIMULATOR.md](docs/SIMULATOR.md)).
 - **Custom cards:** add fan-made scenarios, homebrew investigators or missing cards to
   any game, and they work like official ones ([docs/CUSTOM_CARDS.md](docs/CUSTOM_CARDS.md)).
 - **Collection:** tick the packs you own, per game. The deck builder can then show only
@@ -53,6 +56,7 @@ trust.** Real sign-in for internet access is planned; see
 | [docs/USAGE.md](docs/USAGE.md) | Using the web app and the CLI, decklist syntax, where data lives, backups |
 | [docs/ACCOUNTS.md](docs/ACCOUNTS.md) | Profiles, sign-in, deck ownership and sharing, managing profiles |
 | [docs/DECKBUILDER.md](docs/DECKBUILDER.md) | How the deck builder works: plugins, the TOML config reference, each game's rules |
+| [docs/SIMULATOR.md](docs/SIMULATOR.md) | The Arkham deck simulator: settings, reading results, what's modelled, adding card effects |
 | [docs/DOCKER.md](docs/DOCKER.md) | Docker image and compose, HTTPS with Caddy, automatic updates from `main` |
 | [docs/DEPLOY_VPS.md](docs/DEPLOY_VPS.md) | Hosting it on a rented server: HTTPS, a password gate, backups, updates |
 | [docs/UPDATING_GAMES.md](docs/UPDATING_GAMES.md) | Keeping a game current: new expansions, new images, new rules |

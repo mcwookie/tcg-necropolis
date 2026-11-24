@@ -51,7 +51,8 @@ previews use a scratch copy**: copy `index.db`, `users.json`, `decks/`; symlink
 | `tcgnecro/decklist.py`, `pdf.py` | decklist parsing/printing choice, PDF layout (PyMuPDF) |
 | `tcgnecro/games/<id>/` | per game: catalog (`load_source` → `build_catalog`), `backs/`, `display_rotation`, `DESCRIPTION`, `LOGO_TILE`, deck builder (`deckbuilder.py` rules + `deckbuilder.toml` config) |
 | `tcgnecro/games/custom.py` | merges `data/custom/<game>/` cards into catalogs, skipping bad records with warnings |
-| `tcgnecro/deckbuilder/` | game-agnostic deck builder: plugin base, registry/pools, filters, routes, sync (ArkhamDB/MarvelCDB), templates |
+| `tcgnecro/deckbuilder/` | game-agnostic deck builder: plugin base, registry/pools, filters, routes, sync (ArkhamDB/MarvelCDB), `simulate.py` (deck simulation core), templates |
+| `tcgnecro/games/ahlcg/simulate.py` | Arkham deck simulator (Monte Carlo); card effects in `sim_effects.json` (servers add `data/custom/ahlcg/sim_effects.json`), bags in `chaos_bags.toml` |
 | `tcgnecro/templates/`, `static/` | Jinja + HTMX pages; `app.css`; `static/logos/<id>.(svg\|png\|webp\|jpg)` replaces a game's text tile |
 | `deploy/`, `compose.yaml`, `Dockerfile` | Docker image, compose (optional `https` Caddy and `tunnel` cloudflared profiles), update timer |
 
@@ -115,6 +116,7 @@ troubleshooting: `docs/DOCKER.md`, `docs/ACCOUNTS.md`.
 |---|---|
 | `docs/USAGE.md` | using the app and CLI, where data lives |
 | `docs/DECKBUILDER.md` | deck builder internals, plugin API, each game's rules |
+| `docs/SIMULATOR.md` | the Arkham deck simulator: model, settings, effects format |
 | `docs/ADDING_A_GAME.md` | supporting a new game |
 | `docs/UPDATING_GAMES.md` | new expansions, images, rule data |
 | `docs/CUSTOM_CARDS.md` | custom cards and packs |

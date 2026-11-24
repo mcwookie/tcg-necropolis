@@ -230,4 +230,5 @@ rules down.
 - [ ] backs in `games/<id>/backs/` (optional)
 - [ ] images import and match packs
 - [ ] (deck builder) `Card.attrs` populated; `deckbuilder.py` with `PLUGIN`; `deckbuilder.toml`
+- [ ] (optional) a deck simulator: `sim_settings` + `simulate` returning a `SimReport` (docs/SIMULATOR.md, "For developers")
 - [ ] tests; a row in the README's game table

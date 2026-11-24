@@ -95,6 +95,9 @@ investigator (enough for the deck builder):
   ArkhamDB writes them; see docs/DECKBUILDER.md for what the rules engine understands.
   `deck_requirements.card` lists its signature cards, `restrictions` ties a card to it.
 - Campaign story assets or weaknesses: give them an `encounter_code`, like official ones.
+- The deck simulator counts a custom card's skill icons, cost and slots like any card.
+  To simulate what its text does, add an entry for its code to
+  `data/custom/ahlcg/sim_effects.json` ([SIMULATOR.md](SIMULATOR.md), "Card effects").
 
 ## Marvel Champions (`marvel_champions`): MarvelCDB's fields
 

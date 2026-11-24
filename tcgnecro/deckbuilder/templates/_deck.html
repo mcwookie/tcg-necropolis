@@ -83,6 +83,7 @@
   {% endif %}
   <div class="deck-actions">
     <button type="button" onclick="document.getElementById('print').showModal()">Print proxies</button>
+    {% if can_simulate %}<a class="btn ghost" href="/decks/{{ deck.id }}/simulate">Simulate</a>{% endif %}
     <a class="btn ghost" href="/decks/{{ deck.id }}/export.txt" target="_blank">Text list</a>
     <a class="btn ghost" href="/decks/{{ deck.id }}/export.json">JSON</a>
     <form method="post" action="/decks/{{ deck.id }}/copy" style="display:inline"><button class="ghost">{{ "Copy" if can_edit else "Copy to my decks" }}</button></form>

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{#
+  The Simulate page for one deck. The form is built from the game plugin's
+  sim_settings(); submitting it (and loading the page) fetches the results
+  fragment, _simulation.html, from /decks/{id}/simulate/run. The settings
+  stay in the address bar (HX-Replace-Url), so a link reproduces a run.
+#}
+{% block title %}Simulate {{ deck.name }}{% endblock %}
+{% block body %}
+<div class="sim-page">
+  <div class="sim-head">
+    <div>
+      <h2>Simulate “{{ deck.name }}”</h2>
+      <p class="muted small">{% if identity %}{{ identity.name }} · {% endif %}<a href="/decks/{{ deck.id }}">Back to the deck</a></p>
+    </div>
+  </div>
+
+  <form class="panel sim-settings" id="sim-form"
+        hx-get="/decks/{{ deck.id }}/simulate/run" hx-target="#sim-results"
+        hx-trigger="load, submit" hx-indicator="#sim-busy" hx-sync="this:replace">
+    <input type="hidden" name="run" value="1">
+    <p class="small" style="margin-top:0">Plays this deck solo many times with simple, fixed rules, and reports how
+      often tests pass, how the hand and resources hold up, and when cards show up.</p>
+    {% for s in settings %}
+      {% set v = values[s.key] %}
+      <div class="sim-field"{% if s.show_if %} data-show-if="{{ s.show_if[0] }}" data-show-value="{{ s.show_if[1] }}"{% endif %}>
+      {% if s.type == "toggle" %}
+        <label class="check" style="margin-top:12px"><input type="checkbox" name="{{ s.key }}" value="1" {{ "checked" if v }}> {{ s.label }}</label>
+      {% elif s.type == "multiselect" %}
+        <label class="f">{{ s.label }}</label>
+        <div class="opts">
+          {% for value, label in s.options %}
+          <label><input type="checkbox" name="{{ s.key }}" value="{{ value }}" {{ "checked" if value in v }}> {{ label }}</label>
+          {% endfor %}
+        </div>
+      {% elif s.type == "select" %}
+        <label class="f" for="sim-{{ s.key }}">{{ s.label }}</label>
+        <select id="sim-{{ s.key }}" name="{{ s.key }}">
+          {% for value, label in s.options %}<option value="{{ value }}" {{ "selected" if value == v }}>{{ label }}</option>{% endfor %}
+        </select>
+      {% elif s.type == "number" %}
+        <label class="f" for="sim-{{ s.key }}">{{ s.label }}</label>
+        <input type="number" id="sim-{{ s.key }}" name="{{ s.key }}" value="{{ v if v is not none }}"
+               {% if s.min is not none %}min="{{ s.min }}"{% endif %} {% if s.max is not none %}max="{{ s.max }}"{% endif %}
+               {% if s.step %}step="{{ s.step }}"{% endif %}>
+      {% else %}
+        <label class="f" for="sim-{{ s.key }}">{{ s.label }}</label>
+        <input type="text" id="sim-{{ s.key }}" name="{{ s.key }}" value="{{ v }}">
+      {% endif %}
+      {% if s.help %}<div class="small muted">{{ s.help }}</div>{% endif %}
+      </div>
+    {% endfor %}
+    <p class="deck-actions">
+      <button>Run simulation</button>
+      <span id="sim-busy" class="htmx-indicator small muted">Simulating…</span>
+    </p>
+  </form>
+
+  <section class="sim-results" id="sim-results" aria-live="polite">
+    <p class="muted">Simulating…</p>
+  </section>
+</div>
+<script>
+  // Fields that only matter for one choice of another field (the typed-in
+  // chaos bag) are hidden otherwise.
+  (function () {
+    const form = document.getElementById('sim-form');
+    function sync() {
+      form.querySelectorAll('[data-show-if]').forEach(el => {
+        const other = form.elements[el.dataset.showIf];
+        el.hidden = !other || other.value !== el.dataset.showValue;
+      });
+    }
+    form.addEventListener('change', sync);
+    sync();
+  })();
+</script>
+{% endblock %}

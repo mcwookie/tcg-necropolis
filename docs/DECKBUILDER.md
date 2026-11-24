@@ -54,6 +54,7 @@ ArkhamDB API ──► data/cache/ahlcg/*.json ──► games/ahlcg load_catalo
 | `deckbuilder/markup.py` | Card text → safe HTML (escape, allow-list, `[icons]`, `[[Traits]]`) |
 | `deckbuilder/store.py` | Deck JSON files: load/save/update/list/delete |
 | `deckbuilder/routes.py` | FastAPI routes under `/decks` |
+| `deckbuilder/simulate.py` | Deck simulation, game-agnostic part: settings form, report types, band chart ([SIMULATOR.md](SIMULATOR.md)) |
 | `deckbuilder/templates/` | Jinja templates; `_*.html` are HTMX fragments |
 | `static/app.css`, `static/htmx.min.js` | Styles; htmx 2.0.4 vendored, so no CDN is needed |
 
@@ -94,6 +95,8 @@ Only `build_card` is required. Every other hook has a default that gives a plain
 | `main_label()` | `"Deck"` | Name of the main part when there are sections |
 | `allowed_in(card, section)` | `True` | Whether a card can go in a part at all (`MAIN` is the main part) |
 | `section_limit(card, deck, section)` | `max_copies` less copies in the other parts | Caps the + button in one part |
+| `sim_settings(deck, pool) -> [SimSetting]` | `[]` (no simulator) | Fields for the deck's Simulate page; non-empty adds a **Simulate** button. See [SIMULATOR.md](SIMULATOR.md) |
+| `simulate(deck, pool, values) -> SimReport` | not supported | Play the deck many times with those settings; the page renders the report |
 
 ### Deck sections
 
@@ -464,6 +467,10 @@ also cover deck sections end to end through the web routes.
 `tests/test_marvel_deckbuilder.py` does the same for Marvel Champions (hero sets,
 aspects, Spider-Woman, Adam Warlock, Gamora's limit, MarvelCDB code mapping, printing
 the obligation and nemesis, and the web page).
+
+`tests/test_ahlcg_simulate.py` covers the Arkham deck simulator: chaos bag parsing and
+pass chances, the effects table and server overrides, repeatable runs, the commit policy,
+and the Simulate page.
 
 `tests/test_deckbuilder.py` uses small synthetic Arkham cards, so it runs offline. It
 covers:

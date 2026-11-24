@@ -223,3 +223,39 @@ h2.welcome { margin: 0 0 4px; font-size: 24px; }
   .game-hero .logo.big { max-width: 260px; }
   .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ---- simulate page (deckbuilder/templates/simulate.html) ---- */
+/* Settings beside the results on wide screens, above them on phones. */
+.sim-page { max-width: 1300px; margin: 0 auto; padding: 20px; display: grid; gap: 16px; align-items: start;
+            grid-template-columns: 300px minmax(0, 1fr); grid-template-areas: "head head" "settings results"; }
+.sim-head { grid-area: head; }
+.sim-head h2 { margin: 0 0 4px; font-size: 22px; }
+.sim-head p { margin: 0; }
+.sim-settings { grid-area: settings; position: sticky; top: 10px; max-height: calc(100vh - 20px); overflow: auto; }
+.sim-settings .opts label { display: block; }
+.sim-results { grid-area: results; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; min-width: 0; }
+.sim-results > *, .sim-settings { min-width: 0; }
+.sim-section h3 { margin: 0 0 6px; font-size: 17px; }
+.sim-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 10px 0; }
+.sim-stats .stat em { display: block; font-style: normal; margin-top: 2px; }
+.sim-table { overflow-x: auto; }
+.sim-table table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+.sim-table th, .sim-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+.sim-table th { font-weight: 600; color: var(--muted); font-size: 13px; }
+.sim-table th:first-child, .sim-table td:first-child { text-align: left; white-space: normal; }
+.sim-table td.shade { background: color-mix(in srgb, var(--accent) calc(var(--shade) * 38%), transparent); }
+.sim-chart { margin: 14px 0 0; }
+.sim-chart figcaption { margin-bottom: 4px; }
+.band-chart { width: 100%; max-width: 720px; height: auto; display: block; }
+.band-chart .grid { stroke: var(--line); stroke-width: 1; }
+.band-chart .axis { fill: var(--muted); font-size: 12px; font-family: system-ui, sans-serif; }
+.band-chart .band { fill: var(--accent); opacity: .18; stroke: none; }
+.band-chart .mid { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; }
+.band-chart .dot { fill: var(--accent); }
+.sim-notes { padding-left: 18px; margin: 6px 0; }
+.sim-notes li { margin: 3px 0; }
+@media (max-width: 800px) {
+  .sim-page { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "settings" "results"; padding: 10px; gap: 12px; }
+  .sim-settings { position: static; max-height: none; }
+}
+@media (max-width: 500px) { .sim-table th, .sim-table td { padding: 5px 4px; } }

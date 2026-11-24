@@ -18,6 +18,7 @@ Every handler is a plain `def`, so FastAPI runs it in a worker thread.
 """
 
 import json
+import logging
 import re
 from urllib.parse import urlencode
 
@@ -27,13 +28,14 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from tcgnecro import db, ownership, users
 from tcgnecro.auth import current_user
 from tcgnecro.decklist import CardRequest, resolve
-from tcgnecro.deckbuilder import filters, registry, store, sync
+from tcgnecro.deckbuilder import filters, registry, simulate, store, sync
 from tcgnecro.deckbuilder.model import MAIN, VISIBILITIES, Deck, DeckCard
 from tcgnecro.games import card_backs
 from tcgnecro.pdf import CUT_LINES, LAYOUTS, PAGE_SIZES, PdfOptions, generate_pdf
 from tcgnecro.templating import templates
 
 router = APIRouter(prefix="/decks")
+log = logging.getLogger(__name__)
 
 
 # ----- helpers -----------------------------------------------------------------
@@ -123,6 +125,7 @@ def _deck_context(request: Request, deck: Deck, plugin, pool, message: str | Non
             qty for cid, qty in plugin.print_list(deck) if pool.resolve(cid) not in owned),
         "owner_name": _owner_name(deck),
         "can_link": sync.can_link(plugin, deck),
+        "can_simulate": bool(plugin.sim_settings(deck, pool)),
         "local_changes": sync.has_local_changes(deck),
         "visibilities": VISIBILITIES,
     }
@@ -410,6 +413,49 @@ def run_action(request: Request, deck_id: str, key: str):
         raise HTTPException(404, "No such action")
     changed = [c for c in set(before) | set(deck.slots) if before.get(c) != deck.slots.get(c)]
     return _deck_fragment(request, deck, plugin, pool, changed=changed, message=message)
+
+
+# ----- simulation (deckbuilder/simulate.py) ----------------------------------------
+
+def _sim_settings(request: Request, deck_id: str):
+    """(deck, plugin, pool, settings, values) for a deck that can be simulated."""
+    deck = _load(request, deck_id)
+    plugin, pool = _game(deck.game)
+    settings = plugin.sim_settings(deck, pool)
+    if not settings:
+        raise HTTPException(404, "This deck can't be simulated")
+    return deck, plugin, pool, settings, simulate.parse_settings(settings, request.query_params)
+
+
+@router.get("/{deck_id}/simulate", response_class=HTMLResponse)
+def simulate_page(request: Request, deck_id: str):
+    """The Simulate page: settings on one side, results (fetched by HTMX when
+    the page loads and on every run) on the other. Read-only: anyone who can
+    see a deck can simulate it."""
+    deck, plugin, pool, settings, values = _sim_settings(request, deck_id)
+    return templates.TemplateResponse(request, "simulate.html", {
+        "deck": deck, "plugin": plugin, "settings": settings, "values": values,
+        "identity": pool.get(deck.identity) if deck.identity else None, "crumb_game": deck.game,
+    })
+
+
+@router.get("/{deck_id}/simulate/run", response_class=HTMLResponse)
+def simulate_run(request: Request, deck_id: str):
+    deck, plugin, pool, settings, values = _sim_settings(request, deck_id)
+    errors = [p for p in plugin.validate(deck, pool) if p.severity == "error"]
+    try:
+        report, failure = plugin.simulate(deck, pool, values), None
+    except Exception as e:   # a bad effects entry or an edge case shouldn't break the page
+        log.exception("Simulating deck %s failed", deck_id)
+        report, failure = None, str(e) or e.__class__.__name__
+    response = templates.TemplateResponse(request, "_simulation.html", {
+        "deck": deck, "report": report, "failure": failure, "illegal": len(errors),
+    })
+    # Keep the settings in the address bar, so reloading or sharing the link
+    # gives the same simulation.
+    query = urlencode([(k, v) for k, v in request.query_params.multi_items()])
+    response.headers["HX-Replace-Url"] = f"/decks/{deck_id}/simulate?{query}"
+    return response
 
 
 # ----- output -------------------------------------------------------------------

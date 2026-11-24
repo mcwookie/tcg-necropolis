@@ -112,6 +112,20 @@ class DeckbuilderPlugin:
         """Handle an Action. Returns a message to show, or None."""
         raise KeyError(key)
 
+    # ----- simulation (deckbuilder/simulate.py, docs/SIMULATOR.md) ------------
+
+    def sim_settings(self, deck: Deck, pool: Pool) -> list:
+        """Fields for the deck's Simulate page (simulate.SimSetting). An empty
+        list, the default, means this game has no simulator and the deck page
+        shows no Simulate button."""
+        return []
+
+    def simulate(self, deck: Deck, pool: Pool, values: dict):
+        """Play the deck many times with these setting values and return a
+        simulate.SimReport. Runs in a worker thread; keep it to a few seconds
+        (cap the number of runs in sim_settings)."""
+        raise NotImplementedError(f"Simulation isn't supported for {self.game_id}")
+
     # ----- display ----------------------------------------------------------
 
     def group_of(self, card: DeckCard) -> str:

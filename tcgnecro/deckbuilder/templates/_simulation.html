@@ -1,0 +1,51 @@
+{#
+  Simulation results (deckbuilder/simulate.py SimReport), swapped into the
+  Simulate page. Blocks render by kind: stats, table, chart, notes.
+#}
+{% if failure %}
+<div class="panel"><p class="error-box">The simulation failed: {{ failure }}</p></div>
+{% else %}
+<div class="panel sim-summary">
+  <div>{{ report.summary }}</div>
+  <div class="small muted">Took {{ "%.1f"|format(report.seconds) }} s</div>
+  {% if illegal %}<div class="small" style="color:var(--warn)">This deck has {{ illegal }} deckbuilding problem{{ "s" if illegal != 1 }}; it's simulated as it is.</div>{% endif %}
+  {% for w in report.warnings %}<div class="small" style="color:var(--warn)">{{ w }}</div>{% endfor %}
+</div>
+{% for section in report.sections %}
+<div class="panel sim-section">
+  <h3>{{ section.title }}</h3>
+  {% if section.intro %}<p class="small muted">{{ section.intro }}</p>{% endif %}
+  {% for block in section.blocks %}
+    {% if block.kind == "stats" %}
+    <div class="sim-stats">
+      {% for label, value, title in block.items %}
+      <div class="stat"><span>{{ label }}</span><b>{{ value }}</b>{% if title %}<em class="small muted">{{ title }}</em>{% endif %}</div>
+      {% endfor %}
+    </div>
+    {% elif block.kind == "table" %}
+    <div class="sim-table">
+      <table>
+        <thead><tr>{% for h in block.headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+        <tbody>
+        {% for row in block.rows %}
+          <tr>{% for cell in row %}<td{% if cell.shade is not none %} class="shade" style="--shade: {{ '%.3f'|format(cell.shade) }}"{% endif %}{% if cell.title %} title="{{ cell.title }}"{% endif %}>{{ cell.text }}</td>{% endfor %}</tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if block.caption %}<p class="small muted">{{ block.caption }}</p>{% endif %}
+    {% elif block.kind == "chart" %}
+    <figure class="sim-chart">
+      <figcaption><b>{{ block.title }}</b>{% if block.y_label %} <span class="muted small">({{ block.y_label }} by round)</span>{% endif %}</figcaption>
+      {{ block.svg() }}
+      {% if block.caption %}<p class="small muted">{{ block.caption }}</p>{% endif %}
+    </figure>
+    {% elif block.kind == "notes" %}
+    {% if block.lines|length > 1 %}
+    <ul class="small sim-notes">{% for line in block.lines %}<li>{{ line }}</li>{% endfor %}</ul>
+    {% else %}<p class="small">{{ block.lines[0] }}</p>{% endif %}
+    {% endif %}
+  {% endfor %}
+</div>
+{% endfor %}
+{% endif %}
