@@ -21,6 +21,16 @@
     <input type="hidden" name="run" value="1">
     <p class="small" style="margin-top:0">Plays this deck solo many times with simple, fixed rules, and reports how
       often tests pass, how the hand and resources hold up, and when cards show up.</p>
+    {% if compare_choices %}
+    <div class="sim-field">
+      <label class="f" for="sim-vs">Compare with</label>
+      <select id="sim-vs" name="vs">
+        <option value="">Nothing (this deck alone)</option>
+        {% for id, label in compare_choices %}<option value="{{ id }}" {{ "selected" if id == vs }}>{{ label }}</option>{% endfor %}
+      </select>
+      <div class="small muted">Runs both decks with these settings and the same seed, side by side. Copy a deck to compare two versions.</div>
+    </div>
+    {% endif %}
     {% for s in settings %}
       {% set v = values[s.key] %}
       <div class="sim-field"{% if s.show_if %} data-show-if="{{ s.show_if[0] }}" data-show-value="{{ s.show_if[1] }}"{% endif %}>

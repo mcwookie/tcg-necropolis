@@ -8,14 +8,16 @@ tells you little, but a thousand games played the same way show the deck's tende
 Open a deck and press **Simulate** (next to **Print proxies**). Anyone who can see a
 deck can simulate it; nothing about the deck changes.
 
-Use it to **compare versions of a deck**: swap two cards, run it again with the same
-settings and seed, and see what moved. The simulated player follows fixed rules and
-doesn't face a real scenario, so treat the figures as a measuring stick, not a forecast.
+Use it to **compare decks**: pick another deck in **Compare with** and both run with
+the same settings and seed, side by side (see [Comparing two decks](#comparing-two-decks)).
+The simulated player follows fixed rules and doesn't face a real scenario, so treat the
+figures as a measuring stick, not a forecast.
 
 ## Settings
 
 | Setting | What it does |
 |---|---|
+| Compare with | Another deck of the same game you can see (yours or a shared one). Both are simulated with these settings and shown side by side. *Nothing* simulates this deck alone |
 | Spend spare actions on | Investigating, fighting or evading. After playing cards and drawing or gaining resources when needed, every other action goes to this |
 | Shroud / enemy fight / evade | The difficulty of those tests |
 | Treachery test each round | From round 2, one test of this skill each round (the mythos phase), with its own difficulty. Committed cards are used up, as in a real game. Choose *None* to skip it |
@@ -67,6 +69,34 @@ and the typical round.
 
 **How this deck was modelled.** How many of the deck's cards are fully simulated, which
 ones count only for their icons, cost and slots, and any approximations (see below).
+
+## Comparing two decks
+
+Choose a deck in **Compare with** and run. The deck you opened is **A**, the other is
+**B**. To compare two versions of one deck, copy it (**Copy** on the deck page), change
+the copy, and compare the two.
+
+Both decks use the same settings and the same random seed. If the seed box is empty, a
+fresh seed is picked for the run and shown above the results, so you can type it in to
+repeat it. Settings that depend on the deck (the investigator's skills, elder sign) come
+from each deck.
+
+The results have the same sections as a single run:
+
+- headline figures become a small table: A, B and the change (B minus A);
+- tables show each row twice, *· A* then *· B*, with the change in small print after
+  each of B's figures. Percentages change in points (40% → 48% is *+8*);
+- charts draw both decks, A in blue and B in orange, with a legend;
+- rows only one deck has (its own assets or weaknesses) appear once, and a section only
+  one deck has (Weaknesses, say) says so;
+- notes the decks share are listed once; the rest are marked *A:* or *B:*.
+
+The same seed doesn't make the two decks draw the same cards (their decks differ), so
+some of a difference is still luck. With 1,000 games a change of a point or two in a
+percentage can be noise; run more games or try another seed before trusting it.
+
+The comparison is game-agnostic (`compare_reports` in `deckbuilder/simulate.py`), so a
+future simulator for another game gets it too.
 
 ## What the simulated player does
 
@@ -222,9 +252,9 @@ in on the page).
 
 | File | Role |
 |---|---|
-| `deckbuilder/simulate.py` | Game-agnostic: `SimSetting` (form fields), `parse_settings`, the report types (`SimReport` → `SimSection` → `SimStats` / `SimTable` / `SimChart` / `SimNotes`), percentile helpers and the SVG band chart |
+| `deckbuilder/simulate.py` | Game-agnostic: `SimSetting` (form fields), `parse_settings`, the report types (`SimReport` → `SimSection` → `SimStats` / `SimTable` / `SimChart` / `SimNotes`), percentile helpers, the SVG band chart, and `compare_reports` (two reports side by side, with `delta` for the changes) |
 | `deckbuilder/plugin.py` | `sim_settings(deck, pool)` (empty: no simulator, no button) and `simulate(deck, pool, values)` hooks |
-| `deckbuilder/routes.py` | `GET /decks/{id}/simulate` (the page) and `GET /decks/{id}/simulate/run` (the results fragment; sets `HX-Replace-Url` so the address keeps the settings) |
+| `deckbuilder/routes.py` | `GET /decks/{id}/simulate` (the page) and `GET /decks/{id}/simulate/run` (the results fragment; sets `HX-Replace-Url` so the address keeps the settings; `?vs=<deck id>` compares) |
 | `deckbuilder/templates/simulate.html`, `_simulation.html` | The page and the results, rendered block by block |
 | `games/ahlcg/simulate.py` | The Arkham engine: effects loading and checking, cards, the chaos bag, `Run` (one game), `Stats`, the report |
 | `games/ahlcg/sim_effects.json`, `chaos_bags.toml` | Data |
@@ -244,4 +274,4 @@ Another game can add a simulator by implementing the two hooks and returning a
 `SimReport`; the page, form and charts come for free.
 
 Tests: `tests/test_ahlcg_simulate.py` (bag parsing and pass chances, the effects table
-and server overrides, determinism, policy behaviour, the web routes).
+and server overrides, determinism, policy behaviour, comparing two decks, the web routes).
