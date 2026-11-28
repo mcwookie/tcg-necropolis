@@ -170,3 +170,45 @@ amplify = { label = "Amplify", css = "token" }
 hazard = { label = "Hazard", css = "token" }
 cost = { label = "Cost", css = "token" }
 unique = { label = "✦", title = "Unique" }
+
+# ---- Queries (BuildQL) ------------------------------------------------------
+# Any key of the card's attrs or MarvelCDB data also works as is.
+# Reference: docs/BUILDQL.md.
+
+[query]
+text_fields = ["text", "flavor", "real_text"]
+
+[query.split]
+traits = "."
+
+[query.fields]
+name = "raw.name"
+subname = "raw.subname"
+type = "raw.type_code"
+faction = "attrs.aspect"
+trait = "raw.traits"
+set = ["raw.card_set_code", "raw.card_set_name"]
+atk = "raw.attack"
+thw = "raw.thwart"
+def = "raw.defense"
+rec = "raw.recover"
+hp = "raw.health"
+unique = "raw.is_unique"
+energy = "raw.resource_energy"
+mental = "raw.resource_mental"
+physical = "raw.resource_physical"
+wild = "raw.resource_wild"
+
+[query.help]
+name = "Card name"
+trait = "Traits, one at a time: trait = \"avenger\""
+type = "ally, event, upgrade, support, resource..."
+aspect = "aggression, justice, leadership, protection, pool, basic, hero"
+cost = "Resource cost"
+resources = "Resource icons, one per icon: resources = \"energy\""
+energy = "Energy icons (count); also mental, physical, wild"
+attack = "Attack; also thwart, defense, recover, health"
+text = "Card text"
+unique = "true or false"
+set = "Card set code or name (hero sets, modular sets)"
+deck_limit = "Copies allowed in a deck"

@@ -259,3 +259,14 @@ h2.welcome { margin: 0 0 4px; font-size: 24px; }
   .sim-settings { position: static; max-height: none; }
 }
 @media (max-width: 500px) { .sim-table th, .sim-table td { padding: 5px 4px; } }
+
+/* BuildQL query box and its help (deck builder filter panel). */
+.filters textarea.query { width: 100%; min-height: 0; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+.query-help { margin-top: 6px; }
+.query-help summary { cursor: pointer; color: var(--accent); }
+.query-help table { border-collapse: collapse; width: 100%; }
+.query-help td { padding: 2px 6px 2px 0; vertical-align: top; overflow-wrap: anywhere; }
+.query-help td:first-child { white-space: nowrap; }
+.query-help td:first-child .muted { white-space: normal; }
+.query-help code { font-size: 12px; background: var(--hover); padding: 0 3px; border-radius: 3px; }
+.query-error { color: var(--bad); border: 1px solid var(--bad); border-radius: 6px; padding: 6px 10px; margin: 0 0 8px; overflow-wrap: anywhere; }

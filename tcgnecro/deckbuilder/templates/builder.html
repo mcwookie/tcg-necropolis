@@ -62,6 +62,34 @@
         </div>
       {% endif %}
     {% endfor %}
+    {# BuildQL (deckbuilder/buildql.py): runs after the filters above. #}
+    <label class="f keep" for="f-query">Query</label>
+    <textarea class="keep query" id="f-query" name="query" rows="2" autocomplete="off" spellcheck="false"
+              placeholder='e.g. trait = "spell" & cost <= 2'>{{ query_text }}</textarea>
+    <details class="query-help">
+      <summary class="small">How to write queries</summary>
+      <p class="small">Conditions joined with <code>&amp;</code> (and) and <code>|</code> (or), grouped with
+        <code>( )</code>. Text goes in quotes; unquoted words are field names.</p>
+      <table class="small">
+        <tr><td><code>=</code> <code>!=</code></td><td>contains these words (numbers: equals)</td></tr>
+        <tr><td><code>==</code> <code>!==</code></td><td>exactly (text fields: this exact phrase)</td></tr>
+        <tr><td><code>?</code> <code>!?</code></td><td>any of a list: <code>slot ? ["hand", "arcane"]</code></td></tr>
+        <tr><td><code>&gt; &lt; &gt;= &lt;=</code></td><td>numbers; also <code>+ - * / %</code></td></tr>
+        <tr><td><code>= null</code></td><td>has no value</td></tr>
+        <tr><td><code>/regex/</code></td><td><code>name = /^the/</code></td></tr>
+      </table>
+      {% set names = config.query.field_names() %}
+      <p class="small" style="margin-bottom:4px">Fields:</p>
+      <table class="small">
+        {% for name, desc in config.query.help.items() %}
+        <tr><td><code>{{ name }}</code>{% if names[name] %}<span class="muted"> {{ names[name] | join(", ") }}</span>{% endif %}</td><td>{{ desc }}</td></tr>
+        {% endfor %}
+        <tr><td><code>in_deck</code></td><td>copies in this deck</td></tr>
+        <tr><td><code>owned</code></td><td>in a pack you own</td></tr>
+        <tr><td><code>pack</code></td><td>pack code or name</td></tr>
+      </table>
+      <p class="small muted">Any other field in the card data works by its own name too.</p>
+    </details>
     {% if config.sorts %}
       <label class="f" for="sort">Sort</label>
       <select name="sort" id="sort">

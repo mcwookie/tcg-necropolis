@@ -4,7 +4,8 @@ Build decks and print proxies for out-of-print card games, using your own card s
 
 - **Proxies:** pick cards from packs (or paste a decklist), set how many of each, and get a print-and-play PDF.
 - **Decks:** a deck builder with per-game rules, filters and validation for every game
-  here, and any deck goes straight to the proxy printer.
+  here, and any deck goes straight to the proxy printer. A query box takes
+  arkham.build-style BuildQL (`trait = "spell" & level >= 2`) for finer card searches.
 - **Profiles:** each person signs in to their own profile and owns their decks, which
   they can keep private or share read-only with everyone on the server. On a home
   network, people pick their profile; for internet access, Cloudflare Tunnel and Access
@@ -56,6 +57,7 @@ trust.** Real sign-in for internet access is planned; see
 | [docs/USAGE.md](docs/USAGE.md) | Using the web app and the CLI, decklist syntax, where data lives, backups |
 | [docs/ACCOUNTS.md](docs/ACCOUNTS.md) | Profiles, sign-in, deck ownership and sharing, managing profiles |
 | [docs/DECKBUILDER.md](docs/DECKBUILDER.md) | How the deck builder works: plugins, the TOML config reference, each game's rules |
+| [docs/BUILDQL.md](docs/BUILDQL.md) | The deck builder's Query box: syntax, operators, each game's fields |
 | [docs/SIMULATOR.md](docs/SIMULATOR.md) | The Arkham deck simulator: settings, reading results, what's modelled, adding card effects |
 | [docs/DOCKER.md](docs/DOCKER.md) | Docker image and compose, HTTPS with Caddy, automatic updates from `main` |
 | [docs/DEPLOY_VPS.md](docs/DEPLOY_VPS.md) | Hosting it on a rented server: HTTPS, a password gate, backups, updates |
@@ -119,6 +121,9 @@ as long as what you run matches what's published here.
 Third-party components:
 
 - `tcgnecro/static/htmx.min.js`: [htmx](https://htmx.org) 2.0.4, BSD Zero-Clause License.
+- The deck builder's query language follows [arkham.build](https://github.com/arkham-build/arkham.build)'s
+  BuildQL (AGPL-3.0): its syntax, operators and Arkham field names. The implementation in
+  `tcgnecro/deckbuilder/buildql.py` is independent; no arkham.build code is included.
 
 Card artwork, including the card backs under `tcgnecro/games/*/backs/` and any card
 scans, and card text are the property of their publishers (Fantasy Flight Games /

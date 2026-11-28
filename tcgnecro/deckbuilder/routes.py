@@ -28,7 +28,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from tcgnecro import db, ownership, users
 from tcgnecro.auth import current_user
 from tcgnecro.decklist import CardRequest, resolve
-from tcgnecro.deckbuilder import filters, registry, simulate, store, sync
+from tcgnecro.deckbuilder import buildql, filters, registry, simulate, store, sync
 from tcgnecro.deckbuilder.model import MAIN, VISIBILITIES, Deck, DeckCard
 from tcgnecro.games import card_backs
 from tcgnecro.pdf import CUT_LINES, LAYOUTS, PAGE_SIZES, PdfOptions, generate_pdf
@@ -139,7 +139,10 @@ def _card_rows(request: Request, deck: Deck, plugin, pool, offset: int = 0) -> d
                            overrides={"owned": True} if owned is not None else None)
     sort_key = request.query_params.get("sort")
     section = _section(plugin, request.query_params.get("section"))
-    cards = filters.sort(filters.apply(plugin, values, deck, pool, owned), plugin.config, sort_key)
+    cards = filters.apply(plugin, values, deck, pool, owned)
+    query_text = request.query_params.get("query", "").strip()
+    cards, query_error = _run_query(query_text, cards, deck, pool, owned)
+    cards = filters.sort(cards, plugin.config, sort_key)
     # Grouped like the deck (Assets, Events...): by group, in the config's
     # order, then the chosen sort within each group (the sort is stable).
     group_of = {c.id: plugin.group_of(c) for c in cards}
@@ -148,7 +151,8 @@ def _card_rows(request: Request, deck: Deck, plugin, pool, offset: int = 0) -> d
     for c in cards:
         group_counts[group_of[c.id]] = group_counts.get(group_of[c.id], 0) + 1
     size = plugin.config.page_size or max(len(cards), 1)   # 0: the whole list at once
-    qs = (filters.query_string(plugin.config, values) + ([("sort", sort_key)] if sort_key else [])
+    qs = (filters.query_string(plugin.config, values) + ([("query", query_text)] if query_text else [])
+          + ([("sort", sort_key)] if sort_key else [])
           + ([("section", section)] if section != MAIN else []))
     return {
         "deck": deck,
@@ -161,6 +165,8 @@ def _card_rows(request: Request, deck: Deck, plugin, pool, offset: int = 0) -> d
         "next_offset": offset + size if offset + size < len(cards) else None,
         "query": urlencode(qs),
         "values": values,
+        "query_text": query_text,
+        "query_error": query_error,
         "section": section,
         "sections": [(MAIN, plugin.main_label())] + [(x.key, x.label) for x in plugin.sections()]
                     if plugin.sections() else [],
@@ -168,6 +174,26 @@ def _card_rows(request: Request, deck: Deck, plugin, pool, offset: int = 0) -> d
         "owned": owned,
         "can_edit": deck.editable_by(current_user(request)),
     }
+
+
+def _run_query(text: str, cards: list[DeckCard], deck: Deck, pool, owned) -> tuple[list[DeckCard], str | None]:
+    """Narrow the filtered cards with a BuildQL query. A query that doesn't
+    parse leaves the list as it was and returns the error to show."""
+    if not text:
+        return cards, None
+    conn = db.connect()
+    try:
+        schema, pack_names = registry.query_schema(conn, deck.game, pool)
+    finally:
+        conn.close()
+    try:
+        query = buildql.parse(text)
+        query.check_fields(schema)
+    except buildql.QueryError as e:
+        where = f" (at character {e.pos + 1})" if e.pos is not None else ""
+        return cards, f"{e}{where}"
+    ctx = buildql.Context(schema, deck.all_counts(), owned, pack_names)
+    return [c for c in cards if query.matches(c, ctx)], None
 
 
 def _section(plugin, key: str | None) -> str:
