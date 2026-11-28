@@ -19,6 +19,7 @@ Every handler is a plain `def`, so FastAPI runs it in a worker thread.
 
 import json
 import logging
+import random
 import re
 from urllib.parse import urlencode
 
@@ -453,6 +454,22 @@ def _sim_settings(request: Request, deck_id: str):
     return deck, plugin, pool, settings, simulate.parse_settings(settings, request.query_params)
 
 
+def _compare_choices(request: Request, deck: Deck, pool) -> list[tuple[str, str]]:
+    """(deck id, label) for the other decks of this game the profile can see,
+    for the Simulate page's "Compare with" list."""
+    user = current_user(request)
+    out = []
+    for other in store.list_decks(deck.game):
+        if other.id == deck.id or not other.viewable_by(user):
+            continue
+        identity = pool.get(other.identity) if other.identity else None
+        label = other.name + (f" ({identity.name})" if identity else "")
+        if not other.editable_by(user):
+            label += f" · {_owner_name(other)}"
+        out.append((other.id, label))
+    return out
+
+
 @router.get("/{deck_id}/simulate", response_class=HTMLResponse)
 def simulate_page(request: Request, deck_id: str):
     """The Simulate page: settings on one side, results (fetched by HTMX when
@@ -462,21 +479,51 @@ def simulate_page(request: Request, deck_id: str):
     return templates.TemplateResponse(request, "simulate.html", {
         "deck": deck, "plugin": plugin, "settings": settings, "values": values,
         "identity": pool.get(deck.identity) if deck.identity else None, "crumb_game": deck.game,
+        "compare_choices": _compare_choices(request, deck, pool), "vs": request.query_params.get("vs", ""),
     })
+
+
+def _simulate(plugin, deck: Deck, pool, values: dict):
+    """(report, failure, illegal) for one deck: a failure is the error text."""
+    illegal = sum(1 for p in plugin.validate(deck, pool) if p.severity == "error")
+    try:
+        return plugin.simulate(deck, pool, values), None, illegal
+    except Exception as e:   # a bad effects entry or an edge case shouldn't break the page
+        log.exception("Simulating deck %s failed", deck.id)
+        return None, str(e) or e.__class__.__name__, illegal
 
 
 @router.get("/{deck_id}/simulate/run", response_class=HTMLResponse)
 def simulate_run(request: Request, deck_id: str):
+    """The results fragment. With ?vs=<deck id>, runs that deck too, with the
+    same settings and seed, and shows the two side by side."""
     deck, plugin, pool, settings, values = _sim_settings(request, deck_id)
-    errors = [p for p in plugin.validate(deck, pool) if p.severity == "error"]
-    try:
-        report, failure = plugin.simulate(deck, pool, values), None
-    except Exception as e:   # a bad effects entry or an edge case shouldn't break the page
-        log.exception("Simulating deck %s failed", deck_id)
-        report, failure = None, str(e) or e.__class__.__name__
-    response = templates.TemplateResponse(request, "_simulation.html", {
-        "deck": deck, "report": report, "failure": failure, "illegal": len(errors),
-    })
+    vs_id = request.query_params.get("vs", "")
+    other = None
+    if vs_id and vs_id != deck_id:
+        other = _load(request, vs_id)
+        if other.game != deck.game:
+            raise HTTPException(400, "Both decks must be for the same game")
+    context = {"deck": deck, "other": other, "seed": None}
+    if other is None:
+        report, failure, illegal = _simulate(plugin, deck, pool, values)
+        context.update(report=report, failure=failure, illegal=illegal)
+    else:
+        other_values = simulate.parse_settings(plugin.sim_settings(other, pool), request.query_params)
+        # Both decks must see the same random draws' seed, or the comparison
+        # mixes deck differences with luck. An empty seed gets a fresh one,
+        # shown with the results so the run can be repeated.
+        if "seed" in values and not str(values["seed"]).strip():
+            values["seed"] = context["seed"] = str(random.randrange(1, 1_000_000))
+        if "seed" in other_values:
+            other_values["seed"] = values.get("seed", other_values["seed"])
+        report_a, failure_a, illegal_a = _simulate(plugin, deck, pool, values)
+        report_b, failure_b, illegal_b = _simulate(plugin, other, pool, other_values)
+        failure = (f"A: {failure_a}" if failure_a else "") + (" " if failure_a and failure_b else "") + \
+                  (f"B: {failure_b}" if failure_b else "")
+        report = None if failure else simulate.compare_reports(report_a, report_b, deck.name, other.name)
+        context.update(report=report, failure=failure or None, illegal=illegal_a, illegal_b=illegal_b)
+    response = templates.TemplateResponse(request, "_simulation.html", context)
     # Keep the settings in the address bar, so reloading or sharing the link
     # gives the same simulation.
     query = urlencode([(k, v) for k, v in request.query_params.multi_items()])

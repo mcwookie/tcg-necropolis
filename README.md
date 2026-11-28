@@ -12,7 +12,7 @@ Build decks and print proxies for out-of-print card games, using your own card s
   sign them in by email ([docs/DOCKER.md](docs/DOCKER.md)).
 - **Deck simulator (Arkham):** play a deck solo a thousand times and see how often it
   passes investigate, fight, evade and treachery tests, how its hand and resources hold
-  up, and when its assets and weaknesses show up ([docs/SIMULATOR.md](docs/SIMULATOR.md)).
+  up, and when its assets and weaknesses show up, or compare two decks side by side ([docs/SIMULATOR.md](docs/SIMULATOR.md)).
 - **Custom cards:** add fan-made scenarios, homebrew investigators or missing cards to
   any game, and they work like official ones ([docs/CUSTOM_CARDS.md](docs/CUSTOM_CARDS.md)).
 - **Collection:** tick the packs you own, per game. The deck builder can then show only

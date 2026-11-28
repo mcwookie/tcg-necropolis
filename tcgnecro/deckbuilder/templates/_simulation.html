@@ -1,14 +1,24 @@
 {#
   Simulation results (deckbuilder/simulate.py SimReport), swapped into the
-  Simulate page. Blocks render by kind: stats, table, chart, notes.
+  Simulate page. Blocks render by kind: stats, table, chart, notes. When
+  comparing (`other` set), the report is simulate.compare_reports(): A is this
+  deck, B the other one.
 #}
 {% if failure %}
 <div class="panel"><p class="error-box">The simulation failed: {{ failure }}</p></div>
 {% else %}
 <div class="panel sim-summary">
+  {% if other %}
+  <div class="sim-versus">
+    <div><span class="tag s0">A</span> {{ deck.name }}</div>
+    <div><span class="tag s1">B</span> <a href="/decks/{{ other.id }}">{{ other.name }}</a></div>
+  </div>
+  {% endif %}
   <div>{{ report.summary }}</div>
-  <div class="small muted">Took {{ "%.1f"|format(report.seconds) }} s</div>
-  {% if illegal %}<div class="small" style="color:var(--warn)">This deck has {{ illegal }} deckbuilding problem{{ "s" if illegal != 1 }}; it's simulated as it is.</div>{% endif %}
+  <div class="small muted">Took {{ "%.1f"|format(report.seconds) }} s{% if seed %} · seed {{ seed }} for both decks{% endif %}</div>
+  {% if other %}<div class="small muted">Changes are B minus A (percentages in points). Small changes can be luck: run more games, or another seed, before trusting a difference of a point or two.</div>{% endif %}
+  {% if illegal %}<div class="small" style="color:var(--warn)">{% if other %}A{% else %}This deck{% endif %} has {{ illegal }} deckbuilding problem{{ "s" if illegal != 1 }}; it's simulated as it is.</div>{% endif %}
+  {% if illegal_b %}<div class="small" style="color:var(--warn)">B has {{ illegal_b }} deckbuilding problem{{ "s" if illegal_b != 1 }}; it's simulated as it is.</div>{% endif %}
   {% for w in report.warnings %}<div class="small" style="color:var(--warn)">{{ w }}</div>{% endfor %}
 </div>
 {% for section in report.sections %}
@@ -28,7 +38,7 @@
         <thead><tr>{% for h in block.headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
         <tbody>
         {% for row in block.rows %}
-          <tr>{% for cell in row %}<td{% if cell.shade is not none %} class="shade" style="--shade: {{ '%.3f'|format(cell.shade) }}"{% endif %}{% if cell.title %} title="{{ cell.title }}"{% endif %}>{{ cell.text }}</td>{% endfor %}</tr>
+          <tr>{% for cell in row %}<td{% if cell.shade is not none %} class="shade" style="--shade: {{ '%.3f'|format(cell.shade) }}"{% endif %}{% if cell.title %} title="{{ cell.title }}"{% endif %}>{{ cell.text }}{% if cell.delta %} <small class="delta">{{ cell.delta }}</small>{% endif %}</td>{% endfor %}</tr>
         {% endfor %}
         </tbody>
       </table>
@@ -38,6 +48,7 @@
     <figure class="sim-chart">
       <figcaption><b>{{ block.title }}</b>{% if block.y_label %} <span class="muted small">({{ block.y_label }} by round)</span>{% endif %}</figcaption>
       {{ block.svg() }}
+      {% if block.legend() %}<div class="sim-legend small">{% for series, label in block.legend() %}<span><i class="swatch {{ series }}"></i>{{ label }}</span>{% endfor %}</div>{% endif %}
       {% if block.caption %}<p class="small muted">{{ block.caption }}</p>{% endif %}
     </figure>
     {% elif block.kind == "notes" %}

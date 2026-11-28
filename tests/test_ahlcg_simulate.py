@@ -227,6 +227,43 @@ def test_band_chart_draws_svg():
     assert svg.startswith('<svg class="band-chart"') and "<polyline" in svg and "<polygon" in svg
 
 
+# ----- comparing two decks -----------------------------------------------------
+
+def test_delta_reads_percentages_decimals_and_text():
+    assert core.delta("42%", "50%") == "+8"
+    assert core.delta("3.1", "2.7") == "−0.4"
+    assert core.delta("1,000", "1,250") == "+250"
+    assert core.delta("12%", "12%") == "±0"
+    assert core.delta("5", "–") is None and core.delta("40%", "4.0") is None
+
+
+def test_compare_reports_lines_up_two_decks(pool, tmp_path, monkeypatch):
+    monkeypatch.setenv("TCGNECRO_DATA", str(tmp_path))
+    plain = sim.run(deck(_99001=2, _01096=1), pool, values(commit="none"))
+    glass = sim.run(deck(_01030=2, _99001=2), pool, values(commit="none"))
+    report = core.compare_reports(plain, glass, "Plain", "With glass")
+    assert [s.title for s in report.sections] == [s.title for s in plain.sections]
+    grid = table(report, "Chance to pass").blocks[0]
+    a_row = next(r for r in grid.rows if r[0].text == "Investigate · A")
+    b_row = grid.rows[grid.rows.index(a_row) + 1]
+    assert b_row[0].text == "Investigate · B"
+    assert a_row[4].delta is None and b_row[4].delta.startswith("+")   # the glass helps at difficulty 4
+    # Stats become a figure / A / B / change table
+    stats = table(report, "Spare actions: investigating").blocks[0]
+    assert stats.headers == ["", "A", "B", "Change"] and stats.rows[0][0].text == "Clues per game"
+    # One chart with both decks, in different series
+    chart = table(report, "Spare actions: investigating").blocks[1]
+    assert [b.label for b in chart.bands] == ["A · Clues", "B · Clues"]
+    assert 'class="mid s1"' in str(chart.svg()) and len(chart.legend()) == 2
+    # Rows one deck lacks appear once; sections one deck lacks are labelled
+    assets = table(report, "Assets in play").blocks[0]
+    assert [r[0].text for r in assets.rows if "Magnifying" in r[0].text] == ["Magnifying Glass · B"]
+    assert table(report, "Weaknesses").intro.startswith("Only for A (Plain)")
+    notes = table(report, "How this deck was modelled").blocks[0].lines
+    assert any(line.startswith("A: 0 of the deck's 1") for line in notes)
+    assert any(line.startswith("Investigator abilities") or "Not simulated" in line for line in notes)
+
+
 def test_games_without_a_simulator_offer_none():
     from tcgnecro.deckbuilder import registry
     assert registry.plugin("swlcg").sim_settings(Deck(id="t", game="swlcg", name="t"), None) == []
@@ -246,3 +283,25 @@ def test_web_simulate_page_and_run(client):  # noqa: F811
     assert "Chance to pass" in r.text and "Spare actions: fighting" in r.text
     assert r.headers["HX-Replace-Url"].startswith(f"/decks/{deck_id}/simulate?run=1&runs=100")
     assert client.get("/decks/nosuchdeck/simulate").status_code == 404
+
+
+def test_web_simulate_compares_two_decks(client):  # noqa: F811
+    ids = []
+    for qty in (1, 2):
+        r = client.post("/decks", data={"game": "ahlcg", "identity": "01001", "name": f"Deck {qty}"},
+                        follow_redirects=False)
+        ids.append(r.headers["location"].rsplit("/", 1)[1])
+        client.post(f"/decks/{ids[-1]}/slots/01016?delta={qty}")
+    a, b = ids
+    page = client.get(f"/decks/{a}/simulate").text
+    assert 'name="vs"' in page and f'value="{b}"' in page and f'value="{a}"' not in page
+    r = client.get(f"/decks/{a}/simulate/run?run=1&runs=100&rounds=3&vs={b}")
+    assert r.status_code == 200
+    assert "Deck 2" in r.text and "Investigate · B" in r.text and "for both decks" in r.text
+    assert f"vs={b}" in r.headers["HX-Replace-Url"]
+    # A fixed seed is used as given; the same link gives the same figures
+    url = f"/decks/{a}/simulate/run?run=1&runs=100&rounds=3&seed=5&vs={b}"
+    first, second = client.get(url).text, client.get(url).text
+    assert "for both decks" not in first
+    assert first.split("Changes are")[1] == second.split("Changes are")[1]   # after the timing line
+    assert client.get(f"/decks/{a}/simulate/run?vs=nosuchdeck").status_code == 404

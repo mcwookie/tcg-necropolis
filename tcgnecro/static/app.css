@@ -252,6 +252,17 @@ h2.welcome { margin: 0 0 4px; font-size: 24px; }
 .band-chart .band { fill: var(--accent); opacity: .18; stroke: none; }
 .band-chart .mid { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; }
 .band-chart .dot { fill: var(--accent); }
+/* Second, third and fourth series (compare mode: B in the warm colour). */
+.band-chart .band.s1 { fill: var(--warn); } .band-chart .mid.s1 { stroke: var(--warn); } .band-chart .dot.s1 { fill: var(--warn); }
+.band-chart .band.s2 { fill: var(--good); } .band-chart .mid.s2 { stroke: var(--good); } .band-chart .dot.s2 { fill: var(--good); }
+.band-chart .band.s3 { fill: var(--muted); } .band-chart .mid.s3 { stroke: var(--muted); } .band-chart .dot.s3 { fill: var(--muted); }
+.sim-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 4px; }
+.sim-legend .swatch { display: inline-block; width: 14px; height: 3px; margin-right: 6px; vertical-align: middle; background: var(--accent); }
+.sim-legend .swatch.s1, .sim-versus .tag.s1 { background: var(--warn); }
+.sim-legend .swatch.s2 { background: var(--good); } .sim-legend .swatch.s3 { background: var(--muted); }
+.sim-versus { display: grid; gap: 2px; margin-bottom: 6px; font-weight: 600; overflow-wrap: anywhere; }
+.sim-versus .tag { display: inline-block; min-width: 1.4em; text-align: center; border-radius: 4px; color: var(--panel); background: var(--accent); font-size: 13px; margin-right: 4px; }
+.sim-table .delta { color: var(--muted); font-size: 12px; margin-left: 2px; }
 .sim-notes { padding-left: 18px; margin: 6px 0; }
 .sim-notes li { margin: 3px 0; }
 @media (max-width: 800px) {
