@@ -13,12 +13,14 @@ import threading
 from importlib import import_module
 
 from tcgnecro import db
+from tcgnecro.deckbuilder.buildql import QuerySchema
 from tcgnecro.deckbuilder.model import Pool
 from tcgnecro.deckbuilder.plugin import DeckbuilderPlugin
 from tcgnecro.games import GAME_MODULES, display_rotation
 
 _plugins: dict[str, DeckbuilderPlugin] | None = None
 _pools: dict[str, tuple[tuple, Pool]] = {}
+_schemas: dict[str, tuple[Pool, "QuerySchema", dict[str, str]]] = {}
 _lock = threading.Lock()
 
 
@@ -76,3 +78,17 @@ def pool(conn: sqlite3.Connection, game_id: str) -> Pool:
     with _lock:
         _pools[game_id] = (version, built)
     return built
+
+
+def query_schema(conn: sqlite3.Connection, game_id: str, pool: Pool) -> tuple[QuerySchema, dict[str, str]]:
+    """The game's BuildQL field schema and {pack code: pack name}, rebuilt
+    whenever the pool is."""
+    with _lock:
+        cached = _schemas.get(game_id)
+        if cached and cached[0] is pool:
+            return cached[1], cached[2]
+    schema = QuerySchema.build(plugin(game_id).config.query, pool.cards.values())
+    names = {r["id"]: r["name"] for r in conn.execute("SELECT id, name FROM packs WHERE game_id = ?", (game_id,))}
+    with _lock:
+        _schemas[game_id] = (pool, schema, names)
+    return schema, names

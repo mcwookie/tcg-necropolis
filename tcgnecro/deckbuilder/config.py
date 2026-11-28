@@ -73,6 +73,34 @@ class BadgeConfig(BaseModel):
     format: str = "{}"
 
 
+class QueryConfig(BaseModel):
+    """Field names for BuildQL queries (deckbuilder/buildql.py).
+
+    Any key of a card's attrs or raw data already works by its own name; this
+    adds friendlier names and aliases, and says how to read some values.
+    """
+
+    # query name -> where to read it: "key" (attrs, then raw), "attrs.key",
+    # "raw.key", or a list of those whose values are combined.
+    fields: dict[str, str | list[str]] = Field(default_factory=dict)
+    # Help text for fields, shown under the query box (name -> description).
+    # Fields listed here are the ones the help shows, in this order.
+    help: dict[str, str] = Field(default_factory=dict)
+    # data key -> separator, for strings that hold several values
+    # ("Item. Weapon." -> ["Item", "Weapon"]).
+    split: dict[str, str] = Field(default_factory=lambda: {"traits": "."})
+    # data keys holding rules text: == on these is an exact substring match.
+    text_fields: list[str] = Field(default_factory=lambda: ["text", "flavor", "back_text", "real_text"])
+
+    def field_names(self) -> dict[str, list[str]]:
+        """Each `help` entry's other names: the fields that read the same data."""
+        out = {}
+        for name in self.help:
+            target = self.fields.get(name, name)
+            out[name] = [k for k, v in self.fields.items() if v == target and k != name]
+        return out
+
+
 class GameConfig(BaseModel):
     identity_label: str = "Identity"   # "Investigator", "Hero", "Identity"...
     identity_required: bool = True
@@ -87,6 +115,7 @@ class GameConfig(BaseModel):
     sorts: list[SortConfig] = Field(default_factory=list)
     page_size: int = 0                 # card rows per "Show more"; 0 shows every card at once
     icons: dict[str, IconConfig] = Field(default_factory=dict)
+    query: QueryConfig = Field(default_factory=QueryConfig)
 
     @classmethod
     def load(cls, path: Path) -> "GameConfig":

@@ -1,6 +1,7 @@
 {# The filtered card list, one page at a time. "Load more" replaces itself with the next page. #}
 {% from "_macros.html" import card_row with context %}
 {% if offset == 0 %}
+{% if query_error %}<p class="query-error small" role="alert">Query not applied: {{ query_error }}</p>{% endif %}
 <div class="list-head">
   <span class="muted small">{{ total }} card{{ "s" if total != 1 }}</span>
   <a class="small to-deck" href="#deck">Deck ↓</a>

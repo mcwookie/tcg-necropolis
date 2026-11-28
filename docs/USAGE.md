@@ -162,6 +162,10 @@ Three columns: **your deck | cards | filters**. The card list is grouped by type
   and campaign cards are hidden by default; tick *Weakness* or *Story / campaign* under
   Type to add a story weakness or a story asset your campaign gave you. Neither counts
   toward deck size.
+- **Query** (under the filters) narrows the list with an expression such as
+  `trait = "spell" & level >= 2` or `health + sanity >= 5`. It works in every game;
+  **How to write queries** below the box lists the syntax and the game's fields. See
+  [BUILDQL.md](BUILDQL.md).
 - **Cards:** `+`/`−` change copies (capped at the card's deck limit). Hover a name for
   its image; click it for full text and stats. The list shows every matching card at once, grouped by type.
 - **Your deck:** live counts (cards toward deck size, XP, weaknesses), problems in red

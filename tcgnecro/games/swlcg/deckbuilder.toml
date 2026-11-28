@@ -149,3 +149,30 @@ fields = ["set_number"]
 key = "force"
 label = "Most Force icons"
 fields = ["-force", "set_number"]
+
+# ---- Queries (BuildQL) ------------------------------------------------------
+# Deck builder rows are objective sets; set-level fields add up the set's
+# cards. Any key of the objective's attrs or source data also works as is.
+# Reference: docs/BUILDQL.md.
+
+[query.split]
+traits = ","
+
+[query.fields]
+name = "raw.name"
+trait = "attrs.traits"
+type = "attrs.types"
+set = "attrs.set_number"
+
+[query.help]
+name = "Objective name"
+side = "light or dark"
+affiliation = "jedi, rebel, smugglers, sith, navy, scum, neutral"
+set = "Objective set number"
+text = "Text of the objective and every card in the set"
+trait = "Objective traits, one at a time"
+type = "Card types in the set: unit, event, enhancement, fate"
+units = "Units in the set"
+force = "Force icons in the set"
+resources = "Resources in the set"
+limited = "true or false"

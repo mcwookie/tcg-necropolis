@@ -162,3 +162,21 @@ fields = ["kind", "name"]
 key = "powerset"
 label = "Powerset, name"
 fields = ["powersets", "name"]
+
+# ---- Queries (BuildQL) ------------------------------------------------------
+# Any key of the card's attrs or source data also works as is.
+# Reference: docs/BUILDQL.md.
+
+[query.fields]
+powerset = "attrs.powersets"
+
+[query.help]
+name = "Card name"
+kind = "Card kind (as grouped in the list)"
+powerset = "Powersets, one at a time"
+archetype = "Archetype"
+inspiration = "Inspiration"
+recharge = "Recharge"
+accuracy = "Accuracy; also defense, health"
+text = "Card text"
+rarity = "Rarity"

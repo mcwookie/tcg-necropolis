@@ -51,6 +51,7 @@ ArkhamDB API ──► data/cache/ahlcg/*.json ──► games/ahlcg load_catalo
 | `deckbuilder/plugin.py` | `DeckbuilderPlugin` base class and its default behavior |
 | `deckbuilder/registry.py` | Discovers plugins, caches pools |
 | `deckbuilder/filters.py` | Parses filter query params, applies filters and sorts |
+| `deckbuilder/buildql.py` | The Query box's language (BuildQL), run after the filters ([BUILDQL.md](BUILDQL.md)) |
 | `deckbuilder/markup.py` | Card text → safe HTML (escape, allow-list, `[icons]`, `[[Traits]]`) |
 | `deckbuilder/store.py` | Deck JSON files: load/save/update/list/delete |
 | `deckbuilder/routes.py` | FastAPI routes under `/decks` |
@@ -192,8 +193,12 @@ and then it starts switched on regardless of `default`. Add it to any game's TOM
 "Only cards I own". Ownership is computed from card *versions*, so cards reprinted in a
 pack the profile owns count, and reprint codes resolve through `pool.aliases`.
 
+**Queries:** the `[query]` table names the fields the Query box understands (BuildQL).
+Its format is in [BUILDQL.md](BUILDQL.md#for-maintainers). Without it, every key of the
+cards' `attrs` and raw data still works by its own name.
+
 How filters reach the server: the form sends each filter as query parameters (`faction=a&faction=b`,
-`level_min=0&level_max=2`, `q=text`, `legal=1`) plus `f=1`. Without `f=1` (first load,
+`level_min=0&level_max=2`, `q=text`, `legal=1`) plus `f=1`, and the Query box as `query=...`. Without `f=1` (first load,
 "Reset filters") the TOML defaults apply. With it, an unchecked box means off.
 
 ## Deck file format

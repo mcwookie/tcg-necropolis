@@ -149,6 +149,10 @@ class AhlcgPlugin(DeckbuilderPlugin):
             "text": raw.get("text") or "",
             "pack": raw.get("pack_code"),
             "deck_limit": raw.get("deck_limit"),
+            # For queries (deckbuilder/buildql.py, [query] in deckbuilder.toml).
+            "multiclass": len(_factions(raw)) > 1,
+            "heals_damage": "hd" in (raw.get("tags") or "").split("."),
+            "heals_horror": "hh" in (raw.get("tags") or "").split("."),
         }
         return DeckCard(card_id, title, name, attrs, raw)
 
