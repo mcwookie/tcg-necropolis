@@ -17,11 +17,14 @@ compatibility with upstream collections:
 """
 
 import json
+import logging
 import urllib.request
 from pathlib import Path
 
 from tcgnecro import db
 from tcgnecro.games import Card, CardVersion, Catalog, Pack
+
+log = logging.getLogger(__name__)
 
 GAME_ID = "ahlcg"
 NAME = "Arkham Horror: The Card Game"
@@ -77,7 +80,82 @@ def load_source(refresh: bool = False) -> tuple[list[dict], list[dict]]:
         cards_file.write_text(json.dumps(cards))
     packs = json.loads(packs_file.read_text())
     cards = [c for c in json.loads(cards_file.read_text()) if not c.get("hidden")]
+    # Taboo lists ride along with the card data but are only used by the deck
+    # builder, so failing to fetch them doesn't stop the catalog loading.
+    if refresh or not taboos_file().exists():
+        try:
+            download_taboos()
+        except Exception as e:  # network, ArkhamDB down
+            log.warning("Couldn't download ArkhamDB taboo lists: %s", e)
     return packs, cards
+
+
+# ----- taboo lists --------------------------------------------------------------
+#
+# FFG's taboo lists change player cards for balance: extra (chained) or fewer
+# (unchained) experience, forbidden cards, and rewritten text or deckbuilding.
+# ArkhamDB publishes them at /api/public/taboos/; a deck names the list it
+# follows by its numeric id (`taboo_id`). The deck builder applies them
+# (games/ahlcg/deckbuilder.py); this part only fetches and reads them.
+
+def taboos_file() -> Path:
+    return cache_dir() / "taboos.json"
+
+
+def download_taboos() -> None:
+    data = fetch_json(f"{API}/taboos/")
+    cache_dir().mkdir(parents=True, exist_ok=True)
+    taboos_file().write_text(json.dumps(data))
+
+
+def normalize_taboos(data: list[dict]) -> dict[int, dict]:
+    """id -> {"id", "code", "name", "date_start", "active", "cards": {code: entry}}.
+
+    ArkhamDB's API sends each list's `cards` as a JSON string and always gives
+    an `id`; the arkhamdb-json-data repository has `cards` as a list and ids
+    only on recent lists, so the id falls back to the numeric code ("008" -> 8).
+    """
+    out = {}
+    for taboo in data or []:
+        cards = taboo.get("cards") or []
+        if isinstance(cards, str):
+            cards = json.loads(cards) if cards.strip() else []
+        try:
+            taboo_id = int(taboo.get("id") or taboo["code"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        out[taboo_id] = {
+            "id": taboo_id,
+            "code": taboo.get("code") or f"{taboo_id:03d}",
+            "name": taboo.get("name") or "Taboo List",
+            "date_start": taboo.get("date_start") or "",
+            "active": bool(taboo.get("active", True)),
+            "cards": {str(e["code"]): e for e in cards if isinstance(e, dict) and e.get("code")},
+        }
+    return out
+
+
+_taboo_cache: tuple[float, dict[int, dict]] | None = None
+
+
+def load_taboos() -> dict[int, dict]:
+    """The downloaded taboo lists (see normalize_taboos), re-read when the
+    cache file changes. Empty until `tcgnecro catalog ahlcg` has fetched them;
+    never downloads from here, so page loads stay offline."""
+    global _taboo_cache
+    path = taboos_file()
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        return {}
+    if _taboo_cache is None or _taboo_cache[0] != mtime:
+        try:
+            taboos = normalize_taboos(json.loads(path.read_text()))
+        except (OSError, ValueError) as e:
+            log.warning("Couldn't read %s: %s", path, e)
+            taboos = {}
+        _taboo_cache = (mtime, taboos)
+    return _taboo_cache[1]
 
 
 # Landscape card types. Collections store them sideways (turned 90° clockwise)

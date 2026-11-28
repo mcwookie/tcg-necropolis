@@ -39,6 +39,14 @@ class DeckbuilderPlugin:
                 cards[card.id] = card
         return Pool(cards)
 
+    def deck_pool(self, deck: Deck, pool: Pool) -> Pool:
+        """The pool as this deck sees it. Override when a deck's choices change
+        the cards themselves (Arkham taboo lists). The web routes call this
+        once per request so the card list, details and +/- limits show the
+        changed cards; hooks may call it again, so it should be cheap and
+        return its argument unchanged when it is already this deck's view."""
+        return pool
+
     def identities(self, pool: Pool) -> list[DeckCard]:
         """Cards a deck can be built around. Default: none."""
         return []

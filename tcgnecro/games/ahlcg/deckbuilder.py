@@ -26,20 +26,28 @@ Some player cards change deckbuilding too. Those that ArkhamDB encodes as
 the investigator's options. The rest only say so in their text, so they are
 listed in DECKBUILDING_CARDS below.
 
+Taboo lists (deck.meta["taboo_id"], ArkhamDB's list id) are applied by
+giving the deck its own view of the pool (deck_pool): the listed cards are
+copied with the list's changes merged into `raw`, so every rule above reads
+the changed card. See "Taboo lists" below.
+
 Option criteria supported: faction, faction_select, option_select,
 deck_size_select, level, type, trait, slot, uses, text, tag, permanent, not,
-limit, atleast, ignore_match. Not yet: taboo lists, customizable upgrades,
-parallel investigator front/back choices, base_level. See docs/ROADMAP.md.
+limit, atleast, ignore_match. Not yet: customizable upgrades (and taboo
+changes to them), parallel investigator front/back choices, base_level.
+See docs/ROADMAP.md.
 """
 
 import json
 import random
 import re
 import urllib.error
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from tcgnecro.deckbuilder.model import Action, Deck, DeckCard, Pool, Problem, RemoteDeck, Selection, Stat
 from tcgnecro.deckbuilder.plugin import DeckbuilderPlugin
+from tcgnecro.games import ahlcg
 from tcgnecro.games.ahlcg import fetch_json
 
 API = "https://arkhamdb.com/api/public"
@@ -102,6 +110,89 @@ def _select_key(option: dict) -> str | None:
         if kind in option:
             return option.get("id") or key
     return None
+
+
+# ----- Taboo lists ---------------------------------------------------------------
+#
+# Each entry of a list (games/ahlcg/__init__.py loads them) names a card code
+# and any of:
+#   xp            extra experience per copy: positive is "chained", negative
+#                 "unchained". The card's level is unchanged, so deck options
+#                 that check level still see the printed level; only the XP
+#                 cost changes.
+#   deck_limit    new copy limit; 0 means forbidden.
+#   exceptional   gains (true) or loses (false) the Exceptional keyword.
+#   deck_options, deck_requirements   replace an investigator's.
+#   text          the list's own description of the change (shown).
+#   replacement_text  the card's new text, used as its text.
+#   customization_*   changes to customizable cards; not applied (customizable
+#                 upgrades aren't supported yet), only described by `text`.
+
+TABOO_KEY = "taboo_id"
+# Fields of a taboo entry copied over the card's own.
+TABOO_REPLACES = ("deck_limit", "exceptional", "deck_options", "deck_requirements")
+
+
+@dataclass
+class TabooPool(Pool):
+    """A pool with one taboo list applied (AhlcgPlugin.deck_pool)."""
+
+    taboo_id: int = 0
+    base: Pool | None = None
+
+
+def taboo_id(deck: Deck) -> int | None:
+    """The deck's taboo list id, or None. ArkhamDB imports store an int; the
+    picker stores the form's string ("" for none)."""
+    value = deck.meta.get(TABOO_KEY)
+    try:
+        return int(value) if value not in (None, "", 0, "0") else None
+    except (TypeError, ValueError):
+        return None
+
+
+def taboo_label(taboo: dict) -> str:
+    date = taboo.get("date_start") or ""
+    return f"{taboo['name']} {taboo['code']}" + (f" ({date})" if date else "")
+
+
+def _taboo_summary(entry: dict) -> tuple[str, str]:
+    """(badge, description) for one taboo entry."""
+    parts, badge = [], "Taboo"
+    xp = entry.get("xp")
+    if entry.get("deck_limit") == 0:
+        badge = "Forbidden"
+    elif xp:
+        badge = f"{'+' if xp > 0 else '−'}{abs(xp)} XP"
+        parts.append(f"{'Chained' if xp > 0 else 'Unchained'}: {xp:+d} experience per copy.")
+    if entry.get("text"):
+        parts.append(entry["text"])
+    elif entry.get("deck_limit") == 0:
+        parts.append("Forbidden.")
+    return badge, " ".join(parts)
+
+
+def apply_taboo(card: DeckCard, entry: dict) -> DeckCard:
+    """A copy of `card` with one taboo entry applied."""
+    raw = dict(card.raw)
+    for key in TABOO_REPLACES:
+        if key in entry:
+            raw[key] = entry[key]
+    # Exceptional cards are limited to 1 copy by the rules; ArkhamDB's data
+    # bakes that into deck_limit, so a list that only adds the keyword
+    # (Seeker's Insight, 03315) needs it applied here. (Our reading of the
+    # rules; the entry doesn't say so itself.)
+    if entry.get("exceptional") and "deck_limit" not in entry:
+        raw["deck_limit"] = min(int(raw.get("deck_limit") or DEFAULT_COPIES), 1)
+    if entry.get("replacement_text"):
+        raw["text"] = entry["replacement_text"]
+    badge, summary = _taboo_summary(entry)
+    raw["taboo_xp"] = int(entry.get("xp") or 0)
+    raw["taboo_text"] = summary
+    attrs = card.attrs | {"taboo": badge, "taboo_xp": raw["taboo_xp"], "text": raw.get("text") or "",
+                          "deck_limit": raw.get("deck_limit"),
+                          "forbidden": raw.get("deck_limit") == 0}
+    return replace(card, attrs=attrs, raw=raw)
 
 
 class AhlcgPlugin(DeckbuilderPlugin):
@@ -171,6 +262,41 @@ class AhlcgPlugin(DeckbuilderPlugin):
             (c for c in pool.cards.values() if c.get("kind") == "investigator" and c.raw.get("deck_options")),
             key=lambda c: (c.raw.get("faction_code"), c.name),
         )
+
+    # ----- taboo lists ------------------------------------------------------
+
+    def taboos(self) -> dict[int, dict]:
+        return ahlcg.load_taboos()
+
+    def deck_pool(self, deck: Deck, pool: Pool) -> Pool:
+        """The pool with the deck's taboo list applied (cached per list)."""
+        wanted = taboo_id(deck)
+        if isinstance(pool, TabooPool):
+            if pool.taboo_id == wanted:
+                return pool
+            pool = pool.base
+        taboo = self.taboos().get(wanted) if wanted is not None else None
+        if taboo is None:
+            return pool
+        # taboo id -> (the list it was built from, TabooPool); rebuilt when the
+        # game's pool is rebuilt or the taboo lists are downloaded again.
+        cache = self.__dict__.setdefault("_taboo_pools", {})
+        built_from, cached = cache.get(wanted, (None, None))
+        if cached is not None and cached.base is pool and built_from is taboo:
+            return cached
+        cards = dict(pool.cards)
+        for code, entry in taboo["cards"].items():
+            card_id = pool.resolve(code)
+            if card_id in pool.cards:
+                cards[card_id] = apply_taboo(pool.cards[card_id], entry)
+        view = TabooPool(cards, pool.aliases, pool.images, taboo_id=wanted, base=pool)
+        cache[wanted] = (taboo, view)
+        return view
+
+    def _taboo_entry(self, deck: Deck, card: DeckCard) -> dict | None:
+        wanted = taboo_id(deck)
+        taboo = self.taboos().get(wanted) if wanted is not None else None
+        return taboo["cards"].get(card.id) if taboo else None
 
     # ----- helpers ----------------------------------------------------------
 
@@ -295,6 +421,7 @@ class AhlcgPlugin(DeckbuilderPlugin):
     # ----- building ---------------------------------------------------------
 
     def start_deck(self, deck: Deck, pool: Pool) -> None:
+        pool = self.deck_pool(deck, pool)
         identity = self._identity(deck, pool)
         if identity is None:
             return
@@ -311,6 +438,7 @@ class AhlcgPlugin(DeckbuilderPlugin):
                 deck.set_count(card.id, int(card.raw.get("deck_limit") or card.raw.get("quantity") or 1))
 
     def selections(self, deck: Deck, pool: Pool) -> list[Selection]:
+        pool = self.deck_pool(deck, pool)
         out = []
         for option in self._options(self._identity(deck, pool)):
             key = _select_key(option)
@@ -324,11 +452,19 @@ class AhlcgPlugin(DeckbuilderPlugin):
                 choices = [(str(s), f"{s} cards") for s in option["deck_size_select"]]
             value = deck.meta.get(key, choices[0][0])
             out.append(Selection(key, option.get("name") or "Choice", choices, str(value)))
+        taboos = self.taboos()
+        if taboos and deck.identity:
+            choices = [("", "None")] + [(str(t["id"]), taboo_label(t))
+                                        for t in sorted(taboos.values(), key=lambda t: t["id"], reverse=True)]
+            current = taboo_id(deck)
+            out.append(Selection(TABOO_KEY, "Taboo list", choices, str(current) if current else ""))
         return out
 
     def is_legal(self, card: DeckCard, deck: Deck, pool: Pool) -> bool:
+        pool = self.deck_pool(deck, pool)
+        card = pool.get(card.id) or card
         identity = self._identity(deck, pool)
-        if card.get("kind") == "investigator":
+        if card.get("kind") == "investigator" or card.raw.get("deck_limit") == 0:
             return False
         restricted = self._restriction_ok(card, identity)
         if restricted is not None:
@@ -342,7 +478,10 @@ class AhlcgPlugin(DeckbuilderPlugin):
         return False
 
     def max_copies(self, card: DeckCard, deck: Deck) -> int:
-        return int(card.raw.get("deck_limit") or DEFAULT_COPIES)
+        limit = card.raw.get("deck_limit")
+        if "taboo_xp" not in card.raw and (entry := self._taboo_entry(deck, card)):
+            limit = apply_taboo(card, entry).raw.get("deck_limit")   # called with an untabooed card
+        return 0 if limit == 0 else int(limit or DEFAULT_COPIES)
 
     def _assign(self, deck: Deck, pool: Pool, identity: DeckCard) -> tuple[list[str], list[str]]:
         """Offer each non-exempt copy to the deck options (see module doc).
@@ -386,10 +525,22 @@ class AhlcgPlugin(DeckbuilderPlugin):
         return illegal, limit_errors
 
     def validate(self, deck: Deck, pool: Pool) -> list[Problem]:
+        pool = self.deck_pool(deck, pool)
         identity = self._identity(deck, pool)
         if identity is None:
             return [Problem("Choose an investigator")]
         problems = []
+
+        wanted = taboo_id(deck)
+        if wanted is not None and not isinstance(pool, TabooPool):
+            problems.append(Problem(
+                f"Taboo list {wanted} isn't downloaded, so it isn't applied"
+                " (run `tcgnecro catalog ahlcg --refresh`)", severity="warning"))
+        forbidden = sorted(cid for cid in deck.slots
+                           if (c := pool.get(cid)) and c.raw.get("deck_limit") == 0 and "taboo_xp" in c.raw)
+        for card_id in forbidden:
+            problems.append(Problem(f"{pool.get(card_id).name} is forbidden by the taboo list",
+                                    card_ids=[card_id]))
 
         unknown = [cid for cid in deck.slots if pool.get(cid) is None]
         if unknown:
@@ -402,6 +553,8 @@ class AhlcgPlugin(DeckbuilderPlugin):
 
         illegal, limit_errors = self._assign(deck, pool, identity)
         for card_id in illegal:
+            if card_id in forbidden:
+                continue
             problems.append(Problem(f"{pool.get(card_id).name} isn't allowed for this investigator",
                                     card_ids=[card_id]))
         problems += [Problem(m) for m in limit_errors]
@@ -415,7 +568,7 @@ class AhlcgPlugin(DeckbuilderPlugin):
         for title, cards in sorted(by_title.items()):
             copies = sum(deck.count(c.id) for c in cards)
             limit = max(self.max_copies(c, deck) for c in cards)
-            if copies > limit:
+            if copies > limit and not all(c.id in forbidden for c in cards):
                 problems.append(Problem(f"{copies} copies of {title} (limit {limit})",
                                         card_ids=[c.id for c in cards]))
 
@@ -493,13 +646,18 @@ class AhlcgPlugin(DeckbuilderPlugin):
 
     def xp(self, deck: Deck, pool: Pool) -> int:
         """Experience the deck costs: exceptional cards cost double, myriad
-        cards are paid for once per title."""
+        cards are paid for once per title. A taboo list's chain (unchain) is
+        added to (taken from) the level before doubling, never below 0."""
+        pool = self.deck_pool(deck, pool)
         total, myriad_seen = 0, set()
         for card_id, qty in deck.slots.items():
             card = pool.get(card_id)
-            if card is None or not card.raw.get("xp"):
+            if card is None:
                 continue
-            xp = card.raw["xp"] * (2 if card.raw.get("exceptional") else 1)
+            level = max(0, (card.raw.get("xp") or 0) + (card.raw.get("taboo_xp") or 0))
+            if not level:
+                continue
+            xp = level * (2 if card.raw.get("exceptional") else 1)
             if card.raw.get("myriad"):
                 if card.raw["name"] not in myriad_seen:
                     myriad_seen.add(card.raw["name"])
@@ -509,6 +667,7 @@ class AhlcgPlugin(DeckbuilderPlugin):
         return total
 
     def stats(self, deck: Deck, pool: Pool) -> list[Stat]:
+        pool = self.deck_pool(deck, pool)
         identity = self._identity(deck, pool)
         size = self._deck_size(deck, identity, pool)
         counted = self._counted(deck, pool, identity)
@@ -516,7 +675,8 @@ class AhlcgPlugin(DeckbuilderPlugin):
         stats = [
             Stat("Cards", f"{counted} / {size}", counted == size),
             Stat("XP in deck", str(self.xp(deck, pool)),
-                 title="Total experience cost of the cards in the deck (exceptional cards count double)"),
+                 title="Total experience cost of the cards in the deck (exceptional cards count double"
+                       + (", taboo list chains included)" if isinstance(pool, TabooPool) else ")")),
         ]
         exp = deck.meta.get("experience")
         if exp:
@@ -538,6 +698,7 @@ class AhlcgPlugin(DeckbuilderPlugin):
     def run_action(self, key: str, deck: Deck, pool: Pool) -> str | None:
         if key != "random_weakness":
             raise KeyError(key)
+        pool = self.deck_pool(deck, pool)
         identity = self._identity(deck, pool)
         candidates = [
             c for c in pool.cards.values()
@@ -577,7 +738,8 @@ class AhlcgPlugin(DeckbuilderPlugin):
             ("Skill icons", " ".join(s.title() for s in card.get("skills"))),
             ("Health / Sanity", f"{raw.get('health', '–')} / {raw.get('sanity', '–')}"
              if raw.get("health") is not None or raw.get("sanity") is not None else ""),
-            ("Deck limit", str(raw.get("deck_limit") or "")),
+            ("Deck limit", "Forbidden" if raw.get("deck_limit") == 0 else str(raw.get("deck_limit") or "")),
+            ("Taboo", raw.get("taboo_text") or ""),
             ("Pack", f"{raw.get('pack_code')} #{raw.get('position')}"),
             ("Code", card.id),
         ]
