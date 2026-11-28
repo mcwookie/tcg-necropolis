@@ -45,6 +45,17 @@ def user_timezone(request) -> str | None:
     return user.prefs.get("timezone") if user else None
 
 
+THEMES = ("light", "dark")
+
+
+def user_theme(request) -> str | None:
+    """The signed-in profile's color theme ("light" or "dark"), or None to
+    follow the device's setting. Pages put it on <html data-theme>."""
+    user = getattr(getattr(request, "state", None), "user", None)
+    theme = user.prefs.get("theme") if user else None
+    return theme if theme in THEMES else None
+
+
 @pass_context
 def when(context, stamp: str | None, fmt: str = "datetime") -> Markup:
     """A timestamp as <time>. The browser rewrites it in the viewer's time zone
@@ -105,4 +116,5 @@ def game_name(game_id: str) -> str:
 
 
 templates.env.globals.update(game_name=game_name, static_url=static_url, thumb_list=thumb_list, thumb_url=db.thumb_url, image_url=db.image_url, source_url=SOURCE_URL,
-                             ago=ago, when=when, user_timezone=user_timezone)
+                             ago=ago, when=when, user_timezone=user_timezone,
+                             user_theme=user_theme)

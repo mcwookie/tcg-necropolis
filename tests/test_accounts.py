@@ -182,6 +182,31 @@ def test_time_zone_preference(app):
     assert 'data-tz=""' in alice.get("/decks").text
 
 
+def test_theme_preference(app):
+    users.create("Alice")
+    alice = sign_in(app, "Alice")
+    page = alice.get("/profile").text
+    assert "Automatic: follow this device" in page and "data-theme" not in page
+
+    assert alice.post("/profile", data={"name": "Alice", "theme": "neon"},
+                      follow_redirects=False).headers["location"].startswith("/profile?error=")
+    alice.post("/profile", data={"name": "Alice", "theme": "dark", "timezone": "America/New_York"})
+    prefs = users.by_name("Alice").prefs
+    assert prefs["theme"] == "dark" and prefs["timezone"] == "America/New_York"
+    for path in ("/profile", "/decks", "/proxies", "/"):
+        assert '<html lang="en" data-theme="dark">' in alice.get(path).text, path
+    assert '<option value="dark" selected>' in alice.get("/profile").text
+
+    alice.post("/profile", data={"name": "Alice", "theme": "light"})
+    assert users.by_name("Alice").prefs["theme"] == "light"
+    assert "timezone" not in users.by_name("Alice").prefs     # the form sent none: automatic
+    assert 'data-theme="light"' in alice.get("/decks").text
+
+    alice.post("/profile", data={"name": "Alice"})               # back to automatic
+    assert "theme" not in users.by_name("Alice").prefs
+    assert "data-theme" not in alice.get("/decks").text
+
+
 def test_archive_hides_and_unarchive_restores(app):
     alice_id = users.create("Alice").id
     bob_id = users.create("Bob").id

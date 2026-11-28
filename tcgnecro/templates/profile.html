@@ -23,6 +23,13 @@
         <option value="">Automatic: this device's time zone</option>
         {% for tz in timezones %}<option {{ "selected" if tz == user.prefs.get("timezone") }}>{{ tz }}</option>{% endfor %}
       </select>
+      <label class="f" for="theme">Theme</label>
+      <select id="theme" name="theme">
+        {% set theme = user.prefs.get("theme") or "" %}
+        <option value="" {{ "selected" if theme == "" }}>Automatic: follow this device</option>
+        <option value="light" {{ "selected" if theme == "light" }}>Light</option>
+        <option value="dark" {{ "selected" if theme == "dark" }}>Dark</option>
+      </select>
       <p><button>Save</button></p>
     </form>
   </section>
@@ -45,9 +52,9 @@
     <form method="post" action="/profile/users" style="margin-top:14px">
       <label class="f" for="new-name">Add a profile</label>
       <div class="range" style="gap:10px">
-        <input type="text" id="new-name" name="name" required placeholder="Friend's name">
-        <input type="email" name="email" placeholder="Their email" aria-label="Their email">
-        <label class="check" style="white-space:nowrap"><input type="checkbox" name="is_admin" value="true"> admin</label>
+        <input type="text" id="new-name" name="name" required placeholder="Friend's name" style="flex:1 1 9em">
+        <input type="email" name="email" placeholder="Their email" aria-label="Their email" style="flex:1 1 11em">
+        <label class="check" style="white-space:nowrap"><input type="checkbox" name="is_admin" value="true" style="width:auto"> admin</label>
         <button>Add</button>
       </div>
     </form>

@@ -37,7 +37,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.middleware.sessions import SessionMiddleware
 
 from tcgnecro import db, users
-from tcgnecro.templating import templates
+from tcgnecro.templating import THEMES, templates
 
 log = logging.getLogger("tcgnecro.auth")
 
@@ -269,13 +269,17 @@ def profile_page(request: Request, error: str | None = None, message: str | None
 
 
 @router.post("/profile")
-def update_profile(request: Request, name: str = Form(...), email: str = Form(""), timezone: str = Form("")):
+def update_profile(request: Request, name: str = Form(...), email: str = Form(""), timezone: str = Form(""),
+                   theme: str = Form("")):
     user = current_user(request)
     if _cloudflare_mode(request):
         email = user.email or ""   # it's how Cloudflare signs you in; an admin changes it
     if timezone and timezone not in available_timezones():
         return RedirectResponse("/profile?" + urlencode({"error": f"Unknown time zone '{timezone}'"}), 303)
-    prefs = {k: v for k, v in user.prefs.items() if k != "timezone"} | ({"timezone": timezone} if timezone else {})
+    if theme and theme not in THEMES:
+        return RedirectResponse("/profile?" + urlencode({"error": f"Unknown theme '{theme}'"}), 303)
+    prefs = {k: v for k, v in user.prefs.items() if k not in ("timezone", "theme")}
+    prefs |= ({"timezone": timezone} if timezone else {}) | ({"theme": theme} if theme else {})
     try:
         users.update(user.id, name=name, email=email.strip() or None, prefs=prefs)
     except users.UserError as e:
