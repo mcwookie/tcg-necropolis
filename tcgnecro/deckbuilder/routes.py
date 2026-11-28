@@ -30,7 +30,7 @@ from tcgnecro import db, ownership, users
 from tcgnecro.auth import current_user
 from tcgnecro.decklist import CardRequest, resolve
 from tcgnecro.deckbuilder import buildql, filters, registry, simulate, store, sync
-from tcgnecro.deckbuilder.model import MAIN, VISIBILITIES, Deck, DeckCard
+from tcgnecro.deckbuilder.model import MAIN, VISIBILITIES, Deck, DeckCard, now
 from tcgnecro.games import card_backs
 from tcgnecro.pdf import CUT_LINES, LAYOUTS, PAGE_SIZES, PdfOptions, generate_pdf
 from tcgnecro.templating import templates
@@ -234,8 +234,10 @@ def _deck_fragment(request: Request, deck: Deck, plugin, pool, changed: list[str
 # ----- deck list, create, import -----------------------------------------------
 
 @router.get("", response_class=HTMLResponse)
-def deck_index(request: Request, error: str | None = None, game: str | None = None):
-    """Every deck you can see, or just one game's (?game=, from its game page)."""
+def deck_index(request: Request, error: str | None = None, game: str | None = None, archived: str = ""):
+    """Every deck you can see, or just one game's (?game=, from its game page).
+    Archived decks are left out unless ?archived=1; others' archived decks
+    are never listed."""
     conn = db.connect()
     loaded = {r["id"]: r["name"] for r in conn.execute("SELECT id, name FROM games")}
     conn.close()
@@ -245,10 +247,17 @@ def deck_index(request: Request, error: str | None = None, game: str | None = No
     elif games[0][0] != game:   # the forms start on this game
         games.sort(key=lambda g: g[0] != game)
     user = current_user(request)
-    mine, shared = [], []
+    show_archived = bool(archived)
+    mine, shared, archived_count = [], [], 0
     for deck in store.list_decks():
         if not deck.viewable_by(user) or (game and deck.game != game):
             continue
+        if deck.archived:
+            if not deck.editable_by(user):
+                continue
+            archived_count += 1
+            if not show_archived:
+                continue
         if deck.game not in loaded or deck.game not in registry.plugins():
             row = (deck, None, None)
         else:
@@ -260,6 +269,9 @@ def deck_index(request: Request, error: str | None = None, game: str | None = No
     return templates.TemplateResponse(request, "decks.html", {
         "games": games, "game_names": loaded, "decks": mine, "shared": shared,
         "owner_names": {u.id: u.name for u in users.list_users()}, "error": error, "crumb_game": game,
+        "show_archived": show_archived, "archived_count": archived_count,
+        "list_url": "/decks?" + urlencode([("game", game)] * bool(game) + [("archived", "1")] * show_archived)
+                    if game or show_archived else "/decks",
     })
 
 
@@ -460,7 +472,7 @@ def _compare_choices(request: Request, deck: Deck, pool) -> list[tuple[str, str]
     user = current_user(request)
     out = []
     for other in store.list_decks(deck.game):
-        if other.id == deck.id or not other.viewable_by(user):
+        if other.id == deck.id or other.archived or not other.viewable_by(user):
             continue
         identity = pool.get(other.identity) if other.identity else None
         label = other.name + (f" ({identity.name})" if identity else "")
@@ -589,10 +601,34 @@ def copy_deck(request: Request, deck_id: str):
     deck = _load(request, deck_id)
     copy = Deck.from_json(deck.to_json() | {
         "id": store.new_id(), "name": f"{deck.name} (copy)", "source": None, "sync": None,
-        "owner": current_user(request).id, "visibility": "private",
+        "owner": current_user(request).id, "visibility": "private", "archived": None,
+        "created": now(),
     })
     store.save(copy)
     return RedirectResponse(f"/decks/{copy.id}", 303)
+
+
+def _back(next_url: str, fallback: str) -> str:
+    """Where to go after a form post: `next` if it's a deck page or list on
+    this site, else `fallback`."""
+    return next_url if re.fullmatch(r"/decks(/\w+)?(\?[\w=&%.-]*)?", next_url or "") else fallback
+
+
+@router.post("/{deck_id}/archive")
+def archive_deck(request: Request, deck_id: str, next: str = Form("")):
+    """Hide a deck from the deck lists. Nothing is deleted; unarchive brings it back.
+    The page asks for confirmation before posting here."""
+    _load(request, deck_id, edit=True)
+    store.update(deck_id, lambda d: setattr(d, "archived", d.archived or now()))
+    log.info("Deck %s archived by %s", deck_id, current_user(request).id)
+    return RedirectResponse(_back(next, "/decks"), 303)
+
+
+@router.post("/{deck_id}/unarchive")
+def unarchive_deck(request: Request, deck_id: str, next: str = Form("")):
+    _load(request, deck_id, edit=True)
+    store.update(deck_id, lambda d: setattr(d, "archived", None))
+    return RedirectResponse(_back(next, f"/decks/{deck_id}"), 303)
 
 
 @router.post("/{deck_id}/delete")

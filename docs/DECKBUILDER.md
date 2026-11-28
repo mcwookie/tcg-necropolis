@@ -207,7 +207,7 @@ How filters reach the server: the form sends each filter as query parameters (`f
 
 ```json
 {
-  "format": 4,
+  "format": 5,
   "id": "0d9269855fcb",
   "game": "ahlcg",
   "name": "Zoey - Dunwich",
@@ -220,6 +220,7 @@ How filters reach the server: the form sends each filter as query parameters (`f
   "source": "https://arkhamdb.com/decklist/view/55482/x",
   "owner": "3f2a9c41d0be",
   "visibility": "private",
+  "archived": null,
   "sync": {"provider": "arkhamdb", "provider_name": "ArkhamDB", "kind": "deck",
            "remote_id": "6380828", "url": "https://arkhamdb.com/deck/view/6380828",
            "version": "0.1", "remote_updated": "2026-10-11T22:23:21+00:00",
@@ -234,7 +235,9 @@ How filters reach the server: the form sends each filter as query parameters (`f
 `{"location": {...}, "sideboard": {...}, "pool": {...}}`); older decks load with none.
 `owner` is a profile id from `data/users.json`, and `visibility` is `private` or `shared`
 (see [ACCOUNTS.md](ACCOUNTS.md)). Format-1 decks, saved before profiles existed, have
-neither field and load as unowned and private.
+neither field and load as unowned and private. `archived` (format 5) is the time the owner
+archived the deck, or `null`; archived decks are hidden from deck lists but otherwise
+work as normal. Copies always start unarchived.
 
 Card ids are the game's catalog ids (ArkhamDB codes for Arkham). `meta` keys for Arkham
 match ArkhamDB's (`faction_selected`, `faction_1`/`faction_2`, `option_selected`,

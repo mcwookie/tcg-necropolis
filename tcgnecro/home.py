@@ -73,8 +73,8 @@ def loaded_games(conn) -> list[Game]:
 
 
 def _my_decks(user) -> list:
-    """The profile's own decks (not ones shared with them), newest first."""
-    decks = [d for d in store.list_decks() if d.editable_by(user)]
+    """The profile's own decks (not ones shared with them, not archived), newest first."""
+    decks = [d for d in store.list_decks() if d.editable_by(user) and not d.archived]
     return sorted(decks, key=lambda d: d.updated or "", reverse=True)
 
 
@@ -113,7 +113,7 @@ def game_page(request: Request, game_id: str):
     owned_groups = list(dict.fromkeys(p["group_name"] or p["name"] for p in packs if owned and p["id"] in owned))
     decks = [d for d in _my_decks(user) if d.game == game_id]
     identity = lambda d: pool.get(d.identity) if pool and d.identity else None
-    shared = sum(1 for d in store.list_decks() if d.game == game_id and d.viewable_by(user) and not d.editable_by(user))
+    shared = sum(1 for d in store.list_decks() if d.game == game_id and not d.archived and d.viewable_by(user) and not d.editable_by(user))
     return templates.TemplateResponse(request, "game.html", {
         "game": game, "crumb_game": game.id,
         "decks": [(d, identity(d)) for d in decks[:RECENT_DECKS]], "deck_total": len(decks), "shared_total": shared,

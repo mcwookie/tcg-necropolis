@@ -139,6 +139,13 @@ def test_private_shared_and_copy(app):
     assert copy.owner == users.by_name("Bob").id and copy.visibility == "private"
     assert copy.slots == {"01016": 2}
 
+    # A copy is a fresh, unarchived deck even when the original is archived.
+    store.update("a1", lambda d: setattr(d, "archived", "2026-01-01T00:00:00+00:00"))
+    r = alice.post("/decks/a1/copy", follow_redirects=False)
+    mine = store.load(r.headers["location"].rsplit("/", 1)[1])
+    assert mine.archived is None and mine.name == "Alice's deck (copy)" and mine.slots == {"01016": 2}
+    store.update("a1", lambda d: setattr(d, "archived", None))
+
     # The owner can change visibility; nonsense values are ignored.
     alice.post("/decks/a1/meta", data={"visibility": "public-ish"})
     assert store.load("a1").visibility == "shared"
@@ -173,3 +180,37 @@ def test_time_zone_preference(app):
     alice.post("/profile", data={"name": "Alice", "timezone": ""})     # back to automatic
     assert "timezone" not in users.by_name("Alice").prefs
     assert 'data-tz=""' in alice.get("/decks").text
+
+
+def test_archive_hides_and_unarchive_restores(app):
+    alice_id = users.create("Alice").id
+    bob_id = users.create("Bob").id
+    store.save(Deck(id="keep1", game="ahlcg", name="Keeper", owner=alice_id))
+    store.save(Deck(id="old1", game="ahlcg", name="Old one", owner=alice_id, visibility="shared"))
+    alice, bob = sign_in(app, "Alice"), sign_in(app, "Bob")
+
+    # Only the owner can archive; it goes back to the list it came from.
+    assert bob.post("/decks/old1/archive").status_code == 403
+    r = alice.post("/decks/old1/archive", data={"next": "/decks?game=ahlcg"}, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/decks?game=ahlcg"
+    assert store.load("old1").archived
+    # Nothing outside the deck pages is accepted as a place to go back to.
+    r = alice.post("/decks/old1/archive", data={"next": "https://evil.example/"}, follow_redirects=False)
+    assert r.headers["location"] == "/decks"
+
+    # Hidden from the deck list (owner and shared) until "Show archived".
+    page = alice.get("/decks").text
+    assert "Keeper" in page and "Old one" not in page and "Show archived decks (1)" in page
+    page = alice.get("/decks?archived=1").text
+    assert "Old one" in page and "Unarchive" in page and "Hide archived decks" in page
+    assert "Old one" not in bob.get("/decks").text
+    assert "Old one" not in bob.get("/decks?archived=1").text
+    # Still reachable directly, with a way back.
+    assert "Unarchive" in alice.get("/decks/old1").text
+
+    # Unarchive brings it back.
+    assert bob.post("/decks/old1/unarchive").status_code == 403
+    alice.post("/decks/old1/unarchive")
+    assert store.load("old1").archived is None
+    assert "Old one" in alice.get("/decks").text
+    assert "Show archived" not in alice.get("/decks").text
