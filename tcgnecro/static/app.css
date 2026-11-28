@@ -1,15 +1,25 @@
 /* Shared styles for the deck builder pages (the Proxies page has its own
-   inline styles). Colors are tokens so dark mode is one override block. */
+   inline styles). Colors are tokens so dark mode is one override block.
+   Dark mode follows the device unless the profile picked a theme, which
+   pages put on <html data-theme="light|dark">; the dark tokens are listed
+   twice (device setting, and an explicit "dark") and must stay in step. */
 
 :root {
   --bg: #f6f6f4; --panel: #fff; --text: #1d1d1b; --muted: #6b6b66; --line: #ddddd8;
   --accent: #2f5fd0; --warn: #b0481c; --bad: #c0392b; --good: #2e7d4f; --hover: #f0f0ec;
+  color-scheme: light dark;
 }
+:root[data-theme="light"] { color-scheme: light; }
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #18181a; --panel: #222225; --text: #ececea; --muted: #9a9a94; --line: #36363a;
     --accent: #7a9cff; --warn: #f08a5d; --bad: #ff7b6b; --good: #6fcf97; --hover: #2b2b2f;
   }
+}
+:root[data-theme="dark"] {
+  --bg: #18181a; --panel: #222225; --text: #ececea; --muted: #9a9a94; --line: #36363a;
+  --accent: #7a9cff; --warn: #f08a5d; --bad: #ff7b6b; --good: #6fcf97; --hover: #2b2b2f;
+  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, sans-serif; }
@@ -26,6 +36,8 @@ footer.site { text-align: center; color: var(--muted); font-size: 12px; padding:
 .banner { background: var(--hover); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; margin: 16px 16px 0; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .banner form { margin: 0; }
 .narrow { max-width: 640px; margin: 0 auto; padding: 20px; display: grid; gap: 20px; }
+.narrow > * { min-width: 0; }   /* lets wide tables scroll inside their panel on a phone */
+@media (max-width: 700px) { .narrow { padding: 12px; } .narrow .range { flex-wrap: wrap; } }
 .profiles { display: grid; gap: 8px; }
 .profiles button { width: 100%; text-align: left; font-size: 16px; padding: 12px 14px; }
 nav.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -44,7 +56,7 @@ nav.tabs a.on { color: var(--text); background: var(--panel); font-weight: 600; 
 .not-owned { font-size: 11px; color: var(--warn); border: 1px solid currentColor; border-radius: 4px; padding: 0 4px; margin-left: 6px; vertical-align: 1px; }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
 label.f { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 4px; text-transform: uppercase; letter-spacing: .03em; }
-select, input[type=text], input[type=number], input[type=search], textarea {
+select, input[type=text], input[type=email], input[type=number], input[type=search], textarea {
   width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px;
   background: var(--bg); color: var(--text); font: inherit;
 }

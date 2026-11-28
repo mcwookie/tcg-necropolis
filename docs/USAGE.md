@@ -16,6 +16,10 @@ Dates and times are shown in your device's time zone. To use a fixed zone instea
 example on a computer whose clock is set to UTC), pick one under **Time zone** on your
 Profile page.
 
+Light or dark colors follow your device's setting. To always use one, pick **Light** or
+**Dark** under **Theme** on your Profile page; it applies on every page and every device
+you sign in from.
+
 ### Signing in
 
 The first time anyone opens the app, it asks for a name and creates the **admin**

@@ -1,14 +1,17 @@
 <!doctype html>
-<html lang="en">
+<html lang="en"{% if user_theme(request) %} data-theme="{{ user_theme(request) }}"{% endif %}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TCG Necropolis</title>
 <style>
-  :root { --bg: #f6f6f4; --panel: #fff; --text: #1d1d1b; --muted: #6b6b66; --line: #ddddd8; --accent: #2f5fd0; --warn: #b0481c; }
+  /* Dark tokens twice: the device's setting, and the profile's explicit choice (as app.css). */
+  :root { --bg: #f6f6f4; --panel: #fff; --text: #1d1d1b; --muted: #6b6b66; --line: #ddddd8; --accent: #2f5fd0; --warn: #b0481c; color-scheme: light dark; }
+  :root[data-theme="light"] { color-scheme: light; }
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #18181a; --panel: #222225; --text: #ececea; --muted: #9a9a94; --line: #36363a; --accent: #7a9cff; --warn: #f08a5d; }
+    :root:not([data-theme="light"]) { --bg: #18181a; --panel: #222225; --text: #ececea; --muted: #9a9a94; --line: #36363a; --accent: #7a9cff; --warn: #f08a5d; }
   }
+  :root[data-theme="dark"] { --bg: #18181a; --panel: #222225; --text: #ececea; --muted: #9a9a94; --line: #36363a; --accent: #7a9cff; --warn: #f08a5d; color-scheme: dark; }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, sans-serif; }
   header { padding: 14px 20px; border-bottom: 1px solid var(--line); display: flex; gap: 16px; align-items: center; }
