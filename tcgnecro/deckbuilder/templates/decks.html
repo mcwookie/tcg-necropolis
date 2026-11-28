@@ -9,10 +9,10 @@
     <h2 style="margin-top:0">Your {{ game_names[crumb_game] ~ " " if crumb_game }}decks</h2>
     {% if decks %}
     <table class="decks">
-      <tr><th>Name</th><th>Game</th><th>Built around</th><th>Cards</th><th>Status</th><th>Updated</th></tr>
+      <tr><th>Name</th><th>Game</th><th>Built around</th><th>Cards</th><th>Status</th><th>Updated</th><th aria-label="Actions"></th></tr>
       {% for deck, identity, errors in decks %}
-      <tr>
-        <td><a href="/decks/{{ deck.id }}">{{ deck.name }}</a>{% if deck.visibility == "shared" %} <span class="muted small" title="Others on this server can see it">· shared</span>{% endif %}{% if deck.sync %} <span class="muted small" title="Kept in sync with {{ deck.sync.provider_name }}{% if deck.sync.status != 'ok' %}: {{ deck.sync.message }}{% endif %}">· synced{% if deck.sync.status != 'ok' %} ⚠{% endif %}</span>{% endif %}</td>
+      <tr{% if deck.archived %} class="archived"{% endif %}>
+        <td><a href="/decks/{{ deck.id }}">{{ deck.name }}</a>{% if deck.archived %} <span class="muted small" title="Archived {{ ago(deck.archived) }}">· archived</span>{% endif %}{% if deck.visibility == "shared" %} <span class="muted small" title="Others on this server can see it">· shared</span>{% endif %}{% if deck.sync %} <span class="muted small" title="Kept in sync with {{ deck.sync.provider_name }}{% if deck.sync.status != 'ok' %}: {{ deck.sync.message }}{% endif %}">· synced{% if deck.sync.status != 'ok' %} ⚠{% endif %}</span>{% endif %}</td>
         <td class="muted small">{{ game_names.get(deck.game, deck.game) }}</td>
         <td>{{ identity.name if identity else "—" }}</td>
         <td>{{ deck.total() }}</td>
@@ -22,14 +22,33 @@
           {% else %}<span style="color:var(--good)">legal</span>{% endif %}
         </td>
         <td class="muted small">{{ when(deck.updated) }}</td>
+        <td class="row-actions">
+          <form method="post" action="/decks/{{ deck.id }}/copy"><button class="ghost small">Copy</button></form>
+          {% if deck.archived %}
+          <form method="post" action="/decks/{{ deck.id }}/unarchive"><input type="hidden" name="next" value="{{ list_url }}"><button class="ghost small">Unarchive</button></form>
+          {% else %}
+          <form method="post" action="/decks/{{ deck.id }}/archive" data-name="{{ deck.name }}"
+                onsubmit="return confirm('Archive ' + this.dataset.name + '? It will be hidden from your deck lists until you unarchive it.')"><input type="hidden" name="next" value="{{ list_url }}"><button class="ghost small">Archive</button></form>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </table>
+    {% elif archived_count %}
+    <p class="muted">All your {{ game_names[crumb_game] ~ " " if crumb_game }}decks are archived.</p>
     {% else %}
     <p class="muted">No decks yet. Start one below.</p>
     {% endif %}
-    {% if crumb_game %}
-    <p class="small" style="margin-bottom:0"><a href="/decks">Show decks for every game</a></p>
+    {% if archived_count or crumb_game %}
+    <p class="small" style="margin-bottom:0">
+      {%- if archived_count %}
+      {% set toggle = [("game", crumb_game)] if crumb_game else [] %}
+      {% if show_archived %}<a href="/decks{{ ('?' ~ toggle|urlencode) if toggle }}">Hide archived decks</a>
+      {% else %}<a href="/decks?{{ (toggle + [("archived", "1")])|urlencode }}">Show archived decks ({{ archived_count }})</a>{% endif %}
+      {% endif %}
+      {%- if archived_count and crumb_game %} · {% endif %}
+      {%- if crumb_game %}<a href="/decks{{ '?archived=1' if show_archived }}">Show decks for every game</a>{% endif %}
+    </p>
     {% endif %}
   </section>
 

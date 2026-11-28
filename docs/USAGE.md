@@ -136,6 +136,16 @@ Open it from a game's page: **+ New deck** or **Show all decks** list that game'
 
 Your decks are listed first, followed by **Shared with you**: decks others have shared.
 
+Each of your decks has two buttons at the end of its row:
+
+- **Copy** makes a private copy named "… (copy)" and opens it.
+- **Archive** hides the deck from your deck lists (after asking first). Nothing is
+  deleted. When you have archived decks, **Show archived decks (N)** under the list
+  shows them, marked "archived", with an **Unarchive** button; **Hide archived decks**
+  goes back. Archived decks also drop out of the game page's recent decks and counts
+  and the simulator's **Compare with** list, and people you shared one with stop
+  seeing it. The deck's own page still opens, and says it's archived.
+
 - **New deck:** pick the game, then what the deck is built around (filterable by name or
   trait, or "Only … in my collection"; hover a name to see the card), and optionally a
   name:
@@ -202,7 +212,9 @@ Three columns: **your deck | cards | filters**. The card list is grouped by type
     weaknesses turn up. See [Simulating a deck](#simulating-a-deck-arkham) below.
   - **Text list** is a plain decklist that pastes into the Proxies page or
     `tcgnecro pdf --deck`.
-  - **JSON** downloads the deck file. **Copy** duplicates the deck. **Delete** asks first.
+  - **JSON** downloads the deck file. **Copy** duplicates the deck. **Archive** hides it
+    from your deck lists (it asks first; **Unarchive** brings it back). **Delete** asks
+    first and can't be undone.
   - **Who can see this deck** (under the name): *Only me*, or *Everyone on this server*.
     Shared decks are read-only for others. They can print, export or **Copy to my
     decks**, but not change yours.

@@ -11,7 +11,9 @@ from datetime import datetime, timezone
 # 4: added `sections`, extra parts of a deck beyond `slots` for games that
 #    have them (MECCG's location deck, sideboard and pool). Older decks load
 #    with none.
-DECK_FORMAT = 4
+# 5: added `archived`, when the owner archived the deck (None if not). Older
+#    decks load as not archived.
+DECK_FORMAT = 5
 
 # Who can see a deck besides its owner.
 VISIBILITIES = {
@@ -83,6 +85,7 @@ class Deck:
     `owner` is a profile id (users.py); `visibility` is a key of VISIBILITIES.
     `slots` is the main deck. `sections` holds any other parts of the deck a
     game has (plugin.sections()), keyed by section: {"location": {id: qty}}.
+    `archived` is set while the deck is archived (hidden from lists).
     """
 
     id: str
@@ -100,6 +103,9 @@ class Deck:
     # None when the deck isn't synced.
     sync: dict | None = None
     sections: dict[str, dict[str, int]] = field(default_factory=dict)
+    # When the owner archived it (ISO time), or None. Archived decks are hidden
+    # from deck lists until shown with "Show archived" or unarchived.
+    archived: str | None = None
     created: str = field(default_factory=now)
     updated: str = field(default_factory=now)
     format: int = DECK_FORMAT

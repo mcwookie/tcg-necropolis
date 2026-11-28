@@ -16,6 +16,10 @@
   <div class="title">{{ deck.name }}</div>
   <div class="muted small">by {{ owner_name }}</div>
   {% endif %}
+  {% if deck.archived and can_edit %}
+  <div class="archived-note small">Archived {{ ago(deck.archived) }}: hidden from your deck lists.
+    <form method="post" action="/decks/{{ deck.id }}/unarchive" style="display:inline"><button class="ghost small">Unarchive</button></form></div>
+  {% endif %}
 
   {% if identity %}
   <div class="ident-card" style="--c: {{ plugin.row_color(identity) or 'var(--line)' }}">
@@ -88,6 +92,12 @@
     <a class="btn ghost" href="/decks/{{ deck.id }}/export.json">JSON</a>
     <form method="post" action="/decks/{{ deck.id }}/copy" style="display:inline"><button class="ghost">{{ "Copy" if can_edit else "Copy to my decks" }}</button></form>
     {% if can_edit %}
+    {% if deck.archived %}
+    <form method="post" action="/decks/{{ deck.id }}/unarchive" style="display:inline"><button class="ghost">Unarchive</button></form>
+    {% else %}
+    <form method="post" action="/decks/{{ deck.id }}/archive" style="display:inline"
+          onsubmit="return confirm('Archive this deck? It will be hidden from your deck lists until you unarchive it.')"><button class="ghost">Archive</button></form>
+    {% endif %}
     <form method="post" action="/decks/{{ deck.id }}/delete" style="display:inline"
           onsubmit="return confirm('Delete this deck? This can\'t be undone.')"><button class="danger">Delete</button></form>
     {% endif %}
