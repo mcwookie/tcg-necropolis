@@ -74,6 +74,7 @@ Only `build_card` is required. Every other hook has a default that gives a plain
 |---|---|---|
 | `build_card(id, title, raw) -> DeckCard \| None` | **required** | Map one catalog card to a DeckCard, or None if it can never be in a deck. Fill `attrs` with the keys your TOML refers to |
 | `build_pool(rows) -> Pool` | calls `build_card` for each row | Override to add `pool.aliases` (e.g. reprint code → original) |
+| `deck_pool(deck, pool) -> Pool` | the pool | The pool as one deck sees it, when deck choices change cards (Arkham taboo lists). Routes call it per request; must be cheap and idempotent |
 | `identities(pool)` | `[]` | Cards a deck is built around (investigators, heroes...) |
 | `start_deck(deck, pool)` | nothing | Called once on creation: add required cards, default choices |
 | `selections(deck, pool) -> [Selection]` | `[]` | Choices shown as dropdowns; stored in `deck.meta[key]` |
@@ -343,12 +344,34 @@ Option criteria supported: `faction`, `faction_select`, `option_select`,
   `01520` (Revised Core Machete) lands on `01020`.
 - ArkhamDB's `01000` "Random Basic Weakness" placeholder is dropped on import.
 
-**XP:** exceptional cards cost double. Myriad cards are paid for once per title.
+**XP:** exceptional cards cost double. Myriad cards are paid for once per title. A taboo
+chain (unchain) is added to (taken from) the card's level first, never going below 0, then
+exceptional doubling applies.
+
+**Taboo lists:** `meta.taboo_id` is ArkhamDB's list id (an int from imports, a string from
+the picker, `""` for none). The plugin overrides `deck_pool(deck, pool)` to return a
+`TabooPool`: the game's pool with each listed card copied and the list's entry merged
+into its `raw` (`deck_limit`, `exceptional`, `deck_options`, `deck_requirements`,
+`replacement_text` as the text) plus `taboo_xp` and `taboo_text`, and `attrs.taboo` set for
+the row badge. Every rule reads that view, so investigator deckbuilding changes (Mandy
+Thompson) and new copy limits work without special cases. Details:
+
+- The level that deck options check stays the printed one; chains only change XP.
+- `deck_limit: 0` is forbidden: illegal, `+` is disabled, and validation says so once
+  (instead of "isn't allowed" and a copy-limit error).
+- Gaining Exceptional also sets the copy limit to 1 when the entry doesn't give one
+  (the rules' limit for exceptional cards, which ArkhamDB's card data bakes into
+  `deck_limit`).
+- Changes to customizable cards (`customization_options`) aren't applied; the entry's
+  text is shown.
+- Views are cached per list and rebuilt when the pool or `taboos.json` changes. The web
+  routes call `deck_pool` once per request; the base plugin's version returns the pool
+  unchanged, so other games are unaffected.
 
 **Checked against real data:** five published ArkhamDB decklists import and validate
 legal (Zoey, Ursula, Lucius, Jenny with Underworld Support, Joe Diamond with 40 cards).
-Not yet handled: taboo lists, customizable upgrades, parallel investigator front/back
-choices. See [ROADMAP.md](ROADMAP.md).
+Not yet handled: customizable upgrades (and taboo changes to them), parallel investigator
+front/back choices. See [ROADMAP.md](ROADMAP.md).
 
 ## The Marvel Champions rules (`games/marvel_champions/deckbuilder.py`)
 

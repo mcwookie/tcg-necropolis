@@ -164,8 +164,12 @@ Finally:
 
 ### Errata and taboo updates
 
-Errata arrive with the next `catalog ahlcg --refresh`. Taboo lists aren't applied yet (see
-ROADMAP); imported decks keep their `taboo_id` in `meta` for when they are.
+Errata and new taboo lists arrive with the next `catalog ahlcg --refresh`, which saves
+ArkhamDB's taboo lists to `data/cache/ahlcg/taboos.json` along with the cards. A plain
+`catalog ahlcg` downloads them only if that file is missing (so an existing server gets
+them on its next catalog run without re-downloading every card). The deck builder never
+fetches them itself; if the download fails the catalog still loads, with a warning, and
+decks that name a taboo list get a warning that it isn't applied.
 
 ---
 

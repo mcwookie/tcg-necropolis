@@ -85,6 +85,7 @@ def _game(game_id: str):
 
 def _deck_context(request: Request, deck: Deck, plugin, pool, message: str | None = None) -> dict:
     """Everything the deck panel template needs."""
+    pool = plugin.deck_pool(deck, pool)
     problems = plugin.validate(deck, pool)
     flagged = {cid for p in problems for cid in p.card_ids}
     owned = _owned(request, deck.game, pool)
@@ -133,8 +134,10 @@ def _deck_context(request: Request, deck: Deck, plugin, pool, message: str | Non
 
 
 def _card_rows(request: Request, deck: Deck, plugin, pool, offset: int = 0) -> dict:
-    """Context for the card list fragment."""
+    """Context for the card list fragment. `pool` is the game's pool; the
+    list shows the deck's view of it (plugin.deck_pool)."""
     owned = _owned(request, deck.game, pool)
+    base, pool = pool, plugin.deck_pool(deck, pool)
     # Once you've recorded a collection, "Only cards I own" starts switched on.
     values = filters.parse(plugin.config, request.query_params,
                            overrides={"owned": True} if owned is not None else None)
@@ -142,7 +145,7 @@ def _card_rows(request: Request, deck: Deck, plugin, pool, offset: int = 0) -> d
     section = _section(plugin, request.query_params.get("section"))
     cards = filters.apply(plugin, values, deck, pool, owned)
     query_text = request.query_params.get("query", "").strip()
-    cards, query_error = _run_query(query_text, cards, deck, pool, owned)
+    cards, query_error = _run_query(query_text, cards, deck, base, owned)
     cards = filters.sort(cards, plugin.config, sort_key)
     # Grouped like the deck (Assets, Events...): by group, in the config's
     # order, then the chosen sort within each group (the sort is stable).
@@ -179,7 +182,8 @@ def _card_rows(request: Request, deck: Deck, plugin, pool, offset: int = 0) -> d
 
 def _run_query(text: str, cards: list[DeckCard], deck: Deck, pool, owned) -> tuple[list[DeckCard], str | None]:
     """Narrow the filtered cards with a BuildQL query. A query that doesn't
-    parse leaves the list as it was and returns the error to show."""
+    parse leaves the list as it was and returns the error to show. `pool` is
+    the game's own pool (not a deck's view), which the field schema is cached by."""
     if not text:
         return cards, None
     conn = db.connect()
@@ -223,6 +227,7 @@ def _deck_fragment(request: Request, deck: Deck, plugin, pool, changed: list[str
                    section: str = MAIN) -> HTMLResponse:
     """The deck panel, plus fresh +/- controls for `changed` cards in the list
     (which shows counts for `section`)."""
+    pool = plugin.deck_pool(deck, pool)
     ctx = _deck_context(request, deck, plugin, pool, message) | {
         "changed": [pool.get(c) for c in changed], "list_section": section}
     response = templates.TemplateResponse(request, "_deck.html", ctx)
@@ -349,6 +354,7 @@ def card_list(request: Request, deck_id: str, offset: int = 0):
 def card_detail(request: Request, deck_id: str, card_id: str):
     deck = _load(request, deck_id)
     plugin, pool = _game(deck.game)
+    pool = plugin.deck_pool(deck, pool)
     card = pool.get(card_id)
     if card is None:
         raise HTTPException(404, "No such card")
@@ -366,7 +372,7 @@ def change_count(request: Request, deck_id: str, card_id: str, delta: int = 0, t
     (plugin.sections()); ?list_section= is the part the card list shows."""
     deck = _load(request, deck_id, edit=True)
     plugin, pool = _game(deck.game)
-    card = pool.get(card_id)
+    card = plugin.deck_pool(deck, pool).get(card_id)
     if card is None:
         raise HTTPException(404, "No such card")
     section = _section(plugin, section)

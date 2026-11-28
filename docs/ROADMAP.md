@@ -8,7 +8,7 @@ L = several sessions.
 
 | Item | Size | Notes |
 |---|---|---|
-| Taboo lists | M | ArkhamDB publishes them through its API: XP changes, chains, unchained cards, bans. Imported decks already keep `meta.taboo_id`. Needs a taboo picker per deck plus applying changes to the pool view |
+| Taboo lists: customizable changes | S | Taboo lists are applied (picker, XP, forbidden cards, text, investigator deckbuilding). Their `customization_options` changes wait for customizable cards (next row) |
 | Customizable cards | M | `customization_options` exist on 16 cards. XP comes from checked boxes, stored in deck meta (check how ArkhamDB encodes them before choosing keys). Currently they count as their printed XP (0) |
 | Parallel investigators | M | ArkhamDB's `alternate_front` / `alternate_back` meta picks which side's deckbuilding applies. Today parallel versions are separate investigators |
 | Side deck / upgrades / campaign XP | M | `side_slots` is stored but not shown. Deck versions and "XP available" are the core of campaign play |

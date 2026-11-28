@@ -172,6 +172,13 @@ Three columns: **your deck | cards | filters**. The card list is grouped by type
   and campaign cards are hidden by default; tick *Weakness* or *Story / campaign* under
   Type to add a story weakness or a story asset your campaign gave you. Neither counts
   toward deck size.
+- **Taboo list** (Arkham): pick one of FFG's taboo lists under the investigator, or
+  None. The deck then follows it: chained cards cost extra XP ("+1 XP" on the row),
+  unchained ones less, forbidden cards drop out of "Only cards my investigator can take"
+  and can't be added, and changed text or deckbuilding applies. A card's details list
+  its taboo change. Decks imported from ArkhamDB keep the list they were built with.
+  The lists download with `tcgnecro catalog ahlcg` (see
+  [UPDATING_GAMES.md](UPDATING_GAMES.md)); until then the picker isn't shown.
 - **Query** (under the filters) narrows the list with an expression such as
   `trait = "spell" & level >= 2` or `health + sanity >= 5`. It works in every game;
   **How to write queries** below the box lists the syntax and the game's fields. See

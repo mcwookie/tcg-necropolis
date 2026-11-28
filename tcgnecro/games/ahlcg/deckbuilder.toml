@@ -30,6 +30,11 @@ title = "Cost"
 field = "pips"
 title = "Level (experience)"
 
+# Set only on cards the deck's taboo list changes ("+1 XP", "Forbidden", "Taboo").
+[[badges]]
+field = "taboo"
+title = "Changed by this deck's taboo list (see the card's details)"
+
 [[groups]]
 value = "asset"
 label = "Assets"
