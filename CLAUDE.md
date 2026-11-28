@@ -89,6 +89,7 @@ previews use a scratch copy**: copy `index.db`, `users.json`, `decks/`; symlink
 - Pushing to `main` builds `ghcr.io/mcwookie/tcg-necropolis` in GitHub Actions
   (tests, then an old-x86-CPU start check, then multi-arch images). The live
   server pulls `:latest` about every 5 minutes, so a push to `main` deploys.
+  Pull requests into `main` run the tests only (the `test` check).
   Don't act on the server itself without the owner's say-so.
 - Report outcomes plainly: what was tested and how, what wasn't.
 - The owner works from more than one Claude client (Claude Code, Claude

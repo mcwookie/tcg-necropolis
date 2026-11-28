@@ -3,10 +3,15 @@
 # Registry as
 #   ghcr.io/<owner>/<repo>:latest    and    :sha-<commit>
 # Servers pick up :latest with deploy/update.sh (see docs/DOCKER.md).
+#
+# Pull requests into main run the tests only (the `test` check on the PR);
+# nothing is built or published until the change reaches main.
 name: Docker image
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
   workflow_dispatch:
 
@@ -14,8 +19,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: docker-image
-  cancel-in-progress: true   # a newer push supersedes an unfinished build
+  # One run per branch or PR: a newer push supersedes an unfinished run, and
+  # PR runs never cancel a main build.
+  group: docker-image-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -30,6 +37,7 @@ jobs:
 
   image:
     needs: test
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
