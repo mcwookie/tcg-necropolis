@@ -10,7 +10,7 @@ up to date automatically:
 | `deploy/docker-entrypoint.sh` | On every start: reload card catalogs and reindex collections, then run the server |
 | `deploy/env.example` | Settings template. Copy to `.env` next to `compose.yaml` |
 | `deploy/Caddyfile`, `deploy/caddy-users.example` | Caddy config and password file template |
-| `.github/workflows/docker.yml` | On every push to `main`: run the tests, then build and publish the image to GitHub's container registry |
+| `.github/workflows/docker.yml` | On every push to `main`: run the tests, then build and publish the image to GitHub's container registry. Pull requests into `main` run the tests only, shown as the `test` check on the PR |
 | `deploy/update.sh` + `tcgnecro-update.{service,timer}` | On the server: every 5 minutes, pull the newest image and restart the app if it changed |
 
 ```
